@@ -1,0 +1,47 @@
+name: ✨ Feature Request (기능 추가)
+description: 새로운 화면이나 기능을 개발할 때 사용합니다.
+title: "[FEAT] "
+labels: ["enhancement", "feature"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: 📄 기능 설명 (Description)
+      description: 어떤 기능을 만들고자 하는지 설명해주세요.
+      placeholder: |
+        - 메인 화면에 '인기 여행지' 캐러셀 추가
+        - 로그인 페이지 UI 구현
+    validations:
+      required: true
+
+  - type: textarea
+    id: requirements
+    attributes:
+      label: 🧭 요구사항 (Requirements)
+      description: 구체적인 기능 명세를 적어주세요.
+      placeholder: |
+        - [ ] 터치 스와이프로 넘길 수 있어야 함
+        - [ ] 5초마다 자동 슬라이드 기능
+    validations:
+      required: true
+
+  - type: textarea
+    id: ui-ux
+    attributes:
+      label: 🖼 화면 / UI 흐름
+      description: 피그마 링크나 스케치, 화면 흐름도를 첨부해주세요.
+      placeholder: |
+        - Figma Link: ...
+        - (이미지 붙여넣기)
+    validations:
+      required: false
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: 🛠 구현 아이디어
+      description: 사용할 라이브러리나 구현 방식에 대한 아이디어가 있다면 적어주세요.
+      placeholder: |
+        - Swiper.js 라이브러리 사용 예정
+    validations:
+      required: false

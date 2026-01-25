@@ -1,0 +1,25 @@
+name: 🧹 Chore (일반 작업)
+description: 라이브러리 추가, 설정 변경, 파일 정리 등 단순 작업입니다.
+title: "[CHORE] "
+labels: ["chore"]
+body:
+  - type: textarea
+    id: content
+    attributes:
+      label: 📌 작업 내용
+      description: 무엇을 해야 하는지 적어주세요.
+      placeholder: |
+        - axios 라이브러리 설치
+        - eslint 규칙 수정
+    validations:
+      required: true
+
+  - type: textarea
+    id: todo
+    attributes:
+      label: 📋 할 일 (Todo)
+      placeholder: |
+        - [ ] npm install axios
+        - [ ] util 함수 작성
+    validations:
+      required: false
