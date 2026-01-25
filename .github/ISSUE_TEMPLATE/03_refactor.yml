@@ -1,0 +1,37 @@
+name: ♻️ Refactoring (리팩토링)
+description: 컴포넌트 구조 개선, 성능 최적화, 코드 정리 작업을 합니다.
+title: "[REFACTOR] "
+labels: ["refactor"]
+body:
+  - type: textarea
+    id: target
+    attributes:
+      label: 🧩 개선 대상
+      description: 어떤 코드를 수정할 것인지 설명해주세요.
+      placeholder: |
+        - Home.tsx의 비즈니스 로직 분리
+        - 공통 버튼 컴포넌트(Button.tsx) 스타일 개선
+    validations:
+      required: true
+
+  - type: textarea
+    id: purpose
+    attributes:
+      label: 🎯 목적
+      description: 리팩토링을 하는 이유를 적어주세요.
+      placeholder: |
+        - 코드가 너무 길어져서 가독성이 떨어짐
+        - 재사용성을 높이기 위함
+    validations:
+      required: true
+
+  - type: textarea
+    id: changes
+    attributes:
+      label: 🛠 변경 방향
+      description: 어떻게 바꿀 예정인지 구체적으로 적어주세요.
+      placeholder: |
+        - Custom Hook(useHome)으로 로직 추출
+        - Tailwind CSS 클래스 정리
+    validations:
+      required: true

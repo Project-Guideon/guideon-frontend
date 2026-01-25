@@ -1,0 +1,45 @@
+name: 🐞 Bug Report (버그 제보)
+description: 화면 깨짐, 동작 오류 등 프론트엔드 버그를 제보합니다.
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: phenomenon
+    attributes:
+      label: 📄 현상 (Phenomenon)
+      description: 어떤 버그인지 설명하고 에러 로그나 스크린샷을 첨부해주세요.
+      placeholder: |
+        - 로그인 버튼을 눌러도 반응이 없음
+        - 콘솔 에러: Uncaught TypeError...
+        (스크린샷 첨부)
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 🔁 재현 방법 (Steps to Reproduce)
+      description: 버그를 재현할 수 있는 순서를 적어주세요.
+      placeholder: |
+        1. 메인 페이지 접속
+        2. '로그인' 버튼 클릭
+        3. 아무 반응 없음
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: 💻 환경 (Environment)
+      description: OS, 브라우저, 기기 정보 등을 적어주세요.
+      placeholder: Chrome 120 / Windows 10 / iPhone 15 등
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 🛠 해결 방향 (Optional)
+      description: 원인이나 해결 방법에 대한 아이디어가 있다면 적어주세요.
+    validations:
+      required: false
