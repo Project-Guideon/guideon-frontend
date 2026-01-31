@@ -1,8 +1,3 @@
-/**
- * GUIDEON Animation Variants
- * Based on modern-portfolio fadeIn pattern
- */
-
 type Direction = 'up' | 'down' | 'left' | 'right';
 
 export const fadeIn = (direction: Direction, delay: number) => {

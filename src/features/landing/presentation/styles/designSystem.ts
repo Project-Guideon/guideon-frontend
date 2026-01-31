@@ -1,44 +1,21 @@
-/**
- * GUIDEON Brand Design System
- * 
- * 브랜드 철학:
- * "관광지에 생명을 불어넣다" 
- * - 사람과 장소를 연결하고
- * - AI를 통해 소통하며  
- * - 새로운 발견을 선사하는
- * 
- * 핵심 가치:
- * 1. CONNECTION (연결) - 방문객과 관광지를 잇는 다리
- * 2. INTELLIGENCE (지능) - AI 기반 맞춤형 안내
- * 3. EXPERIENCE (경험) - 잊지 못할 순간의 창조
- */
-
-// ========================================
-// GUIDEON 상징 컬러 시스템
-// ========================================
+// GUIDEON 상징 컬러
 
 export const colors = {
-    // Primary: GUIDEON Coral
-    // - 따뜻하고 환영하는 느낌
-    // - 관광지의 활기와 생동감 표현
-    // - 사람 중심의 서비스 철학
+    // Coral
     primary: {
         50: '#FFF5F3',
         100: '#FFE8E4',
         200: '#FFCFC6',
         300: '#FFB0A1',
         400: '#FF8A75',
-        500: '#FF6B52', // ← GUIDEON 대표색
+        500: '#FF6B52',
         600: '#F04A2E',
         700: '#CC3A22',
         800: '#A62E1A',
         900: '#7A2314',
     },
 
-    // Secondary: Ocean Blue
-    // - 신뢰와 안정감
-    // - 기술력과 전문성
-    // - 넓은 세계로의 연결
+    // Secondary
     secondary: {
         50: '#F0F9FF',
         100: '#E0F2FE',
@@ -52,9 +29,7 @@ export const colors = {
         900: '#0C4A6E',
     },
 
-    // Accent: Mint
-    // - 신선함과 혁신
-    // - 자연 친화적 관광
+    // Mint
     accent: {
         400: '#34D399',
         500: '#10B981',
@@ -76,9 +51,7 @@ export const colors = {
     },
 } as const;
 
-// ========================================
 // 애니메이션 프리셋
-// ========================================
 
 export const animations = {
     // 스크롤 기반 Reveal
@@ -127,12 +100,10 @@ export const animations = {
     },
 } as const;
 
-// ========================================
 // 타이포그래피
-// ========================================
 
 export const typography = {
-    // Display (Hero 제목)
+    // Display
     display: 'text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1]',
 
     // Heading
@@ -149,9 +120,7 @@ export const typography = {
     label: 'text-sm font-medium uppercase tracking-wider',
 } as const;
 
-// ========================================
 // 간격 시스템
-// ========================================
 
 export const spacing = {
     section: 'py-24 md:py-32 lg:py-40',

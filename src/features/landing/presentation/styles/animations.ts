@@ -2,13 +2,6 @@
 
 import { Variants } from 'framer-motion';
 
-/**
- * GUIDEON Animation System
- * 
- * 부드럽고 세련된 모션 프리셋
- * 성능 최적화를 위해 transform과 opacity 위주 사용
- */
-
 export const transitions = {
     spring: {
         type: "spring",
