@@ -35,7 +35,7 @@ export function CTASection() {
                         </div>
 
                         <h2 className="text-4xl md:text-6xl font-black text-white mb-8 leading-tight drop-shadow-sm">
-                            관광지의 미래,<br />
+                            Guideon<br />
                             지금 시작하세요
                         </h2>
 

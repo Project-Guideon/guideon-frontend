@@ -59,7 +59,7 @@ export function HowItWorksSection() {
                     </h2>
 
                     <p className="text-slate-600 text-lg max-w-2xl mx-auto font-medium">
-                        복잡한 과정은 없습니다. 전문가가 처음부터 끝까지 함께합니다.
+                        간단한 설정으로 함께하는 스마트 관광 시스템
                     </p>
                 </motion.div>
 
