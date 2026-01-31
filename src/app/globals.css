@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+/* Core Layout */
+html {
+  scroll-behavior: smooth;
+  scroll-snap-type: y mandatory;
+  overflow-y: scroll;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+section {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: white;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #FF6B52;
+}
+
+/* Swiper */
+.swiper-horizontal>.swiper-pagination-bullets .swiper-pagination-bullet,
+.swiper-pagination-horizontal.swiper-pagination-bullets .swiper-pagination-bullet {
+  background-color: #FF6B52;
+}
+
+.swiper-button-next:after,
+.swiper-button-prev:after {
+  color: #FF6B52;
+}
+
+/* Animations */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  /* 50% { transform: translateY(-6px); } 너무 과하지 않게 줄임 */
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes pulse-soft {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Utilities */
+.text-gradient {
+  background: linear-gradient(135deg, #FF6B52, #ff9a8a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
