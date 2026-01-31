@@ -6,7 +6,7 @@ body:
   - type: textarea
     id: description
     attributes:
-      label: 📄 기능 설명 (Description)
+      label: 📄 기능 설명
       description: 어떤 기능을 만들고자 하는지 설명해주세요.
       placeholder: |
         - 메인 화면에 '인기 여행지' 캐러셀 추가
@@ -17,7 +17,7 @@ body:
   - type: textarea
     id: requirements
     attributes:
-      label: 🧭 요구사항 (Requirements)
+      label: 🧭 요구사항
       description: 구체적인 기능 명세를 적어주세요.
       placeholder: |
         - [ ] 터치 스와이프로 넘길 수 있어야 함
