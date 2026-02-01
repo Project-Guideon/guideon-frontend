@@ -23,7 +23,7 @@ body:
         - 코드가 너무 길어져서 가독성이 떨어짐
         - 재사용성을 높이기 위함
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: changes
@@ -34,4 +34,4 @@ body:
         - Custom Hook(useHome)으로 로직 추출
         - Tailwind CSS 클래스 정리
     validations:
-      required: true
+      required: false
