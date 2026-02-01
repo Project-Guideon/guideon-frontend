@@ -25,7 +25,7 @@ body:
         2. '로그인' 버튼 클릭
         3. 아무 반응 없음
     validations:
-      required: true
+      required: false
 
   - type: input
     id: environment
@@ -34,7 +34,7 @@ body:
       description: OS, 브라우저, 기기 정보 등을 적어주세요.
       placeholder: Chrome 120 / Windows 10 / iPhone 15 등
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: solution
