@@ -31,8 +31,6 @@ apiClient.interceptors.request.use(
 );
 
 /**
- * Response Interceptor - API 에러 코드 기반 처리
- * 
  * AUTH_REQUIRED, AUTH_INVALID → 로그아웃
  * ACCESS_DENIED, ADMIN_SITE_FORBIDDEN, SITE_INACTIVE → 권한 에러
  */
