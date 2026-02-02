@@ -29,3 +29,36 @@ apiClient.interceptors.request.use(
         return Promise.reject(error);
     }
 );
+
+/**
+ * Response Interceptor - API 에러 코드 기반 처리
+ * 
+ * AUTH_REQUIRED, AUTH_INVALID → 로그아웃
+ * ACCESS_DENIED, ADMIN_SITE_FORBIDDEN, SITE_INACTIVE → 권한 에러
+ */
+apiClient.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (typeof window !== 'undefined') {
+            const errorCode = error.response?.data?.error?.code;
+            const status = error.response?.status;
+
+            // 인증 관련 에러 → 로그아웃
+            if (errorCode === 'AUTH_REQUIRED' || errorCode === 'AUTH_INVALID' || status === 401) {
+                localStorage.removeItem('accessToken');
+                window.location.href = '/login';
+            }
+
+            // 권한 관련 에러
+            if (
+                errorCode === 'ACCESS_DENIED' ||
+                errorCode === 'ADMIN_SITE_FORBIDDEN' ||
+                errorCode === 'SITE_INACTIVE'
+            ) {
+                console.error('접근 권한이 없습니다:', errorCode);
+            }
+        }
+
+        return Promise.reject(error);
+    }
+);
