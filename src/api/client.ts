@@ -10,3 +10,22 @@ export const apiClient = axios.create({
         'Content-Type': 'application/json',
     },
 });
+
+/**
+ * - 모든 요청에 Authorization 헤더 자동 주입
+ */
+apiClient.interceptors.request.use(
+    (config) => {
+        // 클라이언트 사이드에서만 localStorage 접근
+        if (typeof window !== 'undefined') {
+            const token = localStorage.getItem('accessToken');
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
