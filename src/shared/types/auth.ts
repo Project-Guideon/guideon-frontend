@@ -4,29 +4,6 @@
 export type AdminRole = 'PLATFORM_ADMIN' | 'SITE_ADMIN';
 
 /**
- * Admin 사용자 정보
- */
-export interface AdminUser {
-    adminId: number;
-    email: string;
-    role: AdminRole;
-    isActive: boolean;
-    lastLoginAt: string | null;
-    sites?: Site[];
-}
-
-/**
- * 관광지 (Site) - 간략 정보
- */
-export interface Site {
-    siteId: number;
-    name: string;
-    isActive: boolean;
-    createdAt: string;
-    updatedAt: string;
-}
-
-/**
  * 로그인 요청
  */
 export interface LoginRequest {
@@ -35,10 +12,41 @@ export interface LoginRequest {
 }
 
 /**
- * 로그인 응답
+ * 로그인 응답 (v4.0)
+ * - PLATFORM_ADMIN: site_ids 없음
+ * - SITE_ADMIN: site_ids 포함
  */
 export interface LoginResponse {
-    accessToken: string;
-    refreshToken?: string;
-    user: AdminUser;
+    access_token: string;
+    refresh_token: string;
+    admin_id: number;
+    email: string;
+    role: AdminRole;
+    site_ids?: number[];  // SITE_ADMIN만 포함
 }
+
+/**
+ * 토큰 갱신 요청
+ */
+export interface RefreshTokenRequest {
+    refresh_token: string;
+}
+
+/**
+ * 토큰 갱신 응답
+ */
+export interface RefreshTokenResponse {
+    access_token: string;
+    refresh_token: string;
+}
+
+/**
+ * 내 정보 조회 응답
+ */
+export interface MeResponse {
+    admin_id: number;
+    email: string;
+    role: AdminRole;
+    site_ids: number[];  // PLATFORM_ADMIN은 빈 배열
+}
+
