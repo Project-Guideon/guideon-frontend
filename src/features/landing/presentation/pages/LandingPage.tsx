@@ -18,7 +18,7 @@ import { Footer } from '../components/Footer';
  */
 export function LandingPage() {
     return (
-        <div className="bg-white text-slate-900 overflow-x-hidden">
+        <div className="landing-page bg-white text-slate-900 overflow-x-hidden">
             <Header />
             <SideNav />
 
