@@ -70,7 +70,9 @@ export function RecentActivityLog() {
                             <div className="flex items-center justify-between">
                                 <p className="text-sm font-bold text-slate-900 truncate">
                                     {log.action}
-                                    {log.site !== '-' && <span className="font-normal text-slate-500 ml-1">@ {log.site}</span>}
+                                    {log.site && log.site !== '-' && (
+                                        <span className="font-normal text-slate-500 ml-1">@ {log.site}</span>
+                                    )}
                                 </p>
                                 <span className="flex items-center text-xs text-slate-400 flex-shrink-0">
                                     <HiOutlineClock className="w-3 h-3 mr-1" />

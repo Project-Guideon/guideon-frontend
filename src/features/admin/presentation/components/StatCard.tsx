@@ -14,7 +14,7 @@ interface StatCardProps {
 /**
  * StatCard
  */
-export function StatCard({ icon, label, value, subValue, isPositive, color }: StatCardProps) {
+export function StatCard({ icon, label, value, subValue, isPositive = true, color }: StatCardProps) {
     const colorStyles = {
         blue: 'bg-blue-50 text-blue-600',
         green: 'bg-green-50 text-green-600',
