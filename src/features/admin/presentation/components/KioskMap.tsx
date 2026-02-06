@@ -1,142 +1,204 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import {
-    HiOutlineMinus,
-    HiOutlinePlus,
     HiOutlineMap,
-    HiOutlineInformationCircle,
-    HiOutlineDeviceTablet
+    HiOutlineBuildingLibrary,
+    HiChevronDown,
+    HiCheck
 } from 'react-icons/hi2';
+
+// Dynamic Import for Leaflet (SSR False)
+const AdminMap = dynamic(() => import('./AdminMap'), {
+    ssr: false,
+    loading: () => (
+        <div className="h-full w-full flex flex-col items-center justify-center bg-slate-50 text-slate-400 gap-2">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+            <p className="text-sm font-medium">지도를 불러오는 중입니다...</p>
+        </div>
+    )
+});
+
+// Mock Data (Sites & Kiosks & Zones)
+interface SiteOption {
+    id: number;
+    name: string;
+    center: [number, number];
+    zoom: number;
+}
+
+const SITES: SiteOption[] = [
+    { id: 1, name: '에버랜드 (Everland)', center: [37.2939, 127.2025], zoom: 15 },
+    { id: 2, name: '경복궁 (Gyeongbokgung)', center: [37.5796, 126.9770], zoom: 16 },
+    { id: 3, name: '롯데월드 (Lotte World)', center: [37.5111, 127.0982], zoom: 16 },
+];
 
 interface KioskLocation {
     id: string;
     name: string;
-    x: number; // 0-100%
-    y: number; // 0-100%
+    lat: number;
+    lng: number;
     status: 'online' | 'warning' | 'offline';
     zone: string;
 }
 
-const MOCK_LOCATIONS: KioskLocation[] = [
-    { id: 'K-01', name: '정문 입구', x: 20, y: 80, status: 'online', zone: 'ZONE-A' },
-    { id: 'K-02', name: '매표소 앞', x: 25, y: 75, status: 'online', zone: 'ZONE-A' },
-    { id: 'K-03', name: '사파리 대기줄', x: 50, y: 40, status: 'warning', zone: 'ZONE-B' },
-    { id: 'K-04', name: '장미원 입구', x: 70, y: 60, status: 'online', zone: 'ZONE-C' },
-    { id: 'K-05', name: 'T익스프레스', x: 60, y: 30, status: 'online', zone: 'ZONE-B' },
-    { id: 'K-06', name: '주차장 A', x: 10, y: 90, status: 'offline', zone: 'ZONE-D' },
-    { id: 'K-07', name: '식당가', x: 40, y: 55, status: 'online', zone: 'ZONE-E' },
-];
+interface ZoneInfo {
+    id: string;
+    name: string;
+    center: [number, number];
+    paths: [number, number][];
+    color: string;
+}
+
+const MOCK_KIOSKS: Record<number, KioskLocation[]> = {
+    1: [ // 에버랜드
+        { id: 'K-01', name: '정문 매표소', lat: 37.2939, lng: 127.2025, status: 'online', zone: '글로벌페어' },
+        { id: 'K-02', name: '사파리 월드', lat: 37.2925, lng: 127.2045, status: 'warning', zone: '주토피아' },
+        { id: 'K-03', name: 'T익스프레스', lat: 37.2915, lng: 127.2015, status: 'online', zone: '유러피언어드벤처' },
+    ],
+};
+
+const MOCK_ZONES: Record<number, ZoneInfo[]> = {
+    1: [ // 에버랜드 Zones
+        {
+            id: 'Z-01', name: '글로벌페어',
+            center: [37.2945, 127.2025],
+            paths: [
+                [37.2950, 127.2010], [37.2950, 127.2040], [37.2930, 127.2040], [37.2930, 127.2010]
+            ],
+            color: '#3b82f6'
+        },
+        {
+            id: 'Z-02', name: '주토피아',
+            center: [37.2925, 127.2055],
+            paths: [
+                [37.2935, 127.2045], [37.2935, 127.2070], [37.2915, 127.2070], [37.2915, 127.2045]
+            ],
+            color: '#10b981'
+        },
+        {
+            id: 'Z-03', name: '유러피언',
+            center: [37.2910, 127.2015],
+            paths: [
+                [37.2920, 127.2005], [37.2920, 127.2025], [37.2900, 127.2025], [37.2900, 127.2005]
+            ],
+            color: '#a855f7'
+        },
+    ],
+};
 
 export function KioskMap() {
-    const [zoom, setZoom] = useState(1);
-    const [selectedKiosk, setSelectedKiosk] = useState<KioskLocation | null>(null);
+    const [selectedSiteId, setSelectedSiteId] = useState<number>(1);
+    const [zoom, setZoom] = useState(15);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
-    const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.2, 2));
-    const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.2, 0.8));
+    const currentSite = SITES.find(s => s.id === selectedSiteId) || SITES[0];
+    const markers = MOCK_KIOSKS[selectedSiteId] || [];
+    const zones = MOCK_ZONES[selectedSiteId] || [];
+
+    // 드롭다운 외부 클릭 감지
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    const handleSiteSelect = (site: SiteOption) => {
+        setSelectedSiteId(site.id);
+        setZoom(site.zoom);
+        setIsDropdownOpen(false);
+    };
 
     return (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden h-full flex flex-col">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+            {/* Header with Site Selector */}
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between flex-shrink-0 z-10 bg-white relative">
                 <div>
                     <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                         <HiOutlineMap className="w-5 h-5 text-slate-500" />
-                        실시간 키오스크 분포
-                        <span className="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                            에버랜드 전체
-                        </span>
+                        실시간 모니터링
                     </h3>
-                    <p className="text-sm text-slate-500 mt-1">현재 45대 운영 중 • 2대 오프라인</p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                        {currentSite.name} - 총 {markers.length}대 가동 중
+                    </p>
                 </div>
-                <div className="flex gap-2">
-                    <button onClick={handleZoomOut} className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200 text-slate-600 transition-colors">
-                        <HiOutlineMinus className="w-5 h-5" />
+
+                {/* Custom Site Selector Dropdown */}
+                <div className="relative" ref={dropdownRef}>
+                    <button
+                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                        className={`flex items-center gap-2 px-3 py-2 bg-white border rounded-xl transition-all duration-200 outline-none
+                            ${isDropdownOpen
+                                ? 'border-orange-500 ring-4 ring-orange-50 text-slate-800'
+                                : 'border-slate-200 hover:border-orange-400 text-slate-600 hover:bg-orange-50'
+                            }
+                        `}
+                    >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isDropdownOpen ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-500'}`}>
+                            <HiOutlineBuildingLibrary className="w-4 h-4" />
+                        </div>
+                        <span className="text-sm font-bold min-w-[80px] text-left">{currentSite.name.split(' ')[0]}</span>
+                        <HiChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180 text-orange-500' : ''}`} />
                     </button>
-                    <button onClick={handleZoomIn} className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200 text-slate-600 transition-colors">
-                        <HiOutlinePlus className="w-5 h-5" />
-                    </button>
+
+                    {/* Dropdown Menu */}
+                    <div className={`absolute right-0 mt-2 w-56 bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden transition-all duration-200 origin-top-right
+                        ${isDropdownOpen ? 'opacity-100 scale-100 translate-y-0 visible' : 'opacity-0 scale-95 -translate-y-2 invisible pointer-events-none'}
+                    `}>
+                        <div className="p-1">
+                            {SITES.map((site) => (
+                                <button
+                                    key={site.id}
+                                    onClick={() => handleSiteSelect(site)}
+                                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors
+                                        ${selectedSiteId === site.id
+                                            ? 'bg-orange-50 text-orange-700 font-bold'
+                                            : 'text-slate-600 hover:bg-slate-50 hover:text-orange-600 font-medium'
+                                        }
+                                    `}
+                                >
+                                    <span>{site.name}</span>
+                                    {selectedSiteId === site.id && <HiCheck className="w-4 h-4 text-orange-600" />}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div className="flex-1 relative bg-slate-50 overflow-hidden group cursor-grab active:cursor-grabbing min-h-[350px]">
-                {/* Mock Map Background */}
-                <div
-                    className="absolute inset-0 transition-transform duration-300 origin-center"
-                    style={{
-                        transform: `scale(${zoom})`,
-                        backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
-                        backgroundSize: '20px 20px'
-                    }}
-                >
-                    {/* 구역 영역 */}
-                    <div className="absolute top-[20%] left-[40%] w-[30%] h-[30%] bg-blue-100/50 rounded-full border-2 border-blue-200 flex items-center justify-center text-blue-400 font-bold text-sm select-none">ZONE-B</div>
-                    <div className="absolute top-[60%] left-[10%] w-[25%] h-[25%] bg-green-100/50 rounded-full border-2 border-green-200 flex items-center justify-center text-green-400 font-bold text-sm select-none">ZONE-A</div>
-                    <div className="absolute top-[50%] left-[60%] w-[20%] h-[20%] bg-purple-100/50 rounded-full border-2 border-purple-200 flex items-center justify-center text-purple-400 font-bold text-sm select-none">ZONE-C</div>
+            {/* Map Area */}
+            <div className="flex-1 relative bg-slate-100 min-h-[350px]">
+                <AdminMap
+                    center={currentSite.center}
+                    zoom={zoom}
+                    markers={markers}
+                    zones={zones}
+                />
 
-                    {/* Kiosk Markers */}
-                    {MOCK_LOCATIONS.map((kiosk) => (
-                        <button
-                            key={kiosk.id}
-                            className={`
-                                absolute w-4 h-4 rounded-full border-2 border-white shadow-lg transform -translate-x-1/2 -translate-y-1/2 transition-all hover:scale-150
-                                ${kiosk.status === 'online' ? 'bg-[#2ECCB7] shadow-[#2ECCB7]/30' : ''}
-                                ${kiosk.status === 'warning' ? 'bg-[#FF9F43] shadow-[#FF9F43]/30' : ''}
-                                ${kiosk.status === 'offline' ? 'bg-[#FF5252] shadow-[#FF5252]/30' : ''}
-                                ${selectedKiosk?.id === kiosk.id ? 'ring-4 ring-blue-500/20 scale-125 z-10' : 'z-0'}
-                            `}
-                            style={{ left: `${kiosk.x}%`, top: `${kiosk.y}%` }}
-                            onClick={() => setSelectedKiosk(kiosk)}
-                            onMouseEnter={() => setSelectedKiosk(kiosk)}
-                            aria-label={`${kiosk.name} - ${kiosk.status}`}
-                        >
-                            <span className="sr-only">{kiosk.name}</span>
-                        </button>
-                    ))}
-                </div>
-
-                {/* Legend */}
-                <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm p-3 rounded-xl border border-slate-100 shadow-sm text-xs space-y-2 pointer-events-none select-none">
+                {/* Legend Overlay */}
+                <div className="absolute bottom-6 left-4 bg-white/90 backdrop-blur-sm px-3 py-2.5 rounded-xl border border-slate-200 shadow-lg text-xs space-y-1.5 z-[1000] pointer-events-none select-none">
+                    <div className="font-bold text-slate-800 mb-1">Status Legend</div>
                     <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-[#2ECCB7]" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-green-100" />
                         <span className="text-slate-600">정상 (Online)</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-[#FF9F43]" />
-                        <span className="text-slate-600">주의 (Slow)</span>
+                        <span className="w-2.5 h-2.5 rounded-full bg-orange-500 ring-2 ring-orange-100" />
+                        <span className="text-slate-600">점검 (Warning)</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-[#FF5252]" />
-                        <span className="text-slate-600">오프라인 (Offline)</span>
+                        <span className="w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-red-100" />
+                        <span className="text-slate-600">장애 (Offline)</span>
                     </div>
                 </div>
-
-                {/* Tooltip Card */}
-                {selectedKiosk && (
-                    <div className="absolute bottom-4 left-4 bg-white p-4 rounded-xl shadow-lg border border-slate-100 w-64 animate-fade-in-up z-20">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="font-bold text-slate-900 flex items-center gap-1">
-                                <HiOutlineDeviceTablet className="w-4 h-4 text-slate-400" />
-                                {selectedKiosk.id}
-                            </span>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase
-                                ${selectedKiosk.status === 'online' ? 'bg-green-100 text-green-600' : ''}
-                                ${selectedKiosk.status === 'warning' ? 'bg-orange-100 text-orange-600' : ''}
-                                ${selectedKiosk.status === 'offline' ? 'bg-red-100 text-red-600' : ''}
-                            `}>
-                                {selectedKiosk.status}
-                            </span>
-                        </div>
-                        <p className="text-sm font-medium text-slate-800">{selectedKiosk.name}</p>
-                        <p className="text-xs text-slate-500 mt-1">{selectedKiosk.zone}</p>
-                        <div className="mt-3 text-xs text-slate-400 flex justify-between items-center border-t border-slate-50 pt-2">
-                            <span>Last Ping: 1m ago</span>
-                            <button className="flex items-center text-blue-500 hover:text-blue-600 transition-colors">
-                                <HiOutlineInformationCircle className="w-4 h-4 mr-1" />
-                                상세보기
-                            </button>
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     );
