@@ -36,8 +36,8 @@ export function KioskMap() {
     const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.2, 0.8));
 
     return (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden h-[500px] flex flex-col">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden h-full flex flex-col">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
                 <div>
                     <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                         <HiOutlineMap className="w-5 h-5 text-slate-500" />
@@ -58,8 +58,8 @@ export function KioskMap() {
                 </div>
             </div>
 
-            <div className="flex-1 relative bg-slate-50 overflow-hidden group cursor-grab active:cursor-grabbing">
-                {/* Mock Map Background (Grid Pattern) */}
+            <div className="flex-1 relative bg-slate-50 overflow-hidden group cursor-grab active:cursor-grabbing min-h-[350px]">
+                {/* Mock Map Background */}
                 <div
                     className="absolute inset-0 transition-transform duration-300 origin-center"
                     style={{
@@ -68,7 +68,7 @@ export function KioskMap() {
                         backgroundSize: '20px 20px'
                     }}
                 >
-                    {/* 구역 영역 (Mock Zones) */}
+                    {/* 구역 영역 */}
                     <div className="absolute top-[20%] left-[40%] w-[30%] h-[30%] bg-blue-100/50 rounded-full border-2 border-blue-200 flex items-center justify-center text-blue-400 font-bold text-sm select-none">ZONE-B</div>
                     <div className="absolute top-[60%] left-[10%] w-[25%] h-[25%] bg-green-100/50 rounded-full border-2 border-green-200 flex items-center justify-center text-green-400 font-bold text-sm select-none">ZONE-A</div>
                     <div className="absolute top-[50%] left-[60%] w-[20%] h-[20%] bg-purple-100/50 rounded-full border-2 border-purple-200 flex items-center justify-center text-purple-400 font-bold text-sm select-none">ZONE-C</div>
@@ -94,7 +94,7 @@ export function KioskMap() {
                     ))}
                 </div>
 
-                {/* Legend (범례) */}
+                {/* Legend */}
                 <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm p-3 rounded-xl border border-slate-100 shadow-sm text-xs space-y-2 pointer-events-none select-none">
                     <div className="flex items-center gap-2">
                         <span className="w-2.5 h-2.5 rounded-full bg-[#2ECCB7]" />

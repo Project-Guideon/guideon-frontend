@@ -1,128 +1,63 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { HiOutlineChevronDown, HiOutlineCheck } from 'react-icons/hi2';
-import { useAuth, useSiteContext } from '@/features/auth/application/hooks/useAuth';
+import { useAuth } from '@/features/auth/application/hooks/useAuth';
+import {
+    HiOutlineBell,
+    HiOutlineUserCircle,
+    HiOutlineArrowRightOnRectangle
+} from 'react-icons/hi2';
 
-/**
- * AdminHeader
- */
 export function AdminHeader() {
-    const { user, isPlatformAdmin } = useAuth();
-    const { currentSite, sites, setCurrentSite } = useSiteContext();
-    const [isSiteDropdownOpen, setIsSiteDropdownOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
-
-    /**
-     * 외부 클릭 시 드롭다운 닫기
-     */
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsSiteDropdownOpen(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    /**
-     * 사이트 선택 핸들러
-     */
-    const handleSiteSelect = (siteId: number) => {
-        setCurrentSite(siteId);
-        setIsSiteDropdownOpen(false);
-    };
+    const { user, logout } = useAuth();
 
     return (
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
-            {/* 좌측: 페이지 타이틀 또는 빵 부스러기 */}
+        <header className="bg-white border-b border-slate-100 h-16 px-6 flex items-center justify-between sticky top-0 z-20">
+            {/* 좌측: 현재 위치/사이트 표시 */}
             <div className="flex items-center gap-4">
-                {/* 모바일에서 사이드바 버튼 공간 확보 */}
-                <div className="lg:hidden w-10" />
+                <span className="text-slate-400 font-medium hidden md:block">
+                    GuideON Admin
+                </span>
+                <span className="text-slate-300 hidden md:block">/</span>
 
-                <h1 className="text-lg font-semibold text-slate-900">
-                    관리자 대시보드
-                </h1>
+                <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-800 text-lg">
+                        전체 플랫폼 현황
+                    </span>
+                    <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs rounded font-medium">
+                        Global View
+                    </span>
+                </div>
             </div>
 
-            {/* 우측: 사이트 선택 & 사용자 정보 */}
+            {/* 우측: 알림 및 프로필 */}
             <div className="flex items-center gap-4">
-                {/* 사이트 선택 드롭다운 */}
-                {sites.length > 0 && (
-                    <div className="relative" ref={dropdownRef}>
-                        <button
-                            onClick={() => setIsSiteDropdownOpen(!isSiteDropdownOpen)}
-                            className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-                        >
-                            <span className="text-sm font-medium text-slate-700">
-                                {currentSite?.name || '사이트 선택'}
-                            </span>
-                            <HiOutlineChevronDown
-                                className={`w-4 h-4 text-slate-500 transition-transform ${isSiteDropdownOpen ? 'rotate-180' : ''
-                                    }`}
-                            />
-                        </button>
+                {/* 알림 버튼 */}
+                <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-colors relative">
+                    <HiOutlineBell className="w-6 h-6" />
+                    <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                </button>
 
-                        {/* 드롭다운 메뉴 */}
-                        {isSiteDropdownOpen && (
-                            <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50">
-                                <div className="px-3 py-2 border-b border-slate-100">
-                                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
-                                        관광지 선택
-                                    </p>
-                                </div>
-                                <div className="py-1 max-h-64 overflow-y-auto">
-                                    {sites.map((site) => (
-                                        <button
-                                            key={site.siteId}
-                                            onClick={() => handleSiteSelect(site.siteId)}
-                                            className={`
-                                                w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors
-                                                ${currentSite?.siteId === site.siteId
-                                                    ? 'bg-[#FF6B52]/10 text-[#FF6B52]'
-                                                    : 'hover:bg-slate-50 text-slate-700'
-                                                }
-                                                ${!site.isActive ? 'opacity-50' : ''}
-                                            `}
-                                            disabled={!site.isActive}
-                                        >
-                                            <div>
-                                                <span className="font-medium">{site.name}</span>
-                                                {!site.isActive && (
-                                                    <span className="ml-2 text-xs text-slate-400">(비활성)</span>
-                                                )}
-                                            </div>
-                                            {currentSite?.siteId === site.siteId && (
-                                                <HiOutlineCheck className="w-4 h-4" />
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                {/* 프로필 드롭다운 */}
+                <div className="flex items-center gap-3 pl-4 border-l border-slate-100">
+                    <div className="text-right hidden sm:block">
+                        <p className="text-sm font-bold text-slate-800 leading-tight">
+                            {user?.email.split('@')[0]}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                            {user?.role === 'PLATFORM_ADMIN' ? '슈퍼 관리자' : '구역 관리자'}
+                        </p>
                     </div>
-                )}
-
-                {/* 사용자 정보 (데스크탑) */}
-                {user && (
-                    <div className="hidden md:flex items-center gap-3 pl-4 border-l border-slate-200">
-                        <div className="w-8 h-8 bg-gradient-to-br from-[#FF6B52] to-[#e55a43] rounded-full flex items-center justify-center">
-                            <span className="text-white text-sm font-bold">
-                                {user.email[0].toUpperCase()}
-                            </span>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-sm font-medium text-slate-900 leading-tight">
-                                {user.email.split('@')[0]}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                                {isPlatformAdmin ? '플랫폼 관리자' : '사이트 관리자'}
-                            </p>
-                        </div>
+                    <div className="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center text-slate-500">
+                        <HiOutlineUserCircle className="w-6 h-6" />
                     </div>
-                )}
+                    <button
+                        onClick={logout}
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="로그아웃"
+                    >
+                        <HiOutlineArrowRightOnRectangle className="w-5 h-5" />
+                    </button>
+                </div>
             </div>
         </header>
     );
