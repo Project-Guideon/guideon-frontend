@@ -77,7 +77,7 @@ export function AdminHeader() {
     const unreadCount = MOCK_NOTIFICATIONS.filter(n => !n.isRead).length;
 
     return (
-        <header className="bg-white border-b border-slate-100 h-16 px-6 flex items-center justify-between sticky top-0 z-[2000]">
+        <header className="bg-white border-b border-slate-200 h-16 px-6 flex items-center justify-between sticky top-0 z-[2000]">
             {/* 좌측: 현재 위치/사이트 표시 */}
             <div className="flex items-center gap-4">
                 <span className="text-slate-400 font-medium hidden md:block">
