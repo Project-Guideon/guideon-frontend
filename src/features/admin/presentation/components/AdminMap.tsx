@@ -71,7 +71,7 @@ const createCustomIcon = (status: 'online' | 'warning' | 'offline') => {
 };
 
 // Zone 이름 라벨 아이콘
-const createLabelIcon = (name: string, color: string) => {
+const createLabelIcon = (name: string) => {
     // Tailwind 색상 클래스를 직접 매핑하기 어려워 hex 컬러를 border/text에 적용
     return L.divIcon({
         className: 'zone-label',
@@ -110,7 +110,7 @@ export default function AdminMap({ center, zoom, markers, zones = [] }: AdminMap
                     />
                     <Marker
                         position={zone.center}
-                        icon={createLabelIcon(zone.name, zone.color)}
+                        icon={createLabelIcon(zone.name)}
                         zIndexOffset={-100}
                     />
                 </div>

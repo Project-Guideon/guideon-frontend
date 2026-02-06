@@ -177,22 +177,22 @@ export function AdminHeader() {
                     </div>
                 </div>
 
-                {/* 프로필 드롭다운 */}
-                <div className="flex items-center gap-3 pl-4 border-l border-slate-100">
+                {/* 프로필 영역 (Sidebar 통일 디자인) */}
+                <div className="flex items-center gap-3 pl-4 border-l border-slate-100 group cursor-pointer">
                     <div className="text-right hidden sm:block">
-                        <p className="text-sm font-bold text-slate-800 leading-tight">
+                        <p className="text-sm font-bold text-slate-700 group-hover:text-slate-900 transition-colors leading-tight">
                             {user?.email.split('@')[0]}
                         </p>
-                        <p className="text-xs text-slate-500">
-                            {user?.role === 'PLATFORM_ADMIN' ? '슈퍼 관리자' : '구역 관리자'}
+                        <p className="text-xs text-slate-400 group-hover:text-orange-500 transition-colors font-medium mt-0.5">
+                            {user?.role === 'PLATFORM_ADMIN' ? 'Platform Manager' : 'Site Manager'}
                         </p>
                     </div>
-                    <div className="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center text-slate-500">
+                    <div className="w-9 h-9 rounded-full bg-orange-50 flex items-center justify-center text-orange-600 ring-2 ring-transparent group-hover:ring-orange-100 transition-all">
                         <HiOutlineUserCircle className="w-6 h-6" />
                     </div>
                     <button
                         onClick={logout}
-                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="ml-2 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
                         title="로그아웃"
                     >
                         <HiOutlineArrowRightOnRectangle className="w-5 h-5" />

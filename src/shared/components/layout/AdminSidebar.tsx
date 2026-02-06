@@ -14,8 +14,8 @@ import {
     HiOutlineArrowRightOnRectangle,
     HiOutlineBars3,
     HiOutlineXMark,
-    HiOutlineCog6Tooth,
-    HiOutlineBuildingLibrary
+    HiOutlineBuildingLibrary,
+    HiOutlineUserCircle
 } from 'react-icons/hi2';
 import { useAuth, useSiteContext } from '@/features/auth/application/hooks/useAuth';
 
@@ -145,11 +145,11 @@ export function AdminSidebar() {
                 </div>
             </nav>
 
-            {/* User Profile (Minimal Design) */}
+            {/* 유저 프로필 */}
             <div className="p-4 border-t border-slate-100">
                 <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors group cursor-pointer">
                     <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 ring-2 ring-white shadow-sm group-hover:ring-orange-200 transition-all">
-                        <span className="font-bold text-sm">{user?.email?.[0].toUpperCase() || 'A'}</span>
+                        <HiOutlineUserCircle className="w-6 h-6" />
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-slate-700 truncate group-hover:text-slate-900">
