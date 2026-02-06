@@ -153,10 +153,10 @@ export function AdminSidebar() {
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-slate-700 truncate group-hover:text-slate-900">
-                            {user?.email.split('@')[0]}
+                            {user?.email?.split('@')[0] ?? '사용자'}
                         </p>
                         <p className="text-xs text-slate-400 font-medium truncate">
-                            {user?.role === 'PLATFORM_ADMIN' ? 'Platform Manager' : 'Site Manager'}
+                            {user?.role === 'PLATFORM_ADMIN' ? 'Platform Manager' : user?.role === 'SITE_ADMIN' ? 'Site Manager' : ''}
                         </p>
                     </div>
                     <button

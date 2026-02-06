@@ -181,10 +181,10 @@ export function AdminHeader() {
                 <div className="flex items-center gap-3 pl-4 border-l border-slate-100 group cursor-pointer">
                     <div className="text-right hidden sm:block">
                         <p className="text-sm font-bold text-slate-700 group-hover:text-slate-900 transition-colors leading-tight">
-                            {user?.email.split('@')[0]}
+                            {user?.email?.split('@')[0] ?? '사용자'}
                         </p>
                         <p className="text-xs text-slate-400 group-hover:text-orange-500 transition-colors font-medium mt-0.5">
-                            {user?.role === 'PLATFORM_ADMIN' ? 'Platform Manager' : 'Site Manager'}
+                            {user?.role === 'PLATFORM_ADMIN' ? 'Platform Manager' : user?.role === 'SITE_ADMIN' ? 'Site Manager' : ''}
                         </p>
                     </div>
                     <div className="w-9 h-9 rounded-full bg-orange-50 flex items-center justify-center text-orange-600 ring-2 ring-transparent group-hover:ring-orange-100 transition-all">
