@@ -88,6 +88,20 @@ export default function AuditLogsPage() {
                                     focus:outline-none focus:ring-2 focus:ring-orange-100"
                         />
                     </div>
+                    {/* 드롭다운 */}
+                    <span className="flex items-center gap-1 text-xs font-bold text-slate-500 whitespace-nowrap">
+                        로그 유형
+                    </span>
+                    <select
+                        className="h-9 px-3 text-xs text-slate-700 bg-white
+                                border border-slate-200 rounded-lg
+                                focus:outline-none focus:ring-2 focus:ring-orange-100"
+                    >
+                        <option value="">전체</option>
+                        <option value="SYSTEM">SYSTEM</option>
+                        <option value="USER">USER</option>
+                        <option value="DEVICE">DEVICE</option>
+                    </select>
                 </div>
             </div>
             <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm h-full flex flex-col">
