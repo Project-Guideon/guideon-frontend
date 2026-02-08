@@ -1,6 +1,6 @@
 'use client';
 
-import { HiOutlineClock, HiOutlineExclamationCircle, HiOutlineCheckCircle, HiOutlinePlusCircle, HiOutlineServer } from 'react-icons/hi2';
+import { HiOutlineCalendar, HiOutlineClock, HiOutlineExclamationCircle, HiOutlineCheckCircle, HiOutlinePlusCircle, HiOutlineServer } from 'react-icons/hi2';
 
 interface LogItem {
     id: number;
@@ -42,18 +42,58 @@ const MOCK_PLATFORM_LOGS: LogItem[] = [
 ];
 
 export default function AuditLogsPage() { 
+    
     return (
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm h-full flex flex-col">
-            <div className="flex items-center justify-between mb-6 flex-shrink-0">
-                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <HiOutlineServer className="w-5 h-5 text-slate-500" />
-                    플랫폼 통합 로그
-                </h3>
-                <button className="text-sm text-slate-500 hover:text-blue-600 font-medium transition-colors">
-                            전체보기
-                        </button>
+         <div className="flex flex-col">
+            <div className=" flex-shrink-0">
+                <div className="flex items-center gap-2">
+                    <h2 className="justify-between mb-3 text-2xl font-bold text-slate-800 flex items-center gap-2">
+                        <HiOutlineServer className="w-7 h-7 text-orange-500" />
+                        플랫폼 통합 로그
+                    </h2>
+                    <p className="justify-between mb-3 text-sm text-slate-500 mt-1 font-medium">
+                        시스템 전반의 변경 사항과 작업 내역을 모니터링합니다.
+                    </p>
+                </div>
+            </div>
+            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-3">
+                   <div className="flex items-center gap-2">
+                    {/* 필터 영역 */}
+                    <div className="flex items-center gap-2">
+                    <span className="flex items-center gap-1 text-xs font-bold text-slate-500">
+                        <HiOutlineCalendar className="w-3 h-3" />
+                        시작 날짜
+                    </span>
+                    <input
+                        type="date"
+                        className="h-9 px-3 text-xs text-slate-700
+                                border border-slate-200 rounded-lg
+                                focus:outline-none focus:ring-2 focus:ring-orange-100"
+                    />
                     </div>
-        
+
+                    <div>
+                        <span className="flex items-center gap-1 text-s text-slate-500">
+                            ~
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <span className="flex items-center gap-1 text-xs font-bold text-slate-500">
+                            <HiOutlineCalendar className="w-3 h-3" />
+                            종료 날짜
+                        </span>
+                        <input
+                            type="date"
+                            className="h-9 px-3 text-xs text-slate-700
+                                    border border-slate-200 rounded-lg
+                                    focus:outline-none focus:ring-2 focus:ring-orange-100"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm h-full flex flex-col">
                     <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-0 custom-scrollbar">
                         {MOCK_PLATFORM_LOGS.map((log) => (
                             <div key={log.id} className="flex items-start gap-4 p-3 hover:bg-slate-50 rounded-xl transition-colors group">
@@ -97,5 +137,6 @@ export default function AuditLogsPage() {
                         ))}
                     </div>
                 </div>
-            );
+            </div>
+        );
 }
