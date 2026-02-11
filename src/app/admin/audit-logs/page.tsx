@@ -1,6 +1,7 @@
 'use client';
 
-import {  HiOutlineCalendar, HiOutlineClock, HiOutlineExclamationCircle, HiOutlineCheckCircle, HiOutlinePlusCircle, HiOutlineServer } from 'react-icons/hi2';
+import { useState, useRef } from 'react';
+import { HiChevronDown, HiOutlineBuildingLibrary, HiCheck, HiOutlineCalendar, HiOutlineClock, HiOutlineExclamationCircle, HiOutlineCheckCircle, HiOutlinePlusCircle, HiOutlineServer } from 'react-icons/hi2';
 
 interface LogItem {
     id: number;
@@ -41,7 +42,28 @@ const MOCK_PLATFORM_LOGS: LogItem[] = [
     },
 ];
 
+interface SiteOption {
+    id: number;
+    name: string;
+}
+
+const SITES: SiteOption[] = [
+    { id: 1, name: '전체' },
+    { id: 2, name: 'SYSTEM' },
+    { id: 3, name: 'USER'},
+    { id: 4, name: 'DEVICE'}
+];
+
+
 export default function AuditLogsPage() { 
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [selectedSiteId, setSelectedSiteId] = useState<number>(1);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const handleSiteSelect = (site: SiteOption) => {
+        setIsDropdownOpen(false);
+        setSelectedSiteId(site.id);
+    };
+    const currentSite = SITES.find(s => s.id === selectedSiteId) || SITES[0];
     return (
         <div className="flex flex-col">
             <div className=" flex-shrink-0">
@@ -89,66 +111,90 @@ export default function AuditLogsPage() {
                         />
                     </div>
                     {/* 드롭다운 */}
-                    <span className="flex items-center gap-1 text-xs font-bold text-slate-500 whitespace-nowrap">
-                        로그 유형
-                    </span>
-                    <select
-                        className="h-9 px-3 text-xs text-slate-700 bg-white
-                                border border-slate-200 rounded-lg
-                                focus:outline-none focus:ring-2 focus:ring-orange-100"
-                    >
-                        <option value="">전체</option>
-                        <option value="SYSTEM">SYSTEM</option>
-                        <option value="USER">USER</option>
-                        <option value="DEVICE">DEVICE</option>
-                    </select>
-                </div>
-            </div>
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm h-full flex flex-col">
-                <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-0 custom-scrollbar">
-                    {MOCK_PLATFORM_LOGS.map((log) => (
-                        <div key={log.id} className="flex items-start gap-4 p-3 hover:bg-slate-50 rounded-xl transition-colors group">
-                            <div className={`mt-1 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center border
-                                ${log.status === 'success' ? 'bg-green-50 border-green-100 text-green-600' : ''}
-                                ${log.status === 'warning' ? 'bg-orange-50 border-orange-100 text-orange-600' : ''}
-                                ${log.status === 'error' ? 'bg-red-50 border-red-100 text-red-600' : ''}
-                            `}>
-                                {log.status === 'success' && <HiOutlineCheckCircle className="w-5 h-5" />}
-                                {log.status === 'warning' && <HiOutlineExclamationCircle className="w-5 h-5" />}
-                                {log.status === 'error' && <HiOutlinePlusCircle className="w-5 h-5 rotate-45" />}
+                    <div className="relative" ref={dropdownRef}>
+                        <button
+                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                            className={`flex items-center gap-2 px-3 py-2 bg-white border rounded-xl transition-all duration-200 outline-none
+                                ${isDropdownOpen
+                                    ? 'border-orange-500 ring-4 ring-orange-50 text-slate-800'
+                                    : 'border-slate-200 hover:border-orange-400 text-slate-600 hover:bg-orange-50'
+                                }
+                            `}
+                        >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isDropdownOpen ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-500'}`}>
+                                <HiOutlineBuildingLibrary className="w-4 h-4" />
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between">
-                                    <p className="text-sm font-bold text-slate-900 truncate">
-                                        {log.action}
-                                        {log.site && log.site !== '-' && (
-                                            <span className="font-normal text-slate-500 ml-1">@ {log.site}</span>
-                                        )}
-                                    </p>
-                                    <span className="flex items-center text-xs text-slate-400 flex-shrink-0">
-                                        <HiOutlineClock className="w-3 h-3 mr-1" />
-                                        {log.time}
-                                    </span>
-                                </div>
-                                <p className="text-xs text-slate-600 mt-1 line-clamp-1">{log.message}</p>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border
-                                        ${log.type === 'SYSTEM' ? 'bg-slate-100 border-slate-200 text-slate-600' : ''}
-                                        ${log.type === 'USER' ? 'bg-blue-50 border-blue-100 text-blue-600' : ''}
-                                        ${log.type === 'DEVICE' ? 'bg-purple-50 border-purple-100 text-purple-600' : ''}
-                                    `}>
-                                        {log.type}
-                                    </span>
-                                    <span className="text-[10px] text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
-                                        {log.target}
-                                    </span>
-                                </div>
+                            <span className="text-sm font-bold min-w-[80px] text-left">{currentSite.name.split(' ')[0]}</span>
+                            <HiChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180 text-orange-500' : ''}`} />
+                        </button>
+                        <div className={`absolute right-0 mt-2 w-56 bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden transition-all duration-200 origin-top-right
+                            ${isDropdownOpen ? 'opacity-100 scale-100 translate-y-0 visible' : 'opacity-0 scale-95 -translate-y-2 invisible pointer-events-none'}
+                        `}>
+                            <div className="p-1">
+                                {SITES.map((site) => (
+                                    <button
+                                        key={site.id}
+                                        onClick={() => handleSiteSelect(site)}
+                                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors
+                                            ${selectedSiteId === site.id
+                                                ? 'bg-orange-50 text-orange-700 font-bold'
+                                                : 'text-slate-600 hover:bg-slate-50 hover:text-orange-600 font-medium'
+                                            }
+                                        `}
+                                    >
+                                        <span>{site.name}</span>
+                                        {selectedSiteId === site.id && <HiCheck className="w-4 h-4 text-orange-600" />}
+                                    </button>
+                                ))}
                             </div>
                         </div>
-                    ))}
+                    </div>
+                    </div>
+                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm h-full flex flex-col">
+                    <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-0 custom-scrollbar">
+                        {MOCK_PLATFORM_LOGS.map((log) => (
+                            <div key={log.id} className="flex items-start gap-4 p-3 hover:bg-slate-50 rounded-xl transition-colors group">
+                                <div className={`mt-1 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center border
+                                    ${log.status === 'success' ? 'bg-green-50 border-green-100 text-green-600' : ''}
+                                    ${log.status === 'warning' ? 'bg-orange-50 border-orange-100 text-orange-600' : ''}
+                                    ${log.status === 'error' ? 'bg-red-50 border-red-100 text-red-600' : ''}
+                                `}>
+                                    {log.status === 'success' && <HiOutlineCheckCircle className="w-5 h-5" />}
+                                    {log.status === 'warning' && <HiOutlineExclamationCircle className="w-5 h-5" />}
+                                    {log.status === 'error' && <HiOutlinePlusCircle className="w-5 h-5 rotate-45" />}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-sm font-bold text-slate-900 truncate">
+                                            {log.action}
+                                            {log.site && log.site !== '-' && (
+                                                <span className="font-normal text-slate-500 ml-1">@ {log.site}</span>
+                                            )}
+                                        </p>
+                                        <span className="flex items-center text-xs text-slate-400 flex-shrink-0">
+                                            <HiOutlineClock className="w-3 h-3 mr-1" />
+                                            {log.time}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-600 mt-1 line-clamp-1">{log.message}</p>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border
+                                            ${log.type === 'SYSTEM' ? 'bg-slate-100 border-slate-200 text-slate-600' : ''}
+                                            ${log.type === 'USER' ? 'bg-blue-50 border-blue-100 text-blue-600' : ''}
+                                            ${log.type === 'DEVICE' ? 'bg-purple-50 border-purple-100 text-purple-600' : ''}
+                                        `}>
+                                            {log.type}
+                                        </span>
+                                        <span className="text-[10px] text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
+                                            {log.target}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>
     );
-
 }
