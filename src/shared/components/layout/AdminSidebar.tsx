@@ -17,7 +17,6 @@ import {
     HiOutlineBuildingLibrary,
     HiOutlineUserCircle
 } from 'react-icons/hi2';
-import { useAuth, useSiteContext } from '@/features/auth/application/hooks/useAuth';
 
 /**
  * 메뉴 아이템 타입
@@ -28,6 +27,31 @@ interface MenuItem {
     href: string;
     icon: React.ElementType;
     requiredRole?: 'PLATFORM_ADMIN' | 'SITE_ADMIN' | 'ALL';
+}
+
+/**
+ * 사이트 정보 타입
+ */
+interface SiteInfo {
+    name: string;
+}
+
+/**
+ * 유저 정보 타입 (Shared Layer에서 사용하는 최소한의 타입)
+ */
+interface SidebarUserInfo {
+    email: string;
+    role: 'PLATFORM_ADMIN' | 'SITE_ADMIN';
+}
+
+/**
+ * AdminSidebar Props — 외부에서 데이터를 주입받아 Feature 의존성을 제거
+ */
+interface AdminSidebarProps {
+    user: SidebarUserInfo | null;
+    currentSite: SiteInfo | null;
+    isPlatformAdmin: boolean;
+    onLogout: () => void;
 }
 
 /**
@@ -47,28 +71,29 @@ const BOTTOM_MENU: MenuItem[] = [
 ];
 
 /**
- * AdminSidebar
+ * 역할 기반 메뉴 필터링 유틸리티 함수
  */
-export function AdminSidebar() {
+function filterMenuByRole(items: MenuItem[], isPlatformAdmin: boolean): MenuItem[] {
+    return items.filter((item) => {
+        if (item.requiredRole === 'ALL') return true;
+        if (item.requiredRole === 'PLATFORM_ADMIN' && isPlatformAdmin) return true;
+        if (item.requiredRole === 'SITE_ADMIN' && !isPlatformAdmin) return true;
+        return false;
+    });
+}
+
+/**
+ * AdminSidebar — Props 기반 순수 레이아웃 컴포넌트
+ *
+ * Shared Layer 원칙에 따라 도메인 맥락을 모르며,
+ * 모든 데이터는 Props를 통해 외부에서 주입받습니다.
+ */
+export function AdminSidebar({ user, currentSite, isPlatformAdmin, onLogout }: AdminSidebarProps) {
     const pathname = usePathname();
-    const { user, logout, isPlatformAdmin } = useAuth();
-    const { currentSite } = useSiteContext();
     const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-    /**
-     * 메뉴 필터링 (역할 기반)
-     */
-    const filterMenuByRole = (items: MenuItem[]) => {
-        return items.filter((item) => {
-            if (item.requiredRole === 'ALL') return true;
-            if (item.requiredRole === 'PLATFORM_ADMIN' && isPlatformAdmin) return true;
-            if (item.requiredRole === 'SITE_ADMIN' && !isPlatformAdmin) return true;
-            return false;
-        });
-    };
-
-    const filteredMainMenu = filterMenuByRole(MENU_ITEMS);
-    const filteredBottomMenu = filterMenuByRole(BOTTOM_MENU);
+    const filteredMainMenu = filterMenuByRole(MENU_ITEMS, isPlatformAdmin);
+    const filteredBottomMenu = filterMenuByRole(BOTTOM_MENU, isPlatformAdmin);
 
     /**
      * 메뉴 아이템 렌더링
@@ -160,7 +185,7 @@ export function AdminSidebar() {
                         </p>
                     </div>
                     <button
-                        onClick={logout}
+                        onClick={onLogout}
                         className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                         title="로그아웃"
                     >
