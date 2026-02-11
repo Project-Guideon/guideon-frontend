@@ -120,7 +120,7 @@ export function KioskMap() {
     return (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden h-full flex flex-col">
             {/* Header with Site Selector */}
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between flex-shrink-0 z-10 bg-white relative">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between shrink-0 z-10 bg-white relative">
                 <div>
                     <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                         <HiOutlineMap className="w-5 h-5 text-slate-500" />
@@ -184,7 +184,7 @@ export function KioskMap() {
                 />
 
                 {/* Legend Overlay */}
-                <div className="absolute bottom-6 left-4 bg-white/90 backdrop-blur-sm px-3 py-2.5 rounded-xl border border-slate-200 shadow-lg text-xs space-y-1.5 z-[1000] pointer-events-none select-none">
+                <div className="absolute bottom-6 left-4 bg-white/90 backdrop-blur-sm px-3 py-2.5 rounded-xl border border-slate-200 shadow-lg text-xs space-y-1.5 z-1000 pointer-events-none select-none">
                     <div className="font-bold text-slate-800 mb-1">Status Legend</div>
                     <div className="flex items-center gap-2">
                         <span className="w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-green-100" />

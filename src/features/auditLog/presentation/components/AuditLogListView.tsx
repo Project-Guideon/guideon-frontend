@@ -16,7 +16,7 @@ export function AuditLogListView() {
     return (
         <div className="flex flex-col">
             {/* 페이지 헤더 */}
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
                 <div className="flex items-center gap-2">
                     <h2 className="justify-between mb-3 text-2xl font-bold text-slate-800 flex items-center gap-2">
                         <HiOutlineServer className="w-7 h-7 text-orange-500" />

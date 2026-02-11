@@ -115,7 +115,7 @@ export function AdminSidebar({ user, currentSite, isPlatformAdmin, onLogout }: A
                     }
                 `}
             >
-                <Icon className={`w-5 h-5 flex-shrink-0 transition-colors ${isActive ? 'text-orange-500' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                <Icon className={`w-5 h-5 shrink-0 transition-colors ${isActive ? 'text-orange-500' : 'text-slate-400 group-hover:text-slate-600'}`} />
                 <span className={`text-sm font-medium ${isActive ? 'font-bold' : ''}`}>{item.label}</span>
                 {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500" />}
             </Link>
@@ -207,14 +207,14 @@ export function AdminSidebar({ user, currentSite, isPlatformAdmin, onLogout }: A
             </button>
 
             {/* 데스크탑 사이드바 */}
-            <aside className="hidden lg:block fixed left-0 top-0 h-screen w-64 bg-white border-r border-slate-200 z-[1900]">
+            <aside className="hidden lg:block fixed left-0 top-0 h-screen w-64 bg-white border-r border-slate-200 z-1900">
                 {sidebarContent}
             </aside>
 
             {/* 모바일 오버레이 */}
             {isMobileOpen && (
                 <div
-                    className="lg:hidden fixed inset-0 bg-slate-900/20 z-[2000] backdrop-blur-sm transition-opacity"
+                    className="lg:hidden fixed inset-0 bg-slate-900/20 z-2000 backdrop-blur-sm transition-opacity"
                     onClick={() => setIsMobileOpen(false)}
                 />
             )}
@@ -222,7 +222,7 @@ export function AdminSidebar({ user, currentSite, isPlatformAdmin, onLogout }: A
             {/* 모바일 사이드바 */}
             <aside
                 className={`
-                    lg:hidden fixed left-0 top-0 h-screen w-64 bg-white z-[2100] transform transition-transform duration-300 shadow-2xl
+                    lg:hidden fixed left-0 top-0 h-screen w-64 bg-white z-2100 transform transition-transform duration-300 shadow-2xl
                     ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
                 `}
             >
