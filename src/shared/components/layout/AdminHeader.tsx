@@ -77,7 +77,7 @@ export function AdminHeader() {
     const unreadCount = MOCK_NOTIFICATIONS.filter(n => !n.isRead).length;
 
     return (
-        <header className="bg-white border-b border-slate-200 h-16 px-6 flex items-center justify-between sticky top-0 z-[2000]">
+        <header className="bg-white border-b border-slate-200 h-16 px-6 flex items-center justify-between sticky top-0 z-2000">
             {/* 좌측: 현재 위치/사이트 표시 */}
             <div className="flex items-center gap-4">
                 <span className="text-slate-400 font-medium hidden md:block">
@@ -139,7 +139,7 @@ export function AdminHeader() {
                                     `}
                                 >
                                     <div className="flex gap-4">
-                                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-1 transition-colors
+                                        <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-1 transition-colors
                                             ${noti.type === 'warning' ? 'bg-red-100 text-red-500 group-hover:bg-red-200' : ''}
                                             ${noti.type === 'success' ? 'bg-green-100 text-green-500 group-hover:bg-green-200' : ''}
                                             ${noti.type === 'info' ? 'bg-blue-100 text-blue-500 group-hover:bg-blue-200' : ''}
@@ -153,14 +153,14 @@ export function AdminHeader() {
                                                 <p className="text-sm font-bold text-slate-800 group-hover:text-orange-900 transition-colors">
                                                     {noti.title}
                                                 </p>
-                                                <span className="text-[10px] text-slate-400 flex-shrink-0 mt-0.5">{noti.time}</span>
+                                                <span className="text-[10px] text-slate-400 shrink-0 mt-0.5">{noti.time}</span>
                                             </div>
                                             <p className="text-xs text-slate-600 leading-relaxed line-clamp-2 group-hover:text-slate-700">
                                                 {noti.message}
                                             </p>
                                         </div>
                                         {!noti.isRead && (
-                                            <div className="flex-shrink-0 mt-2">
+                                            <div className="shrink-0 mt-2">
                                                 <div className="w-2 h-2 rounded-full bg-orange-500 ring-4 ring-orange-100"></div>
                                             </div>
                                         )}

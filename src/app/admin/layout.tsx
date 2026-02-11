@@ -1,5 +1,5 @@
 
-import { AdminSidebar } from '@/shared/components/layout/AdminSidebar';
+import { AdminSidebarContainer } from '@/features/admin/presentation/components/AdminSidebarContainer';
 import { AdminHeader } from '@/shared/components/layout/AdminHeader';
 
 export default function AdminLayout({
@@ -10,7 +10,7 @@ export default function AdminLayout({
     return (
         <div className="min-h-screen bg-slate-50">
             {/* 사이드바 */}
-            <AdminSidebar />
+            <AdminSidebarContainer />
 
             {/* 메인 콘텐츠 영역 */}
             <div className="lg:ml-64">
