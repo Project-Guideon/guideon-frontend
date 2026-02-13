@@ -1,6 +1,9 @@
 import { HiChevronDown, HiOutlineBuildingLibrary, HiOutlineCalendar } from 'react-icons/hi2';
 import type { AuditLogType } from '@/features/auditLog/domain/entities/AuditLogEntry';
 import { useRef, useEffect, useState } from 'react';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+import './datepicker-custom.css';
 
 /**
  * AuditLogFilterProps
@@ -29,67 +32,70 @@ export function AuditLogFilter({ startDate, endDate, type, onFilterChange }: Aud
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, []);
+
+    const CustomDateButton = ({ value, onClick, label }: { value?: string, onClick?: () => void, label: string }) => (
+        <div className="flex  items-center gap-2">
+            <span className="text-sm font-bold text-slate-500 whitespace-nowrap">
+                {label}
+            </span>
+            <button
+                type="button"
+                onClick={onClick}
+                className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-xl hover:border-orange-400 hover:bg-orange-50 transition-all duration-200 outline-none h-[36px] min-w-[140px]"
+            >
+                <div className="w-5 h-5 rounded-md bg-slate-100 flex items-center justify-center text-slate-500">
+                    <HiOutlineCalendar className="w-3.5 h-3.5" />
+                </div>
+                <span className="text-xs font-bold text-slate-700 flex-1 text-left">
+                    {value || "날짜 선택"}
+                </span>
+                <HiChevronDown className="w-4 h-4 text-slate-400" />
+            </button>
+        </div>
+    );
+
     return (
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-3">
-            <div className="flex items-center gap-2">
-                {/* 시작 날짜 */}
-                <div className="flex items-center gap-2">
-                    <span className="flex items-center gap-1 text-xs font-bold text-slate-500">
-                        <HiOutlineCalendar className="w-3 h-3" />
-                        시작 날짜
-                    </span>
-                    <input
-                        type="date"
-                        value={startDate}
-                        onChange={(event) => onFilterChange({ startDate: event.target.value })}
-                        className="h-9 px-3 text-xs text-slate-700
-                    border border-slate-200 rounded-lg
-                    focus:outline-none focus:ring-2 focus:ring-orange-100"
-                    />
-                </div>
+            <div className="flex flex-wrap items-center gap-4">
+                 {/* 시작 날짜 커스텀 캘린더 */}
+                <DatePicker
+                    selected={startDate ? new Date(startDate) : null}
+                    onChange={(date: Date | null) => onFilterChange({ startDate: date ? date.toISOString().split('T')[0] : '' })}customInput={<CustomDateButton label="시작 날짜" />}
+                    dateFormat="yyyy-MM-dd"
+                />
 
-                {/* 구분자 */}
-                <div>
-                    <span className="flex items-center gap-1 text-s text-slate-500">~</span>
-                </div>
+                <span className="text-slate-500 font-bold font-light">~</span>
 
-                {/* 종료 날짜 */}
-                <div className="flex items-center gap-2">
-                    <span className="flex items-center gap-1 text-xs font-bold text-slate-500">
-                        <HiOutlineCalendar className="w-3 h-3" />
-                        종료 날짜
-                    </span>
-                    <input
-                        type="date"
-                        value={endDate}
-                        onChange={(event) => onFilterChange({ endDate: event.target.value })}
-                        className="h-9 px-3 text-xs text-slate-700
-                    border border-slate-200 rounded-lg
-                    focus:outline-none focus:ring-2 focus:ring-orange-100"
-                    />
-                </div>
+                {/* 종료 날짜 커스텀 캘린더 */}
+                <DatePicker
+                    selected={endDate ? new Date(endDate) : null}
+                    onChange={(date: Date | null) => onFilterChange({ endDate: date ? date.toISOString().split('T')[0] : '' })}customInput={<CustomDateButton label="종료 날짜" />}
+                    dateFormat="yyyy-MM-dd"
+                    minDate={startDate ? new Date(startDate) : undefined}
+                />
+
 
                 {/* 로그 유형 */}
-                <span className="flex items-center gap-1 text-xs font-bold text-slate-500 whitespace-nowrap">
+                <span className="flex items-center gap-1 text-sm font-bold text-slate-500 whitespace-nowrap">
                     로그 유형
                 </span>
                 <div className="relative" ref={dropdownRef}>
                     <button
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                        className={`flex items-center gap-2 px-3 py-2 bg-white border rounded-xl transition-all duration-200 outline-none
+                        className={`flex items-center gap-2 px-3 py-1.5 bg-white border rounded-xl transition-all duration-200 outline-none h-[36px]
                             ${isDropdownOpen
                                 ? 'border-orange-500 ring-4 ring-orange-50 text-slate-800'
                                 : 'border-slate-200 hover:border-orange-400 text-slate-600 hover:bg-orange-50'
                             }
                         `}
                     >
-                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
+                        <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors ${
                             isDropdownOpen ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-500'
                         }`}>
-                            <HiOutlineBuildingLibrary className="w-4 h-4" />
+                            <HiOutlineBuildingLibrary className="w-3.5 h-3.5" />
                         </div>
 
-                        <span className="text-sm font-bold min-w-[80px] text-left">
+                        <span className="text-xs font-bold min-w-[60px] text-left">
                             {type === '' ? '전체'
                                 : type === 'SYSTEM' ? 'SYSTEM'
                                 : type === 'USER' ? 'USER'
@@ -97,7 +103,7 @@ export function AuditLogFilter({ startDate, endDate, type, onFilterChange }: Aud
                         </span>
 
                         <HiChevronDown
-                            className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
+                            className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
                                 isDropdownOpen ? 'rotate-180 text-orange-500' : ''
                             }`}
                         />
@@ -118,7 +124,7 @@ export function AuditLogFilter({ startDate, endDate, type, onFilterChange }: Aud
                                         onFilterChange({ type: item });
                                         setIsDropdownOpen(false);
                                     }}
-                                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors
+                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors
                                         ${type === item
                                             ? 'bg-orange-50 text-orange-700 font-bold'
                                             : 'text-slate-600 hover:bg-slate-50 hover:text-orange-600 font-medium'
@@ -127,7 +133,7 @@ export function AuditLogFilter({ startDate, endDate, type, onFilterChange }: Aud
                                 >
                                     <span>{item === '' ? '전체' : item}</span>
                                     {type === item && (
-                                        <HiChevronDown className="w-4 h-4 text-orange-600" />
+                                        <HiChevronDown className="w-3.5 h-3.5 text-orange-600" />
                                     )}
                                 </button>
                             ))}
