@@ -1,9 +1,11 @@
 'use client';
 
+import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineServer } from 'react-icons/hi2';
 import { useAuditLogs } from '@/features/auditLog/application/hooks/useAuditLogs';
 import { AuditLogFilter } from './AuditLogFilter';
 import { AuditLogItem } from './AuditLogItem';
+import { AuditLogPagination } from './AuditLogPagination';
 
 /**
  * AuditLogListView — 감사 로그 전체 뷰
@@ -11,12 +13,12 @@ import { AuditLogItem } from './AuditLogItem';
  * 헤더, 필터, 로그 리스트를 조합하는 프레젠테이션 컴포넌트
  */
 export function AuditLogListView() {
-    const { logs, filter, updateFilter } = useAuditLogs();
+    const { logs, filter, updateFilter, page, setPage, totalPages } = useAuditLogs();
 
     return (
         <div className="flex flex-col">
             {/* 페이지 헤더 */}
-            <div className="shrink-0">
+            <div className="shrink-0 -mt-2">
                 <div className="flex items-center gap-2">
                     <h2 className="justify-between mb-3 text-2xl font-bold text-slate-800 flex items-center gap-2">
                         <HiOutlineServer className="w-7 h-7 text-orange-500" />
@@ -33,16 +35,35 @@ export function AuditLogListView() {
                 startDate={filter.startDate}
                 endDate={filter.endDate}
                 type={filter.type}
+                searchTerm=""
                 onFilterChange={updateFilter}
             />
 
             {/* 로그 리스트 */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm h-full flex flex-col">
-                <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-0 custom-scrollbar">
-                    {logs.map((log) => (
-                        <AuditLogItem key={log.id} log={log} />
-                    ))}
+            <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm h-full flex-1 flex flex-col ">
+                <div className="flex-1 relative overflow-hidden">
+                    <AnimatePresence mode="wait">
+                        {/* 부드럽게 페이지 넘어가기 */}
+                        <motion.div
+                            key={page}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                            className="space-y-4"
+                        >
+                        {logs.map((log) => (
+                            <AuditLogItem key={log.id} log={log} />
+                        ))}
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
+
+            <AuditLogPagination 
+                currentPage={page} 
+                totalPages={totalPages} 
+                onPageChange={setPage} 
+            />
             </div>
         </div>
     );
