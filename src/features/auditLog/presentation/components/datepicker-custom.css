@@ -1,0 +1,33 @@
+/* 캘린더 컨테이너 디자인 */
+.react-datepicker {
+  border: 1px solid #f1f5f9 !important;
+  border-radius: 1rem !important;box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  font-family: inherit !important;
+  overflow: hidden;
+}
+
+/* 헤더(월/년 표시) 부분 */
+.react-datepicker__header {
+  background-color: white !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  padding-top: 10px !important;
+}
+
+/* 선택된 날짜 - 오렌지색으로 변경 */
+.react-datepicker__day--selected, 
+.react-datepicker__day--keyboard-selected {
+  background-color: #f97316 !important; /* orange-500 */
+  border-radius: 0.5rem !important;
+}
+
+/* 오늘 날짜 표시 */
+.react-datepicker__day--today {
+  color: rgb(252, 148, 73)6!important;
+  font-weight: bold;
+}
+
+/* 호버 시 스타일 */
+.react-datepicker__day:hover {
+  background-color: #fff7ed !important; /* orange-50 */
+  color: #f97316 !important;
+}
