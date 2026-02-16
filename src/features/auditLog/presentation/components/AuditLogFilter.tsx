@@ -65,7 +65,7 @@ export function AuditLogFilter({ startDate, endDate, type, searchTerm, onFilterC
                     dateFormat="yyyy-MM-dd"
                 />
 
-                <span className="text-m text-slate-500 font-bold font-light">~</span>
+                <span className="text-base text-slate-500 font-medium">~</span>
 
                 {/* 종료 날짜 */}
                 <DatePicker
