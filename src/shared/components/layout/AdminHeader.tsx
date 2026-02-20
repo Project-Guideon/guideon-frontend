@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/features/auth/application/hooks/useAuth';
 import {
     HiOutlineBell,
@@ -58,6 +59,7 @@ const MOCK_NOTIFICATIONS: Notification[] = [
 
 export function AdminHeader() {
     const { user, logout } = useAuth();
+    const pathname = usePathname();
     const [isNotiOpen, setIsNotiOpen] = useState(false);
     const notiDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -76,6 +78,18 @@ export function AdminHeader() {
 
     const unreadCount = MOCK_NOTIFICATIONS.filter(n => !n.isRead).length;
 
+    const getPageTitle = (path: string) => {
+        if (path === '/admin') return '전체 플랫폼 현황';
+        if (path.startsWith('/admin/audit-logs')) return '플랫폼 통합 로그';
+        if (path.startsWith('/admin/sites')) return '관광지 관리';
+        if (path.startsWith('/admin/zones')) return '구역 관리';
+        if (path.startsWith('/admin/places')) return '장소 관리';
+        if (path.startsWith('/admin/devices')) return '디바이스 관리';
+        if (path.startsWith('/admin/documents')) return '문서 관리';
+        return 'GUIDEON Admin';
+    };
+    const currentTitle = getPageTitle(pathname);
+
     return (
         <header className="bg-white border-b border-slate-200 h-16 px-6 flex items-center justify-between sticky top-0 z-2000">
             {/* 좌측: 현재 위치/사이트 표시 */}
@@ -87,7 +101,7 @@ export function AdminHeader() {
 
                 <div className="flex items-center gap-2">
                     <span className="font-bold text-slate-800 text-lg">
-                        전체 플랫폼 현황
+                        {currentTitle}
                     </span>
                     <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs rounded font-medium">
                         Global View

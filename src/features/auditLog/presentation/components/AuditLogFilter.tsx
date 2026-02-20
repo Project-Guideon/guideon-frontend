@@ -78,7 +78,7 @@ export function AuditLogFilter({ startDate, endDate, type, searchTerm, onFilterC
                 <div className="w-[1px] h-8 bg-slate-200 hidden md:block mx-6" />
 
                 {/* 로그 유형 */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-4">
                     <span className="flex items-center gap-1 text-sm font-bold text-slate-500 whitespace-nowrap">
                         로그 유형
                     </span>
@@ -147,7 +147,7 @@ export function AuditLogFilter({ startDate, endDate, type, searchTerm, onFilterC
                     <div className="w-[1px] h-8 bg-slate-200 hidden md:block mx-6" />
 
                     {/* 검색창 */}
-                    <div className="flex items-center gap-2 ">
+                    <div className="flex items-center gap-4 ">
                         <span className="text-sm font-bold text-slate-500 whitespace-nowrap">검색</span>
                         <div className="relative group w-48">
                             <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md bg-slate-100 group-hover:bg-orange-100 flex items-center justify-center text-slate-500 group-hover:text-orange-600 transition-colors pointer-events-none">
