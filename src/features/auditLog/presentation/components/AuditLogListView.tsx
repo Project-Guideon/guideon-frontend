@@ -1,11 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineServer } from 'react-icons/hi2';
 import { useAuditLogs } from '@/features/auditLog/application/hooks/useAuditLogs';
 import { AuditLogFilter } from './AuditLogFilter';
 import { AuditLogItem } from './AuditLogItem';
 import { AuditLogPagination } from './AuditLogPagination';
+import { AuditLogDetailPanel } from './AuditLogDetailPanel';
+import type { AuditLogEntry } from '@/features/auditLog/domain/entities/AuditLogEntry';
 
 /**
  * AuditLogListView — 감사 로그 전체 뷰
@@ -14,7 +17,7 @@ import { AuditLogPagination } from './AuditLogPagination';
  */
 export function AuditLogListView() {
     const { logs, filter, updateFilter, page, setPage, totalPages } = useAuditLogs();
-
+    const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null);
     return (
         <div className="flex flex-col">
             {/* 페이지 헤더 */}
@@ -53,18 +56,33 @@ export function AuditLogListView() {
                             className="space-y-4"
                         >
                         {logs.map((log) => (
-                            <AuditLogItem key={log.id} log={log} />
+                            <div 
+                                key={log.id} 
+                                onClick={() => setSelectedLog(log)} // 클릭 시 로그 선택
+                                // className="cursor-pointer" >
+                                className={`cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99]`}
+                                >
+                                <AuditLogItem log={log} />
+                            </div>
                         ))}
                         </motion.div>
                     </AnimatePresence>
                 </div>
-
-            <AuditLogPagination 
-                currentPage={page} 
-                totalPages={totalPages} 
-                onPageChange={setPage} 
-            />
+                <AuditLogPagination 
+                    currentPage={page} 
+                    totalPages={totalPages} 
+                    onPageChange={setPage} 
+                />
             </div>
+            {/* 상세 정보 패널 */}
+            <AnimatePresence>
+                {selectedLog && (
+                    <AuditLogDetailPanel 
+                        log={selectedLog} 
+                        onClose={() => setSelectedLog(null)} 
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 }
