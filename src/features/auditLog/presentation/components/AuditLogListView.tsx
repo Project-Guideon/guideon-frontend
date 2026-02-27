@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HiOutlineServer } from 'react-icons/hi2';
+import { HiOutlineClipboardDocumentList } from 'react-icons/hi2';
 import { useAuditLogs } from '@/features/auditLog/application/hooks/useAuditLogs';
 import { AuditLogFilter } from './AuditLogFilter';
 import { AuditLogItem } from './AuditLogItem';
@@ -24,7 +24,7 @@ export function AuditLogListView() {
             <div className="shrink-0 -mt-2">
                 <div className="flex items-center gap-2">
                     <h2 className="justify-between mb-3 text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <HiOutlineServer className="w-7 h-7 text-orange-500" />
+                        <HiOutlineClipboardDocumentList className="w-7 h-7 text-orange-500" />
                         플랫폼 통합 로그
                     </h2>
                     <p className="justify-between mb-3 text-sm text-slate-500 mt-1 font-medium">
