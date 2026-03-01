@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineEnvelope, HiXMark } from 'react-icons/hi2';
 
@@ -46,6 +46,16 @@ const modalVariants = {
 export function SiteInviteModal({ isOpen, siteName, onClose, onSubmit }: SiteInviteModalProps) {
     const [email, setEmail] = useState('');
     const [error, setError] = useState('');
+
+    /** ESC 키로 닫기 */
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
 
     /** 이메일 유효성 검사 */
     const validateEmail = (value: string): boolean => {
@@ -99,6 +109,9 @@ export function SiteInviteModal({ isOpen, siteName, onClose, onSubmit }: SiteInv
                         initial="hidden"
                         animate="visible"
                         exit="exit"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="inviteModalTitle"
                         className="relative w-full max-w-[440px] bg-white rounded-2xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.25)] will-change-transform"
                     >
                         {/* 헤더 */}
@@ -107,13 +120,14 @@ export function SiteInviteModal({ isOpen, siteName, onClose, onSubmit }: SiteInv
                                 <HiOutlineEnvelope className="w-5 h-5 text-white" />
                             </div>
                             <div className="flex-1">
-                                <h3 className="text-lg font-bold text-slate-900">운영자 초대</h3>
+                                <h3 id="inviteModalTitle" className="text-lg font-bold text-slate-900">운영자 초대</h3>
                                 <p className="text-xs text-slate-400 mt-0.5">
                                     <span className="font-semibold text-slate-500">{siteName}</span>에 운영자를 초대합니다
                                 </p>
                             </div>
                             <button
                                 onClick={onClose}
+                                aria-label="모달 닫기"
                                 className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 
                                     hover:text-slate-500 hover:bg-slate-100 transition-colors"
                             >

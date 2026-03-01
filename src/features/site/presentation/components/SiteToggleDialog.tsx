@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineShieldCheck, HiOutlineShieldExclamation } from 'react-icons/hi2';
 
@@ -47,6 +48,16 @@ export function SiteToggleDialog({ isOpen, siteName, currentlyActive, onClose, o
         onClose();
     };
 
+    /** ESC 키로 닫기 */
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
     /** 비활성화 → 활성화 인지 여부 */
     const isActivating = !currentlyActive;
 
@@ -71,6 +82,9 @@ export function SiteToggleDialog({ isOpen, siteName, currentlyActive, onClose, o
                         initial="hidden"
                         animate="visible"
                         exit="exit"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="toggleDialogTitle"
                         className="relative w-full max-w-[380px] bg-white rounded-2xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.25)] will-change-transform"
                     >
                         <div className="px-7 pt-8 pb-7 text-center">
@@ -88,7 +102,7 @@ export function SiteToggleDialog({ isOpen, siteName, currentlyActive, onClose, o
                             </div>
 
                             {/* 메시지 */}
-                            <h3 className="text-lg font-bold text-slate-900 mb-2">
+                            <h3 id="toggleDialogTitle" className="text-lg font-bold text-slate-900 mb-2">
                                 관광지 {isActivating ? '활성화' : '비활성화'}
                             </h3>
                             <p className="text-sm text-slate-500 leading-relaxed">

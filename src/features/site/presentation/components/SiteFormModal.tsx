@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineBuildingLibrary, HiOutlinePencilSquare, HiXMark } from 'react-icons/hi2';
 
@@ -51,6 +51,16 @@ export function SiteFormModal({ isOpen, mode, initialName, onClose, onSubmit }: 
 
     const isCreateMode = mode === 'create';
 
+    /** ESC 키로 닫기 */
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
     /** 폼 제출 핸들러 */
     const handleSubmitForm = () => {
         const trimmedName = name.trim();
@@ -97,6 +107,9 @@ export function SiteFormModal({ isOpen, mode, initialName, onClose, onSubmit }: 
                         initial="hidden"
                         animate="visible"
                         exit="exit"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="siteFormTitle"
                         className="relative w-full max-w-[440px] bg-white rounded-2xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.25)] will-change-transform"
                     >
                         {/* 헤더 */}
@@ -113,7 +126,7 @@ export function SiteFormModal({ isOpen, mode, initialName, onClose, onSubmit }: 
                                 }
                             </div>
                             <div className="flex-1">
-                                <h3 className="text-lg font-bold text-slate-900">
+                                <h3 id="siteFormTitle" className="text-lg font-bold text-slate-900">
                                     {isCreateMode ? '새 관광지 추가' : '관광지 수정'}
                                 </h3>
                                 <p className="text-xs text-slate-400 mt-0.5">
@@ -122,6 +135,7 @@ export function SiteFormModal({ isOpen, mode, initialName, onClose, onSubmit }: 
                             </div>
                             <button
                                 onClick={onClose}
+                                aria-label="모달 닫기"
                                 className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 
                                     hover:text-slate-500 hover:bg-slate-100 transition-colors"
                             >

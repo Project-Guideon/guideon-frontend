@@ -88,6 +88,7 @@ export function SiteListView() {
     /** 관광지 활성/비활성 토글 버튼 클릭 */
     const handleClickToggle = (siteId: number) => {
         const target = sitesWithInvites.find((site) => site.siteId === siteId) ?? null;
+        if (!target) return;
         setToggleTarget(target);
         setIsToggleDialogOpen(true);
     };
@@ -159,13 +160,14 @@ export function SiteListView() {
                         <span className="text-sm font-bold text-slate-500 whitespace-nowrap">검색</span>
                         <div className="relative group w-56">
                             <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md bg-slate-100 group-hover:bg-orange-100 flex items-center justify-center text-slate-500 group-hover:text-orange-600 transition-colors pointer-events-none">
-                                <HiOutlineMagnifyingGlass className="w-3.5 h-3.5" />
+                                <HiOutlineMagnifyingGlass className="w-3.5 h-3.5" aria-hidden="true" />
                             </div>
                             <input
                                 type="text"
                                 value={filter.searchTerm}
                                 onChange={(event) => updateFilter({ searchTerm: event.target.value })}
                                 placeholder="관광지 이름 검색"
+                                aria-label="관광지 이름 검색"
                                 className="w-full h-[36px] pl-10 pr-4 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 placeholder:text-slate-400 placeholder:font-medium outline-none transition-all duration-200 hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50"
                             />
                         </div>
@@ -252,6 +254,7 @@ export function SiteListView() {
                         <button
                             onClick={() => setPage(page - 1)}
                             disabled={page === 0}
+                            aria-label="이전 페이지"
                             className="p-2 rounded-xl border border-slate-200 text-slate-400 hover:bg-orange-50 hover:text-orange-500 hover:border-orange-200 disabled:opacity-30 disabled:hover:bg-transparent transition-all duration-200"
                         >
                             <HiChevronLeft className="w-5 h-5" />
@@ -277,6 +280,7 @@ export function SiteListView() {
                         <button
                             onClick={() => setPage(page + 1)}
                             disabled={page === totalPages - 1}
+                            aria-label="다음 페이지"
                             className="p-2 rounded-xl border border-slate-200 text-slate-400 hover:bg-orange-50 hover:text-orange-500 hover:border-orange-200 disabled:opacity-30 disabled:hover:bg-transparent transition-all duration-200"
                         >
                             <HiChevronRight className="w-5 h-5" />

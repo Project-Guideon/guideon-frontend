@@ -172,14 +172,30 @@ export function useSites() {
 
     /** 관광지 삭제 */
     const deleteSite = useCallback((siteId: number) => {
-        setSites((previous) => previous.filter((site) => site.siteId !== siteId));
-        // 삭제 후 현재 페이지가 범위를 벗어나면 이전 페이지로 이동
-        const newFiltered = sites.filter((site) => site.siteId !== siteId);
-        const newTotalPages = Math.ceil(newFiltered.length / pageSize);
-        if (page >= newTotalPages && newTotalPages > 0) {
-            setPage(newTotalPages - 1);
-        }
-    }, [sites, page, pageSize]);
+        setSites((previous) => {
+            const updated = previous.filter((site) => site.siteId !== siteId);
+
+            // 삭제 후 필터 적용된 목록 기준으로 페이지 보정
+            const newFilteredCount = updated.filter((site) => {
+                if (filter.searchTerm) {
+                    const term = filter.searchTerm.toLowerCase();
+                    if (!site.name.toLowerCase().includes(term)) return false;
+                }
+                if (filter.activeStatus === 'active' && !site.isActive) return false;
+                if (filter.activeStatus === 'inactive' && site.isActive) return false;
+                return true;
+            }).length;
+
+            const newTotalPages = Math.ceil(newFilteredCount / pageSize);
+            if (page >= newTotalPages && newTotalPages > 0) {
+                setPage(newTotalPages - 1);
+            } else if (newTotalPages === 0) {
+                setPage(0);
+            }
+
+            return updated;
+        });
+    }, [filter, page, pageSize]);
 
     // ───────────── 필터 업데이트 ─────────────
 

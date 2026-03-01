@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineExclamationTriangle } from 'react-icons/hi2';
 
@@ -44,6 +45,16 @@ export function SiteDeleteDialog({ isOpen, siteName, onClose, onConfirm }: SiteD
         onClose();
     };
 
+    /** ESC 키로 닫기 */
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -65,6 +76,9 @@ export function SiteDeleteDialog({ isOpen, siteName, onClose, onConfirm }: SiteD
                         initial="hidden"
                         animate="visible"
                         exit="exit"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="deleteDialogTitle"
                         className="relative w-full max-w-[380px] bg-white rounded-2xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.25)] will-change-transform"
                     >
                         <div className="px-7 pt-8 pb-7 text-center">
@@ -74,7 +88,7 @@ export function SiteDeleteDialog({ isOpen, siteName, onClose, onConfirm }: SiteD
                             </div>
 
                             {/* 메시지 */}
-                            <h3 className="text-lg font-bold text-slate-900 mb-2">관광지를 삭제할까요?</h3>
+                            <h3 id="deleteDialogTitle" className="text-lg font-bold text-slate-900 mb-2">관광지를 삭제할까요?</h3>
                             <p className="text-sm text-slate-500 leading-relaxed">
                                 <span className="font-semibold text-slate-700">&quot;{siteName}&quot;</span>이(가)
                                 영구적으로 삭제됩니다.

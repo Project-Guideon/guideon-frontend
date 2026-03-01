@@ -60,6 +60,9 @@ function renderOperatorBadge(invites: SiteInvite[]) {
                     {inv.email}
                 </span>
             ))}
+            {accepted.length === 0 && pending.length === 0 && (
+                <span className="text-[11px] text-slate-300 font-medium">만료된 초대만 있음</span>
+            )}
         </div>
     );
 }
@@ -153,6 +156,7 @@ export function SiteTable({ sites, onEditSite, onDeleteSite, onToggleActive, onI
                                         onClick={() => onInviteOperator(site)}
                                         className="p-2 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 transition-all duration-200"
                                         title="운영자 초대"
+                                        aria-label="운영자 초대"
                                     >
                                         <HiOutlineEnvelope className="w-4.5 h-4.5" />
                                     </button>
@@ -160,6 +164,7 @@ export function SiteTable({ sites, onEditSite, onDeleteSite, onToggleActive, onI
                                         onClick={() => onEditSite(site)}
                                         className="p-2 rounded-lg text-slate-400 hover:text-orange-600 hover:bg-orange-50 transition-all duration-200"
                                         title="수정"
+                                        aria-label="관광지 수정"
                                     >
                                         <HiOutlinePencilSquare className="w-4.5 h-4.5" />
                                     </button>
@@ -167,6 +172,7 @@ export function SiteTable({ sites, onEditSite, onDeleteSite, onToggleActive, onI
                                         onClick={() => onDeleteSite(site)}
                                         className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all duration-200"
                                         title="삭제"
+                                        aria-label="관광지 삭제"
                                     >
                                         <HiOutlineTrash className="w-4.5 h-4.5" />
                                     </button>
