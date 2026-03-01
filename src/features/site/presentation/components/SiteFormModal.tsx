@@ -148,10 +148,11 @@ export function SiteFormModal({ isOpen, mode, initialName, onClose, onSubmit }: 
 
                         {/* 입력 폼 */}
                         <div className="px-7 pt-5 pb-2">
-                            <label className="block text-[13px] font-semibold text-slate-700 mb-2">
+                            <label htmlFor="site-name-input" className="block text-[13px] font-semibold text-slate-700 mb-2">
                                 관광지 이름
                             </label>
                             <input
+                                id="site-name-input"
                                 type="text"
                                 value={name}
                                 onChange={(event) => {

@@ -181,6 +181,9 @@ export function SiteListView() {
                         <div className="relative">
                             <button
                                 onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                                aria-expanded={isStatusDropdownOpen}
+                                aria-haspopup="listbox"
+                                aria-controls="status-filter-menu"
                                 className={`flex items-center gap-2 px-3 py-1.5 bg-white border rounded-xl transition-all duration-200 outline-none h-[36px]
                                     ${isStatusDropdownOpen
                                         ? 'border-orange-500 ring-4 ring-orange-50 text-slate-800'
@@ -197,16 +200,22 @@ export function SiteListView() {
                             </button>
 
                             {/* 드롭다운 메뉴 */}
-                            <div className={`absolute right-0 mt-2 w-32 bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden transition-all duration-200 origin-top-right
+                            <div
+                                id="status-filter-menu"
+                                role="listbox"
+                                aria-label="상태 필터"
+                                className={`absolute right-0 mt-2 w-32 bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden transition-all duration-200 origin-top-right
                                 ${isStatusDropdownOpen
-                                    ? 'opacity-100 scale-100 translate-y-0 visible'
-                                    : 'opacity-0 scale-95 -translate-y-2 invisible pointer-events-none'
-                                }
+                                        ? 'opacity-100 scale-100 translate-y-0 visible'
+                                        : 'opacity-0 scale-95 -translate-y-2 invisible pointer-events-none'
+                                    }
                             `}>
                                 <div className="p-1">
                                     {STATUS_OPTIONS.map((option) => (
                                         <button
                                             key={option.value}
+                                            role="option"
+                                            aria-selected={filter.activeStatus === option.value}
                                             onClick={() => {
                                                 updateFilter({ activeStatus: option.value });
                                                 setIsStatusDropdownOpen(false);

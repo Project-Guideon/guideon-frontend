@@ -99,11 +99,6 @@ export function useSites() {
     const [page, setPage] = useState(0);
     const pageSize = 5;
 
-    /** 다음 ID 계산 */
-    const getNextId = useCallback(() => {
-        return Math.max(...sites.map((site) => site.siteId), 0) + 1;
-    }, [sites]);
-
     /** 현재 시간 문자열 */
     const getCurrentTimestamp = () => new Date().toISOString().slice(0, 19);
 
@@ -138,15 +133,18 @@ export function useSites() {
     /** 관광지 생성 */
     const createSite = useCallback((request: CreateSiteRequest) => {
         const timestamp = getCurrentTimestamp();
-        const newSite: Site = {
-            siteId: getNextId(),
-            name: request.name,
-            isActive: true,
-            createdAt: timestamp,
-            updatedAt: timestamp,
-        };
-        setSites((previous) => [newSite, ...previous]);
-    }, [getNextId]);
+        setSites((previous) => {
+            const nextId = Math.max(...previous.map((site) => site.siteId), 0) + 1;
+            const newSite: Site = {
+                siteId: nextId,
+                name: request.name,
+                isActive: true,
+                createdAt: timestamp,
+                updatedAt: timestamp,
+            };
+            return [newSite, ...previous];
+        });
+    }, []);
 
     /** 관광지 수정 */
     const updateSite = useCallback((siteId: number, request: UpdateSiteRequest) => {
@@ -213,15 +211,18 @@ export function useSites() {
 
     /** 관광지에 운영자 초대 */
     const inviteSiteAdmin = useCallback((siteId: number, email: string) => {
-        const newInvite: SiteInvite = {
-            inviteId: Math.max(...invites.map((inv) => inv.inviteId), 0) + 1,
-            siteId,
-            email,
-            status: 'PENDING',
-            createdAt: getCurrentTimestamp(),
-        };
-        setInvites((previous) => [newInvite, ...previous]);
-    }, [invites]);
+        setInvites((previous) => {
+            const nextId = Math.max(...previous.map((inv) => inv.inviteId), 0) + 1;
+            const newInvite: SiteInvite = {
+                inviteId: nextId,
+                siteId,
+                email,
+                status: 'PENDING',
+                createdAt: getCurrentTimestamp(),
+            };
+            return [newInvite, ...previous];
+        });
+    }, []);
 
     /** 페이지네이션된 관광지 + 초대 정보 조합 */
     const sitesWithInvites: SiteWithInvites[] = useMemo(() => {
