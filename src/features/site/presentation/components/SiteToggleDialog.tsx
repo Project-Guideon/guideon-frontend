@@ -1,14 +1,15 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { HiOutlineExclamationTriangle } from 'react-icons/hi2';
+import { HiOutlineShieldCheck, HiOutlineShieldExclamation } from 'react-icons/hi2';
 
 /**
- * SiteDeleteDialogProps
+ * SiteToggleDialogProps
  */
-interface SiteDeleteDialogProps {
+interface SiteToggleDialogProps {
     isOpen: boolean;
     siteName: string;
+    currentlyActive: boolean;
     onClose: () => void;
     onConfirm: () => void;
 }
@@ -36,13 +37,18 @@ const dialogVariants = {
 };
 
 /**
- * SiteDeleteDialog — 관광지 삭제 확인 다이얼로그
+ * SiteToggleDialog — 관광지 활성/비활성 전환 확인 다이얼로그
+ *
+ * 실수 방지를 위해 상태 전환 전 사용자 확인을 받습니다.
  */
-export function SiteDeleteDialog({ isOpen, siteName, onClose, onConfirm }: SiteDeleteDialogProps) {
-    const handleConfirmDelete = () => {
+export function SiteToggleDialog({ isOpen, siteName, currentlyActive, onClose, onConfirm }: SiteToggleDialogProps) {
+    const handleConfirmToggle = () => {
         onConfirm();
         onClose();
     };
+
+    /** 비활성화 → 활성화 인지 여부 */
+    const isActivating = !currentlyActive;
 
     return (
         <AnimatePresence>
@@ -68,19 +74,32 @@ export function SiteDeleteDialog({ isOpen, siteName, onClose, onConfirm }: SiteD
                         className="relative w-full max-w-[380px] bg-white rounded-2xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.25)] will-change-transform"
                     >
                         <div className="px-7 pt-8 pb-7 text-center">
-                            {/* 경고 아이콘 */}
-                            <div className="mx-auto w-14 h-14 rounded-2xl bg-linear-to-br from-red-400 to-red-600 flex items-center justify-center mb-5 shadow-lg shadow-red-200">
-                                <HiOutlineExclamationTriangle className="w-7 h-7 text-white" />
+                            {/* 아이콘 */}
+                            <div className={`mx-auto w-14 h-14 rounded-2xl flex items-center justify-center mb-5 shadow-lg
+                                ${isActivating
+                                    ? 'bg-linear-to-br from-emerald-400 to-emerald-600 shadow-emerald-200'
+                                    : 'bg-linear-to-br from-amber-400 to-orange-500 shadow-orange-200'
+                                }
+                            `}>
+                                {isActivating
+                                    ? <HiOutlineShieldCheck className="w-7 h-7 text-white" />
+                                    : <HiOutlineShieldExclamation className="w-7 h-7 text-white" />
+                                }
                             </div>
 
                             {/* 메시지 */}
-                            <h3 className="text-lg font-bold text-slate-900 mb-2">관광지를 삭제할까요?</h3>
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">
+                                관광지 {isActivating ? '활성화' : '비활성화'}
+                            </h3>
                             <p className="text-sm text-slate-500 leading-relaxed">
-                                <span className="font-semibold text-slate-700">&quot;{siteName}&quot;</span>이(가)
-                                영구적으로 삭제됩니다.
+                                <span className="font-semibold text-slate-700">&quot;{siteName}&quot;</span>을(를)
+                                {isActivating ? ' 활성화' : ' 비활성화'}합니다.
                             </p>
-                            <p className="text-xs text-red-400 mt-1.5 font-medium">
-                                이 작업은 되돌릴 수 없습니다.
+                            <p className={`text-xs mt-1.5 font-medium ${isActivating ? 'text-emerald-500' : 'text-orange-500'}`}>
+                                {isActivating
+                                    ? '활성화하면 해당 관광지의 서비스가 재개됩니다.'
+                                    : '비활성화하면 해당 관광지의 모든 서비스가 중단됩니다.'
+                                }
                             </p>
 
                             {/* 버튼 영역 */}
@@ -93,11 +112,15 @@ export function SiteDeleteDialog({ isOpen, siteName, onClose, onConfirm }: SiteD
                                     취소
                                 </button>
                                 <button
-                                    onClick={handleConfirmDelete}
-                                    className="flex-1 h-11 rounded-xl font-semibold text-sm text-white bg-red-500 
-                                        hover:bg-red-600 transition-colors duration-150"
+                                    onClick={handleConfirmToggle}
+                                    className={`flex-1 h-11 rounded-xl font-semibold text-sm text-white transition-colors duration-150
+                                        ${isActivating
+                                            ? 'bg-emerald-500 hover:bg-emerald-600'
+                                            : 'bg-orange-500 hover:bg-orange-600'
+                                        }
+                                    `}
                                 >
-                                    삭제
+                                    {isActivating ? '활성화' : '비활성화'}
                                 </button>
                             </div>
                         </div>

@@ -7,6 +7,7 @@ import { useSites } from '@/features/site/application/hooks/useSites';
 import { SiteTable } from './SiteTable';
 import { SiteFormModal } from './SiteFormModal';
 import { SiteDeleteDialog } from './SiteDeleteDialog';
+import { SiteToggleDialog } from './SiteToggleDialog';
 import type { Site } from '@/features/site/domain/entities/Site';
 
 /**
@@ -49,6 +50,10 @@ export function SiteListView() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Site | null>(null);
 
+    // 토글 다이얼로그 상태
+    const [isToggleDialogOpen, setIsToggleDialogOpen] = useState(false);
+    const [toggleTarget, setToggleTarget] = useState<Site | null>(null);
+
     // 상태 필터 드롭다운
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
 
@@ -72,6 +77,20 @@ export function SiteListView() {
     const handleClickDelete = (site: Site) => {
         setDeleteTarget(site);
         setIsDeleteDialogOpen(true);
+    };
+
+    /** 관광지 활성/비활성 토글 버튼 클릭 */
+    const handleClickToggle = (siteId: number) => {
+        const target = sites.find((site) => site.siteId === siteId) ?? null;
+        setToggleTarget(target);
+        setIsToggleDialogOpen(true);
+    };
+
+    /** 토글 확인 */
+    const handleConfirmToggle = () => {
+        if (toggleTarget) {
+            toggleSiteActive(toggleTarget.siteId);
+        }
     };
 
     /** 모달 폼 제출 */
@@ -133,7 +152,7 @@ export function SiteListView() {
                         </div>
                     </div>
 
-                    <div className="w-[1px] h-8 bg-slate-200 hidden md:block" />
+                    <div className="w-px h-8 bg-slate-200 hidden md:block" />
 
                     {/* 상태 필터 */}
                     <div className="flex items-center gap-3">
@@ -202,7 +221,7 @@ export function SiteListView() {
                             sites={sites}
                             onEditSite={handleClickEdit}
                             onDeleteSite={handleClickDelete}
-                            onToggleActive={toggleSiteActive}
+                            onToggleActive={handleClickToggle}
                         />
                     </motion.div>
                 </AnimatePresence>
@@ -248,9 +267,10 @@ export function SiteListView() {
 
             {/* 생성/수정 모달 */}
             <SiteFormModal
+                key={isFormModalOpen ? `${formMode}-${editTarget?.siteId ?? 'new'}` : 'closed'}
                 isOpen={isFormModalOpen}
                 mode={formMode}
-                site={editTarget}
+                initialName={editTarget?.name ?? ''}
                 onClose={() => setIsFormModalOpen(false)}
                 onSubmit={handleSubmitForm}
             />
@@ -261,6 +281,15 @@ export function SiteListView() {
                 siteName={deleteTarget?.name ?? ''}
                 onClose={() => setIsDeleteDialogOpen(false)}
                 onConfirm={handleConfirmDelete}
+            />
+
+            {/* 활성/비활성 토글 확인 다이얼로그 */}
+            <SiteToggleDialog
+                isOpen={isToggleDialogOpen}
+                siteName={toggleTarget?.name ?? ''}
+                currentlyActive={toggleTarget?.isActive ?? true}
+                onClose={() => setIsToggleDialogOpen(false)}
+                onConfirm={handleConfirmToggle}
             />
         </div>
     );
