@@ -8,7 +8,8 @@ import { SiteTable } from './SiteTable';
 import { SiteFormModal } from './SiteFormModal';
 import { SiteDeleteDialog } from './SiteDeleteDialog';
 import { SiteToggleDialog } from './SiteToggleDialog';
-import type { Site } from '@/features/site/domain/entities/Site';
+import { SiteInviteModal } from './SiteInviteModal';
+import type { SiteWithInvites } from '@/features/site/domain/entities/Site';
 
 /**
  * 활성 상태 필터 옵션
@@ -22,13 +23,13 @@ const STATUS_OPTIONS: { value: ActiveStatusOption; label: string }[] = [
 ];
 
 /**
- * SiteListView — 관광지 관리 전체 뷰
+ * 관광지 관리 전체 뷰
  *
  * 헤더, 필터, 테이블, 페이지네이션, 모달을 조합하는 프레젠테이션 컴포넌트
  */
 export function SiteListView() {
     const {
-        sites,
+        sitesWithInvites,
         totalSites,
         filter,
         updateFilter,
@@ -39,20 +40,25 @@ export function SiteListView() {
         updateSite,
         toggleSiteActive,
         deleteSite,
+        inviteSiteAdmin,
     } = useSites();
 
     // 모달 상태
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
-    const [editTarget, setEditTarget] = useState<Site | null>(null);
+    const [editTarget, setEditTarget] = useState<SiteWithInvites | null>(null);
 
     // 삭제 다이얼로그 상태
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [deleteTarget, setDeleteTarget] = useState<Site | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<SiteWithInvites | null>(null);
 
     // 토글 다이얼로그 상태
     const [isToggleDialogOpen, setIsToggleDialogOpen] = useState(false);
-    const [toggleTarget, setToggleTarget] = useState<Site | null>(null);
+    const [toggleTarget, setToggleTarget] = useState<SiteWithInvites | null>(null);
+
+    // 초대 모달 상태
+    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+    const [inviteTarget, setInviteTarget] = useState<SiteWithInvites | null>(null);
 
     // 상태 필터 드롭다운
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
@@ -67,23 +73,36 @@ export function SiteListView() {
     };
 
     /** 관광지 수정 버튼 클릭 */
-    const handleClickEdit = (site: Site) => {
+    const handleClickEdit = (site: SiteWithInvites) => {
         setFormMode('edit');
         setEditTarget(site);
         setIsFormModalOpen(true);
     };
 
     /** 관광지 삭제 버튼 클릭 */
-    const handleClickDelete = (site: Site) => {
+    const handleClickDelete = (site: SiteWithInvites) => {
         setDeleteTarget(site);
         setIsDeleteDialogOpen(true);
     };
 
     /** 관광지 활성/비활성 토글 버튼 클릭 */
     const handleClickToggle = (siteId: number) => {
-        const target = sites.find((site) => site.siteId === siteId) ?? null;
+        const target = sitesWithInvites.find((site) => site.siteId === siteId) ?? null;
         setToggleTarget(target);
         setIsToggleDialogOpen(true);
+    };
+
+    /** 운영자 초대 버튼 클릭 */
+    const handleClickInvite = (site: SiteWithInvites) => {
+        setInviteTarget(site);
+        setIsInviteModalOpen(true);
+    };
+
+    /** 초대 폼 제출 */
+    const handleSubmitInvite = (email: string) => {
+        if (inviteTarget) {
+            inviteSiteAdmin(inviteTarget.siteId, email);
+        }
     };
 
     /** 토글 확인 */
@@ -218,10 +237,11 @@ export function SiteListView() {
                         transition={{ duration: 0.2 }}
                     >
                         <SiteTable
-                            sites={sites}
+                            sites={sitesWithInvites}
                             onEditSite={handleClickEdit}
                             onDeleteSite={handleClickDelete}
                             onToggleActive={handleClickToggle}
+                            onInviteOperator={handleClickInvite}
                         />
                     </motion.div>
                 </AnimatePresence>
@@ -290,6 +310,15 @@ export function SiteListView() {
                 currentlyActive={toggleTarget?.isActive ?? true}
                 onClose={() => setIsToggleDialogOpen(false)}
                 onConfirm={handleConfirmToggle}
+            />
+
+            {/* 운영자 초대 모달 */}
+            <SiteInviteModal
+                key={isInviteModalOpen ? `invite-${inviteTarget?.siteId}` : 'invite-closed'}
+                isOpen={isInviteModalOpen}
+                siteName={inviteTarget?.name ?? ''}
+                onClose={() => setIsInviteModalOpen(false)}
+                onSubmit={handleSubmitInvite}
             />
         </div>
     );

@@ -2,30 +2,26 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HiOutlineBuildingLibrary, HiOutlinePencilSquare, HiXMark } from 'react-icons/hi2';
+import { HiOutlineEnvelope, HiXMark } from 'react-icons/hi2';
 
 /**
- * SiteFormModalProps
+ * SiteInviteModalProps
  */
-interface SiteFormModalProps {
+interface SiteInviteModalProps {
     isOpen: boolean;
-    mode: 'create' | 'edit';
-    initialName: string;
+    siteName: string;
     onClose: () => void;
-    onSubmit: (name: string) => void;
+    onSubmit: (email: string) => void;
 }
 
 /**
- * 오버레이 애니메이션
+ * 오버레이 & 모달 애니메이션
  */
 const overlayVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1 },
 };
 
-/**
- * 모달 본체 애니메이션
- */
 const modalVariants = {
     hidden: { opacity: 0, y: 24 },
     visible: {
@@ -41,31 +37,37 @@ const modalVariants = {
 };
 
 /**
- * 관광지 생성/수정 모달
+ * 관광지에 운영자를 초대하는 모달
  *
- * 상위 컴포넌트에서 모달을 열 때마다 key를 변경하여 리마운트해야 초기값이 정상 반영
+ * 이메일 입력
+ *
+ * key 패턴으로 열 때마다 리마운트하여 초기값 보장
  */
-export function SiteFormModal({ isOpen, mode, initialName, onClose, onSubmit }: SiteFormModalProps) {
-    const [name, setName] = useState(initialName);
+export function SiteInviteModal({ isOpen, siteName, onClose, onSubmit }: SiteInviteModalProps) {
+    const [email, setEmail] = useState('');
     const [error, setError] = useState('');
 
-    const isCreateMode = mode === 'create';
+    /** 이메일 유효성 검사 */
+    const validateEmail = (value: string): boolean => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(value);
+    };
 
     /** 폼 제출 핸들러 */
     const handleSubmitForm = () => {
-        const trimmedName = name.trim();
+        const trimmedEmail = email.trim();
 
-        if (!trimmedName) {
-            setError('관광지 이름을 입력해주세요.');
+        if (!trimmedEmail) {
+            setError('이메일을 입력해주세요.');
             return;
         }
 
-        if (trimmedName.length > 100) {
-            setError('관광지 이름은 100자 이내로 입력해주세요.');
+        if (!validateEmail(trimmedEmail)) {
+            setError('올바른 이메일 형식을 입력해주세요.');
             return;
         }
 
-        onSubmit(trimmedName);
+        onSubmit(trimmedEmail);
         onClose();
     };
 
@@ -101,23 +103,13 @@ export function SiteFormModal({ isOpen, mode, initialName, onClose, onSubmit }: 
                     >
                         {/* 헤더 */}
                         <div className="flex items-center gap-3 px-7 pt-7 pb-1">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center
-                                ${isCreateMode
-                                    ? 'bg-linear-to-br from-orange-400 to-orange-600'
-                                    : 'bg-linear-to-br from-blue-400 to-blue-600'
-                                }
-                            `}>
-                                {isCreateMode
-                                    ? <HiOutlineBuildingLibrary className="w-5 h-5 text-white" />
-                                    : <HiOutlinePencilSquare className="w-5 h-5 text-white" />
-                                }
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-linear-to-br from-violet-400 to-violet-600">
+                                <HiOutlineEnvelope className="w-5 h-5 text-white" />
                             </div>
                             <div className="flex-1">
-                                <h3 className="text-lg font-bold text-slate-900">
-                                    {isCreateMode ? '새 관광지 추가' : '관광지 수정'}
-                                </h3>
+                                <h3 className="text-lg font-bold text-slate-900">운영자 초대</h3>
                                 <p className="text-xs text-slate-400 mt-0.5">
-                                    {isCreateMode ? '새로운 관광지를 시스템에 등록합니다' : '관광지 이름을 변경합니다'}
+                                    <span className="font-semibold text-slate-500">{siteName}</span>에 운영자를 초대합니다
                                 </p>
                             </div>
                             <button
@@ -135,22 +127,22 @@ export function SiteFormModal({ isOpen, mode, initialName, onClose, onSubmit }: 
                         {/* 입력 폼 */}
                         <div className="px-7 pt-5 pb-2">
                             <label className="block text-[13px] font-semibold text-slate-700 mb-2">
-                                관광지 이름
+                                이메일 주소
                             </label>
                             <input
-                                type="text"
-                                value={name}
+                                type="email"
+                                value={email}
                                 onChange={(event) => {
-                                    setName(event.target.value);
+                                    setEmail(event.target.value);
                                     if (error) setError('');
                                 }}
                                 onKeyDown={handleKeyDown}
-                                placeholder="예: 에버랜드, 경복궁, 제주 민속촌"
+                                placeholder="operator@example.com"
                                 className={`w-full h-12 px-4 bg-slate-50 border rounded-xl text-sm font-medium text-slate-800 
                                     placeholder:text-slate-300 outline-none transition-all duration-150
                                     ${error
                                         ? 'border-red-300 bg-red-50/50 focus:border-red-400 focus:ring-2 focus:ring-red-100'
-                                        : 'border-slate-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 focus:bg-white'
+                                        : 'border-slate-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white'
                                     }
                                 `}
                                 autoFocus
@@ -160,6 +152,13 @@ export function SiteFormModal({ isOpen, mode, initialName, onClose, onSubmit }: 
                                     <p className="text-xs font-medium text-red-500">{error}</p>
                                 )}
                             </div>
+                        </div>
+
+                        {/* 안내 문구 */}
+                        <div className="mx-7 mb-5 p-3 bg-violet-50 rounded-xl">
+                            <p className="text-xs text-violet-600 font-medium leading-relaxed">
+                                초대 이메일이 발송되며, 수락 시 해당 관광지의 관리자로 배정됩니다.
+                            </p>
                         </div>
 
                         {/* 버튼 영역 */}
@@ -173,14 +172,10 @@ export function SiteFormModal({ isOpen, mode, initialName, onClose, onSubmit }: 
                             </button>
                             <button
                                 onClick={handleSubmitForm}
-                                className={`flex-1 h-11 rounded-xl font-semibold text-sm text-white transition-colors duration-150
-                                    ${isCreateMode
-                                        ? 'bg-orange-500 hover:bg-orange-600'
-                                        : 'bg-blue-500 hover:bg-blue-600'
-                                    }
-                                `}
+                                className="flex-1 h-11 rounded-xl font-semibold text-sm text-white bg-violet-500 
+                                    hover:bg-violet-600 transition-colors duration-150"
                             >
-                                {isCreateMode ? '관광지 추가' : '변경사항 저장'}
+                                초대 발송
                             </button>
                         </div>
                     </motion.div>

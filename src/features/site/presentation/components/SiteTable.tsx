@@ -1,16 +1,17 @@
 'use client';
 
-import { HiOutlinePencilSquare, HiOutlineTrash } from 'react-icons/hi2';
-import type { Site } from '@/features/site/domain/entities/Site';
+import { HiOutlinePencilSquare, HiOutlineTrash, HiOutlineEnvelope } from 'react-icons/hi2';
+import type { SiteWithInvites, SiteInvite } from '@/features/site/domain/entities/Site';
 
 /**
  * SiteTableProps
  */
 interface SiteTableProps {
-    sites: Site[];
-    onEditSite: (site: Site) => void;
-    onDeleteSite: (site: Site) => void;
+    sites: SiteWithInvites[];
+    onEditSite: (site: SiteWithInvites) => void;
+    onDeleteSite: (site: SiteWithInvites) => void;
     onToggleActive: (siteId: number) => void;
+    onInviteOperator: (site: SiteWithInvites) => void;
 }
 
 /**
@@ -25,11 +26,50 @@ function formatDate(isoString: string): string {
 }
 
 /**
+ * 운영자 상태 뱃지 렌더링
+ */
+function renderOperatorBadge(invites: SiteInvite[]) {
+    if (invites.length === 0) {
+        return (
+            <span className="text-xs text-slate-300 font-medium">미배정</span>
+        );
+    }
+
+    const accepted = invites.filter((inv) => inv.status === 'ACCEPTED');
+    const pending = invites.filter((inv) => inv.status === 'PENDING');
+
+    return (
+        <div className="flex flex-col gap-1">
+            {accepted.map((inv) => (
+                <span
+                    key={inv.inviteId}
+                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-600 max-w-[160px] truncate"
+                    title={inv.email}
+                >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                    {inv.email}
+                </span>
+            ))}
+            {pending.map((inv) => (
+                <span
+                    key={inv.inviteId}
+                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-600 max-w-[160px] truncate"
+                    title={`대기 중: ${inv.email}`}
+                >
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                    {inv.email}
+                </span>
+            ))}
+        </div>
+    );
+}
+
+/**
  * SiteTable — 관광지 목록 테이블 컴포넌트
  *
- * 컬럼: ID, 관광지 이름, 상태, 생성일, 수정일, 작업
+ * 컬럼: ID, 관광지 이름, 운영자, 상태, 생성일, 작업
  */
-export function SiteTable({ sites, onEditSite, onDeleteSite, onToggleActive }: SiteTableProps) {
+export function SiteTable({ sites, onEditSite, onDeleteSite, onToggleActive, onInviteOperator }: SiteTableProps) {
     if (sites.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-16 text-slate-400">
@@ -51,9 +91,9 @@ export function SiteTable({ sites, onEditSite, onDeleteSite, onToggleActive }: S
                     <tr className="border-b border-slate-100">
                         <th className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">ID</th>
                         <th className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">관광지 이름</th>
+                        <th className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">운영자</th>
                         <th className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">상태</th>
                         <th className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">생성일</th>
-                        <th className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">수정일</th>
                         <th className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">작업</th>
                     </tr>
                 </thead>
@@ -73,6 +113,11 @@ export function SiteTable({ sites, onEditSite, onDeleteSite, onToggleActive }: S
                                 <span className="text-sm font-bold text-slate-800 group-hover:text-orange-600 transition-colors">
                                     {site.name}
                                 </span>
+                            </td>
+
+                            {/* 운영자 */}
+                            <td className="px-4 py-4">
+                                {renderOperatorBadge(site.invites)}
                             </td>
 
                             {/* 상태 뱃지 */}
@@ -101,14 +146,16 @@ export function SiteTable({ sites, onEditSite, onDeleteSite, onToggleActive }: S
                                 <span className="text-xs text-slate-500">{formatDate(site.createdAt)}</span>
                             </td>
 
-                            {/* 수정일 */}
-                            <td className="px-4 py-4">
-                                <span className="text-xs text-slate-500">{formatDate(site.updatedAt)}</span>
-                            </td>
-
                             {/* 작업 버튼 */}
                             <td className="px-4 py-4">
                                 <div className="flex items-center justify-end gap-1">
+                                    <button
+                                        onClick={() => onInviteOperator(site)}
+                                        className="p-2 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 transition-all duration-200"
+                                        title="운영자 초대"
+                                    >
+                                        <HiOutlineEnvelope className="w-4.5 h-4.5" />
+                                    </button>
                                     <button
                                         onClick={() => onEditSite(site)}
                                         className="p-2 rounded-lg text-slate-400 hover:text-orange-600 hover:bg-orange-50 transition-all duration-200"

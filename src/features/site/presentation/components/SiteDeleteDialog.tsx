@@ -14,7 +14,7 @@ interface SiteDeleteDialogProps {
 }
 
 /**
- * 오버레이 & 모달 애니메이션 — GPU 가속, backdrop-blur 제거
+ * 오버레이 & 모달 애니메이션
  */
 const overlayVariants = {
     hidden: { opacity: 0 },
@@ -36,7 +36,7 @@ const dialogVariants = {
 };
 
 /**
- * SiteDeleteDialog — 관광지 삭제 확인 다이얼로그
+ * 관광지 삭제 확인 다이얼로그
  */
 export function SiteDeleteDialog({ isOpen, siteName, onClose, onConfirm }: SiteDeleteDialogProps) {
     const handleConfirmDelete = () => {

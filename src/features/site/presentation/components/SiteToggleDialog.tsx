@@ -15,7 +15,7 @@ interface SiteToggleDialogProps {
 }
 
 /**
- * 오버레이 & 모달 애니메이션 — GPU 가속, backdrop-blur 제거
+ * 오버레이 & 모달 애니메이션
  */
 const overlayVariants = {
     hidden: { opacity: 0 },
@@ -37,9 +37,9 @@ const dialogVariants = {
 };
 
 /**
- * SiteToggleDialog — 관광지 활성/비활성 전환 확인 다이얼로그
+ * SiteToggleDialog
  *
- * 실수 방지를 위해 상태 전환 전 사용자 확인을 받습니다.
+ * 상태 전환 전 사용자 확인
  */
 export function SiteToggleDialog({ isOpen, siteName, currentlyActive, onClose, onConfirm }: SiteToggleDialogProps) {
     const handleConfirmToggle = () => {

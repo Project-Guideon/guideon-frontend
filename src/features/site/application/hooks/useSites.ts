@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import type { Site, CreateSiteRequest, UpdateSiteRequest } from '@/features/site/domain/entities/Site';
+import type { Site, SiteInvite, SiteWithInvites, CreateSiteRequest, UpdateSiteRequest } from '@/features/site/domain/entities/Site';
 
 /**
  * 관광지 필터 상태
@@ -74,12 +74,24 @@ const INITIAL_MOCK_SITES: Site[] = [
 ];
 
 /**
+ * Mock 초대 데이터
+ */
+const INITIAL_MOCK_INVITES: SiteInvite[] = [
+    { inviteId: 1, siteId: 1, email: 'operator@everland.com', status: 'ACCEPTED', createdAt: '2026-01-16T10:00:00' },
+    { inviteId: 2, siteId: 2, email: 'admin@gyeongbokgung.kr', status: 'PENDING', createdAt: '2026-02-20T09:00:00' },
+    { inviteId: 3, siteId: 5, email: 'manager@lotteworld.com', status: 'ACCEPTED', createdAt: '2026-01-26T11:00:00' },
+    { inviteId: 4, siteId: 5, email: 'staff@lotteworld.com', status: 'EXPIRED', createdAt: '2026-01-10T08:00:00' },
+    { inviteId: 5, siteId: 7, email: 'admin@haeundae.kr', status: 'ACCEPTED', createdAt: '2026-02-02T10:00:00' },
+];
+
+/**
  * useSites — 관광지 데이터 CRUD 및 필터 관리 훅
  *
  * 향후 API 연동 시 Mock 데이터를 API 호출로 교체하면 됩니다.
  */
 export function useSites() {
     const [sites, setSites] = useState<Site[]>(INITIAL_MOCK_SITES);
+    const [invites, setInvites] = useState<SiteInvite[]>(INITIAL_MOCK_INVITES);
     const [filter, setFilter] = useState<SiteFilter>({
         searchTerm: '',
         activeStatus: 'all',
@@ -176,8 +188,36 @@ export function useSites() {
         setPage(0);
     }, []);
 
+    // ───────────── 초대 액션 ─────────────
+
+    /** 해당 관광지의 초대 목록 조회 */
+    const getInvitesForSite = useCallback((siteId: number): SiteInvite[] => {
+        return invites.filter((invite) => invite.siteId === siteId);
+    }, [invites]);
+
+    /** 관광지에 운영자 초대 */
+    const inviteSiteAdmin = useCallback((siteId: number, email: string) => {
+        const newInvite: SiteInvite = {
+            inviteId: Math.max(...invites.map((inv) => inv.inviteId), 0) + 1,
+            siteId,
+            email,
+            status: 'PENDING',
+            createdAt: getCurrentTimestamp(),
+        };
+        setInvites((previous) => [newInvite, ...previous]);
+    }, [invites]);
+
+    /** 페이지네이션된 관광지 + 초대 정보 조합 */
+    const sitesWithInvites: SiteWithInvites[] = useMemo(() => {
+        return paginatedSites.map((site) => ({
+            ...site,
+            invites: invites.filter((invite) => invite.siteId === site.siteId),
+        }));
+    }, [paginatedSites, invites]);
+
     return {
         sites: paginatedSites,
+        sitesWithInvites,
         totalSites: filteredSites.length,
         filter,
         updateFilter,
@@ -188,5 +228,7 @@ export function useSites() {
         updateSite,
         toggleSiteActive,
         deleteSite,
+        inviteSiteAdmin,
+        getInvitesForSite,
     };
 }

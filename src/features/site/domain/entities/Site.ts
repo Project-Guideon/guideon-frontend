@@ -23,3 +23,20 @@ export interface CreateSiteRequest {
 export interface UpdateSiteRequest {
     name: string;
 }
+
+/** 초대 상태 */
+export type InviteStatus = 'PENDING' | 'ACCEPTED' | 'EXPIRED';
+
+/** 관광지에 배정된 운영자 초대 정보 */
+export interface SiteInvite {
+    inviteId: number;
+    siteId: number;
+    email: string;
+    status: InviteStatus;
+    createdAt: string;
+}
+
+/** 관광지 + 배정된 초대 목록 조합 타입 */
+export interface SiteWithInvites extends Site {
+    invites: SiteInvite[];
+}
