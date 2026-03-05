@@ -51,7 +51,7 @@ const MOCK_PLATFORM_LOGS: AuditLogEntry[] = [
     {
         id: 7, type: 'USER', site: '에버랜드',
         action: '계정 정지', target: 'staff_01', time: '2026-03-07 13:10:00',
-        status: 'success', message: '새로운 관광지 "애버랜드"가 생성되었습니다.',
+        status: 'success', message: '새로운 관광지 "에버랜드"가 생성되었습니다.',
     },
     {
         id: 8, type: 'DEVICE', site: '롯데월드',
@@ -105,15 +105,14 @@ export function useAuditLogs() {
 
     const filteredLogs = useMemo(() => {
         let result = MOCK_PLATFORM_LOGS.filter((log) => {
+            // 로그 유형 필터
             if (filter.type && log.type !== filter.type) return false;
-
+            // 날짜 필터
             const logDate = log.time.split(' ')[0];
-            if (filter.startDate && logDate < filter.startDate) {
-                return false;
-            }
-            if (filter.endDate && logDate > filter.endDate) {
-                return false;
-            }
+            if (filter.startDate && logDate < filter.startDate) return false;
+            if (filter.endDate && logDate > filter.endDate) return false;
+            // 장소 필터
+            if (filter.sortSite !== '전체') { if (log.site !== filter.sortSite) return false; }
 
             return true;
         });
