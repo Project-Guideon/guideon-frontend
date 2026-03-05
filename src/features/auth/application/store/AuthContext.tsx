@@ -98,7 +98,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             return true;
         } else if (email === 'operator@example.com' && password === 'operator1234') {
             setUser(MOCK_SITE_ADMIN);
-            setCurrentSiteId(2);
+            setCurrentSiteId(MOCK_SITE_ADMIN.siteIds[0]);
             setIsLoading(false);
             return true;
         }

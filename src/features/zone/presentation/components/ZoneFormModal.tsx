@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HiOutlineXMark, HiOutlineMap } from 'react-icons/hi2';
+import { HiOutlineXMark, HiOutlineMap, HiOutlineChevronDown } from 'react-icons/hi2';
 import type { Zone, CreateZoneRequest, UpdateZoneRequest, GeoJsonPolygon } from '@/features/zone/domain/entities/Zone';
 
 interface ZoneFormModalProps {
@@ -36,6 +36,7 @@ export function ZoneFormModal({ isOpen, mode, editTarget, parentZones, drawnPoly
     const [parentZoneId, setParentZoneId] = useState<number | null>(
         mode === 'edit' && editTarget ? editTarget.parentZoneId : null,
     );
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
     const derivedZoneType = parentZoneId !== null ? 'SUB' : 'INNER';
 
@@ -72,101 +73,147 @@ export function ZoneFormModal({ isOpen, mode, editTarget, parentZones, drawnPoly
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-black/40"
-                        onClick={onClose}
-                    />
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        transition={{ duration: 0.2 }}
-                        className="relative w-full max-w-md mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden"
-                    >
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-                            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                <HiOutlineMap className="w-5 h-5 text-blue-500" />
-                                {mode === 'create' ? '구역 추가' : '구역 수정'}
-                            </h3>
-                            <button
-                                onClick={onClose}
-                                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                                aria-label="닫기"
-                            >
-                                <HiOutlineXMark className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                            {/* 영역 정보 (create 모드) */}
-                            {mode === 'create' && (
-                                <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
-                                    <p className="text-xs font-bold text-blue-600 mb-0.5">지도에서 그린 영역</p>
-                                    <p className="text-sm font-medium text-blue-800">{drawnPolygon.length}개의 꼭짓점으로 구성</p>
-                                </div>
-                            )}
-
-                            {/* 구역명 */}
-                            <div>
-                                <label htmlFor="zone-name" className="block text-sm font-bold text-slate-700 mb-1.5">구역명 *</label>
-                                <input
-                                    id="zone-name"
-                                    type="text"
-                                    value={name}
-                                    onChange={(event) => setName(event.target.value)}
-                                    placeholder="예: 근정전 권역"
-                                    maxLength={50}
-                                    autoFocus
-                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50"
-                                />
-                            </div>
-
-                            {/* 상위 구역 — 선택하면 자동 SUB */}
-                            {mode === 'create' && (
-                                <div>
-                                    <label htmlFor="parent-zone" className="block text-sm font-bold text-slate-700 mb-1.5">상위 구역 (선택)</label>
-                                    <select
-                                        id="parent-zone"
-                                        value={parentZoneId ?? ''}
-                                        onChange={(event) => setParentZoneId(event.target.value ? Number(event.target.value) : null)}
-                                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none transition-all hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50"
-                                    >
-                                        <option value="">없음 (대구역으로 생성)</option>
-                                        {parentZones.map((zone) => (
-                                            <option key={zone.zoneId} value={zone.zoneId}>{zone.name}</option>
-                                        ))}
-                                    </select>
-                                    <p className="mt-1.5 text-xs text-slate-400 font-medium">
-                                        {derivedZoneType === 'INNER'
-                                            ? '대구역(INNER)으로 생성됩니다'
-                                            : '하위구역(SUB)으로 생성됩니다'
-                                        }
-                                    </p>
-                                </div>
-                            )}
-
-                            <div className="flex gap-3 pt-2">
+                <div className="fixed inset-0 z-50 overflow-y-auto">
+                    <div className="flex min-h-full items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/40"
+                            onClick={onClose}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            transition={{ duration: 0.2 }}
+                            className="relative w-full max-w-md text-left bg-white rounded-2xl shadow-2xl flex flex-col"
+                        >
+                            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                    <HiOutlineMap className="w-5 h-5 text-blue-500" />
+                                    {mode === 'create' ? '구역 추가' : '구역 수정'}
+                                </h3>
                                 <button
-                                    type="button"
                                     onClick={onClose}
-                                    className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-500 hover:bg-slate-50 transition-all"
+                                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                                    aria-label="닫기"
                                 >
-                                    취소
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={!isFormValid}
-                                    className="flex-1 py-2.5 rounded-xl bg-blue-500 text-white text-sm font-bold hover:bg-blue-600 shadow-lg shadow-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
-                                >
-                                    {mode === 'create' ? '추가' : '저장'}
+                                    <HiOutlineXMark className="w-5 h-5" />
                                 </button>
                             </div>
-                        </form>
-                    </motion.div>
+
+                            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                                {/* 영역 정보 (create 모드) */}
+                                {mode === 'create' && (
+                                    <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                                        <p className="text-xs font-bold text-blue-600 mb-0.5">지도에서 그린 영역</p>
+                                        <p className="text-sm font-medium text-blue-800">{drawnPolygon.length}개의 꼭짓점으로 구성</p>
+                                    </div>
+                                )}
+
+                                {/* 구역명 */}
+                                <div>
+                                    <label htmlFor="zone-name" className="block text-sm font-bold text-slate-700 mb-1.5">구역명 *</label>
+                                    <input
+                                        id="zone-name"
+                                        type="text"
+                                        value={name}
+                                        onChange={(event) => setName(event.target.value)}
+                                        placeholder="예: 근정전 권역"
+                                        maxLength={50}
+                                        autoFocus
+                                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50"
+                                    />
+                                </div>
+
+                                {/* 상위 구역 — 선택하면 자동 SUB */}
+                                {mode === 'create' && (
+                                    <div>
+                                        <label htmlFor="parent-zone" className="block text-sm font-bold text-slate-700 mb-1.5">상위 구역 (선택)</label>
+                                        <div className="relative">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                                className="w-full flex items-center justify-between px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none transition-all hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50"
+                                            >
+                                                <span className={parentZoneId ? 'text-slate-800' : 'text-slate-400'}>
+                                                    {parentZoneId === null
+                                                        ? '없음 (대구역으로 생성)'
+                                                        : parentZones.find(z => z.zoneId === parentZoneId)?.name ?? '알 수 없음'}
+                                                </span>
+                                                <HiOutlineChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                                            </button>
+
+                                            <AnimatePresence>
+                                                {isDropdownOpen && (
+                                                    <>
+                                                        <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: -10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            exit={{ opacity: 0, y: -10 }}
+                                                            transition={{ duration: 0.15 }}
+                                                            className="absolute top-full left-0 mt-2 w-full bg-white/95 backdrop-blur-xl rounded-xl shadow-xl border border-slate-100 py-1.5 z-50 overflow-hidden max-h-64 overflow-y-auto"
+                                                        >
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setParentZoneId(null);
+                                                                    setIsDropdownOpen(false);
+                                                                }}
+                                                                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors
+                                                                ${parentZoneId === null ? 'bg-orange-50 text-orange-600 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
+                                                            >
+                                                                없음 (대구역으로 생성)
+                                                            </button>
+                                                            {parentZones.map((zone) => (
+                                                                <button
+                                                                    key={zone.zoneId}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setParentZoneId(zone.zoneId);
+                                                                        setIsDropdownOpen(false);
+                                                                    }}
+                                                                    className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors
+                                                                    ${parentZoneId === zone.zoneId ? 'bg-orange-50 text-orange-600 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
+                                                                >
+                                                                    {zone.name}
+                                                                </button>
+                                                            ))}
+                                                        </motion.div>
+                                                    </>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+                                        <p className="mt-1.5 text-xs text-slate-400 font-medium">
+                                            {derivedZoneType === 'INNER'
+                                                ? '대구역(INNER)으로 생성됩니다'
+                                                : '하위구역(SUB)으로 생성됩니다'
+                                            }
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={onClose}
+                                        className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-500 hover:bg-slate-50 transition-all"
+                                    >
+                                        취소
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={!isFormValid}
+                                        className="flex-1 py-2.5 rounded-xl bg-blue-500 text-white text-sm font-bold hover:bg-blue-600 shadow-lg shadow-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+                                    >
+                                        {mode === 'create' ? '추가' : '저장'}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
                 </div>
             )}
         </AnimatePresence>

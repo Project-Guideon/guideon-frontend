@@ -90,7 +90,7 @@ export function usePlaces() {
         const now = new Date().toISOString();
         const newPlace: Place = {
             placeId: Date.now(),
-            siteId: currentSiteId ?? 1, // Fallback to 1
+            siteId: currentSiteId ?? INITIAL_PLACES[0].siteId, // Fallback to initial mock's siteId
             zoneId: request.zoneId ?? null,
             zoneSource: request.zoneSource ?? 'AUTO',
             name: request.name,

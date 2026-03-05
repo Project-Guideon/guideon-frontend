@@ -118,10 +118,15 @@ export function useZones() {
     }, []);
 
     const deleteZone = useCallback((zoneId: number) => {
-        setZones((previous) =>
-            previous.filter((zone) => zone.zoneId !== zoneId && zone.parentZoneId !== zoneId),
-        );
-        setSelectedZoneId((current) => (current === zoneId ? null : current));
+        setZones((previous) => {
+            const newZones = previous.filter((zone) => zone.zoneId !== zoneId && zone.parentZoneId !== zoneId);
+            setSelectedZoneId((current) => {
+                if (current === null) return null;
+                // 만약 현재 선택된 아이디가 새 배열에 없으면(삭제되었으면) null 반환
+                return newZones.some((z) => z.zoneId === current) ? current : null;
+            });
+            return newZones;
+        });
     }, []);
 
     return {

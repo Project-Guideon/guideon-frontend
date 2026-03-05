@@ -27,32 +27,36 @@ interface ZonePlaceSidePanelProps {
 function ZoneTreeItem({
     zone,
     subZones,
-    isSelected,
+    selectedZoneId,
     onSelect,
     onEdit,
     onDelete,
+    onEditSubZone,
+    onDeleteSubZone,
 }: {
     zone: Zone;
     subZones: Zone[];
-    isSelected: boolean;
-    onSelect: () => void;
+    selectedZoneId: number | null;
+    onSelect: (zoneId: number) => void;
     onEdit: () => void;
     onDelete: () => void;
+    onEditSubZone: (subZone: Zone) => void;
+    onDeleteSubZone: (subZone: Zone) => void;
 }) {
     return (
         <div>
             <div
                 role="button"
                 tabIndex={0}
-                onClick={onSelect}
+                onClick={() => onSelect(zone.zoneId)}
                 onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        onSelect();
+                        onSelect(zone.zoneId);
                     }
                 }}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all duration-200 group cursor-pointer
-                    ${isSelected
+                    ${selectedZoneId === zone.zoneId
                         ? 'bg-orange-50 border border-orange-200 text-orange-700'
                         : 'hover:bg-slate-50 text-slate-700 border border-transparent'
                     }`}
@@ -64,7 +68,7 @@ function ZoneTreeItem({
                         <p className="text-[10px] text-slate-400 font-medium">{zone.code} · {zone.zoneType}</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0">
                     <button
                         type="button"
                         onClick={(event) => { event.stopPropagation(); onEdit(); }}
@@ -86,22 +90,47 @@ function ZoneTreeItem({
             {subZones.length > 0 && (
                 <div className="ml-4 mt-1 space-y-1 border-l-2 border-slate-100 pl-2">
                     {subZones.map((sub) => (
-                        <button
+                        <div
+                            role="button"
+                            tabIndex={0}
                             key={sub.zoneId}
-                            type="button"
-                            onClick={() => onSelect()}
-                            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-left transition-all duration-200 group text-sm
-                                ${sub.zoneId === (isSelected ? zone.zoneId : null)
+                            onClick={() => onSelect(sub.zoneId)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    onSelect(sub.zoneId);
+                                }
+                            }}
+                            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-left transition-all duration-200 group text-sm cursor-pointer
+                                ${selectedZoneId === sub.zoneId
                                     ? 'bg-emerald-50 text-emerald-700'
                                     : 'hover:bg-slate-50 text-slate-600'
                                 }`}
                         >
-                            <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
                                 <span className="font-medium truncate">{sub.name}</span>
                                 <span className="text-[10px] text-slate-400 shrink-0">{sub.code}</span>
                             </div>
-                        </button>
+                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={(event) => { event.stopPropagation(); onEditSubZone(sub); }}
+                                    className="p-1 rounded-lg hover:bg-emerald-100 text-slate-400 hover:text-emerald-700 transition-colors"
+                                    aria-label={`${sub.name} 수정`}
+                                >
+                                    <HiOutlinePencilSquare className="w-3 h-3" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={(event) => { event.stopPropagation(); onDeleteSubZone(sub); }}
+                                    className="p-1 rounded-lg hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors"
+                                    aria-label={`${sub.name} 삭제`}
+                                >
+                                    <HiOutlineTrash className="w-3 h-3" />
+                                </button>
+                            </div>
+                        </div>
                     ))}
                 </div>
             )}
@@ -163,7 +192,7 @@ function PlaceListItem({
                     <span className="text-[10px] text-slate-400">{zoneName}</span>
                 </div>
             </div>
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0">
                 <button
                     type="button"
                     onClick={(event) => { event.stopPropagation(); onEdit(); }}
@@ -249,10 +278,12 @@ function ZonePlaceSidePanelInner({
                                 key={zone.zoneId}
                                 zone={zone}
                                 subZones={getSubZones(zone.zoneId)}
-                                isSelected={selectedZoneId === zone.zoneId}
-                                onSelect={() => onSelectZone(selectedZoneId === zone.zoneId ? null : zone.zoneId)}
+                                selectedZoneId={selectedZoneId}
+                                onSelect={(clickedZoneId) => onSelectZone(selectedZoneId === clickedZoneId ? null : clickedZoneId)}
                                 onEdit={() => onEditZone(zone)}
                                 onDelete={() => onDeleteZone(zone)}
+                                onEditSubZone={(sub) => onEditZone(sub)}
+                                onDeleteSubZone={(sub) => onDeleteZone(sub)}
                             />
                         ))}
                     </>
