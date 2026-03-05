@@ -112,26 +112,30 @@ export function useZones() {
     }, [currentSiteId]);
 
     const updateZone = useCallback((zoneId: number, request: UpdateZoneRequest) => {
+        const sanitizedRequest = Object.fromEntries(
+            Object.entries(request).filter(([, value]) => value !== undefined)
+        );
+
         setZones((previous) =>
             previous.map((zone) =>
                 zone.zoneId === zoneId
-                    ? { ...zone, ...request, updatedAt: new Date().toISOString() }
+                    ? { ...zone, ...sanitizedRequest, updatedAt: new Date().toISOString() }
                     : zone,
             ),
         );
     }, []);
 
-    const deleteZone = useCallback((zoneId: number) => {
-        setZones((previous) => {
-            const newZones = previous.filter((zone) => zone.zoneId !== zoneId && zone.parentZoneId !== zoneId);
-            setSelectedZoneId((current) => {
-                if (current === null) return null;
-                // 만약 현재 선택된 아이디가 새 배열에 없으면(삭제되었으면) null 반환
-                return newZones.some((z) => z.zoneId === current) ? current : null;
-            });
-            return newZones;
-        });
-    }, []);
+    const deleteZone = useCallback((zoneId: number, onZonesDeleted?: (deletedIds: number[]) => void) => {
+        const targetZones = zones.filter((zone) => zone.zoneId === zoneId || zone.parentZoneId === zoneId);
+        const deletedIds = targetZones.map((z) => z.zoneId);
+
+        setZones((previous) => previous.filter((zone) => !deletedIds.includes(zone.zoneId)));
+        setSelectedZoneId((current) => (current && deletedIds.includes(current) ? null : current));
+
+        if (onZonesDeleted && deletedIds.length > 0) {
+            onZonesDeleted(deletedIds);
+        }
+    }, [zones]);
 
     return {
         zones: filteredZones,

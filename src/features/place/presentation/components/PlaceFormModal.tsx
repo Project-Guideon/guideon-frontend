@@ -70,7 +70,6 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, selectedCoords
             };
             onSubmit(request);
         }
-        onClose();
     };
 
     const isFormValid = name.trim().length > 0;
@@ -184,10 +183,13 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, selectedCoords
                                     <div className="relative">
                                         <button
                                             type="button"
+                                            aria-haspopup="listbox"
+                                            aria-expanded={isDropdownOpen}
+                                            aria-controls="place-zone-options"
                                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                             className="w-full flex items-center justify-between px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none transition-all hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50"
                                         >
-                                            <span className={zoneId ? 'text-slate-800' : 'text-slate-400'}>
+                                            <span className={zoneId != null ? 'text-slate-800' : 'text-slate-400'}>
                                                 {zoneId === null
                                                     ? '자동 배정 (좌표 기반)'
                                                     : zones.find(z => z.zoneId === zoneId)?.name ?? '알 수 없음'}
@@ -200,6 +202,8 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, selectedCoords
                                                 <>
                                                     <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />
                                                     <motion.div
+                                                        id="place-zone-options"
+                                                        role="listbox"
                                                         initial={{ opacity: 0, y: -10 }}
                                                         animate={{ opacity: 1, y: 0 }}
                                                         exit={{ opacity: 0, y: -10 }}
@@ -208,6 +212,8 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, selectedCoords
                                                     >
                                                         <button
                                                             type="button"
+                                                            role="option"
+                                                            aria-selected={zoneId === null}
                                                             onClick={() => {
                                                                 setZoneId(null);
                                                                 setIsDropdownOpen(false);
@@ -221,6 +227,8 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, selectedCoords
                                                             <button
                                                                 key={zone.zoneId}
                                                                 type="button"
+                                                                role="option"
+                                                                aria-selected={zoneId === zone.zoneId}
                                                                 onClick={() => {
                                                                     setZoneId(zone.zoneId);
                                                                     setIsDropdownOpen(false);

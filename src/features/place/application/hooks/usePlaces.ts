@@ -75,8 +75,9 @@ export function usePlaces() {
     const { currentSiteId } = useSiteContext();
 
     const filteredPlaces = useMemo(() => {
+        if (currentSiteId === null) return [];
         return places.filter((place) => {
-            if (currentSiteId !== null && place.siteId !== currentSiteId) return false;
+            if (place.siteId !== currentSiteId) return false;
             if (categoryFilter !== 'ALL' && place.category !== categoryFilter) return false;
             if (zoneIdFilter !== null && place.zoneId !== zoneIdFilter) return false;
             if (searchKeyword) {
@@ -88,7 +89,7 @@ export function usePlaces() {
         });
     }, [places, currentSiteId, categoryFilter, zoneIdFilter, searchKeyword]);
 
-    const selectedPlace = places.find((place) => place.placeId === selectedPlaceId) ?? null;
+    const selectedPlace = filteredPlaces.find((place) => place.placeId === selectedPlaceId) ?? null;
 
     const createPlace = useCallback((request: CreatePlaceRequest) => {
         if (currentSiteId == null) {
@@ -135,6 +136,16 @@ export function usePlaces() {
         setSelectedPlaceId((current) => (current === placeId ? null : current));
     }, []);
 
+    const clearZoneReferences = useCallback((deletedZoneIds: number[]) => {
+        setPlaces((previous) =>
+            previous.map((place) =>
+                place.zoneId !== null && deletedZoneIds.includes(place.zoneId)
+                    ? { ...place, zoneId: null, zoneSource: 'AUTO', updatedAt: new Date().toISOString() }
+                    : place,
+            ),
+        );
+    }, []);
+
     return {
         places,
         filteredPlaces,
@@ -150,5 +161,6 @@ export function usePlaces() {
         createPlace,
         updatePlace,
         deletePlace,
+        clearZoneReferences,
     };
 }

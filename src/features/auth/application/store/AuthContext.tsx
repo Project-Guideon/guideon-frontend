@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
 import type { AdminRole } from '@/shared/types/auth';
+import { INITIAL_MOCK_SITES } from '@/features/site/application/hooks/useSites';
 
 /**
  * Mock 사용자 정보
@@ -63,11 +64,7 @@ const MOCK_SITE_ADMIN: AuthUser = {
     siteIds: [1],
 };
 
-const MOCK_SITES: Site[] = [
-    { siteId: 2, name: '경복궁', isActive: true },
-    { siteId: 1, name: '에버랜드', isActive: true },
-    { siteId: 3, name: '롯데월드', isActive: false },
-];
+
 
 interface AuthProviderProps {
     children: ReactNode;
@@ -100,7 +97,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             return true;
         } else if (email === 'operator@example.com' && password === 'operator1234') {
             setUser(MOCK_SITE_ADMIN);
-            setCurrentSiteId(MOCK_SITE_ADMIN.siteIds[0]);
+            setCurrentSiteId(MOCK_SITE_ADMIN.siteIds.length > 0 ? MOCK_SITE_ADMIN.siteIds[0] : null);
             setIsLoading(false);
             return true;
         }
@@ -130,8 +127,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
      */
     const availableSites = useMemo(() => {
         if (!user) return [];
-        if (user.role === 'PLATFORM_ADMIN') return MOCK_SITES;
-        return MOCK_SITES.filter((site) => user.siteIds.includes(site.siteId));
+        if (user.role === 'PLATFORM_ADMIN') return INITIAL_MOCK_SITES;
+        return INITIAL_MOCK_SITES.filter((site) => user.siteIds.includes(site.siteId));
     }, [user]);
 
     const value = useMemo<AuthContextType>(

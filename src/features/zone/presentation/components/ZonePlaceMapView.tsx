@@ -67,6 +67,7 @@ export function ZonePlaceMapView() {
         createPlace,
         updatePlace,
         deletePlace,
+        clearZoneReferences,
     } = usePlaces();
 
     const { isPlatformAdmin } = useAuth();
@@ -171,11 +172,13 @@ export function ZonePlaceMapView() {
 
     const handleConfirmDeleteZone = useCallback(() => {
         if (zoneDeleteTarget) {
-            deleteZone(zoneDeleteTarget.zoneId);
+            deleteZone(zoneDeleteTarget.zoneId, (deletedIds) => {
+                clearZoneReferences(deletedIds);
+            });
             setIsZoneDeleteOpen(false);
             setZoneDeleteTarget(null);
         }
-    }, [zoneDeleteTarget, deleteZone]);
+    }, [zoneDeleteTarget, deleteZone, clearZoneReferences]);
 
     const handleConfirmDeletePlace = useCallback(() => {
         if (placeDeleteTarget) {
@@ -192,6 +195,7 @@ export function ZonePlaceMapView() {
             updateZone(zoneEditTarget.zoneId, request as UpdateZoneRequest);
         }
         setDrawnPolygon([]);
+        setIsZoneFormOpen(false);
     }, [zoneFormMode, zoneEditTarget, createZone, updateZone]);
 
     const handleSubmitPlaceForm = useCallback((request: CreatePlaceRequest | UpdatePlaceRequest) => {
@@ -201,6 +205,7 @@ export function ZonePlaceMapView() {
             updatePlace(placeEditTarget.placeId, request as UpdatePlaceRequest);
         }
         setPlacingPosition(null);
+        setIsPlaceFormOpen(false);
     }, [placeFormMode, placeEditTarget, createPlace, updatePlace]);
 
     const hasSubZones = useMemo(

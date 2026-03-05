@@ -53,14 +53,19 @@ function ZonePlaceMapInner({
     });
 
     const zonePaths = useMemo(
-        () => zones.map((zone) => ({
-            zoneId: zone.zoneId,
-            path: zone.areaGeojson.coordinates[0].map(([lng, lat]) => ({ lat, lng })),
-            center: {
-                lat: zone.areaGeojson.coordinates[0].reduce((s, c) => s + c[1], 0) / zone.areaGeojson.coordinates[0].length,
-                lng: zone.areaGeojson.coordinates[0].reduce((s, c) => s + c[0], 0) / zone.areaGeojson.coordinates[0].length,
-            },
-        })),
+        () => zones.map((zone) => {
+            const rawCoords = zone.areaGeojson.coordinates[0];
+            const isClosed = rawCoords.length > 2 && rawCoords[0][0] === rawCoords[rawCoords.length - 1][0] && rawCoords[0][1] === rawCoords[rawCoords.length - 1][1];
+            const coordsForCenter = isClosed ? rawCoords.slice(0, -1) : rawCoords;
+            return {
+                zoneId: zone.zoneId,
+                path: rawCoords.map(([lng, lat]) => ({ lat, lng })),
+                center: {
+                    lat: coordsForCenter.reduce((s, c) => s + c[1], 0) / coordsForCenter.length,
+                    lng: coordsForCenter.reduce((s, c) => s + c[0], 0) / coordsForCenter.length,
+                },
+            };
+        }),
         [zones],
     );
 

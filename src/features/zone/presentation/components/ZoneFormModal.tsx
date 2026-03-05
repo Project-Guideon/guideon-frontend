@@ -38,6 +38,34 @@ export function ZoneFormModal({ isOpen, mode, editTarget, parentZones, drawnPoly
         mode === 'edit' && editTarget ? editTarget.parentZoneId : null,
     );
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [highlightedIndex, setHighlightedIndex] = useState(0);
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (!isDropdownOpen) {
+            if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setIsDropdownOpen(true);
+            }
+            return;
+        }
+
+        const optionsCount = parentZones.length + 1; // 1 for null
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setHighlightedIndex(prev => (prev + 1) % optionsCount);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setHighlightedIndex(prev => (prev - 1 + optionsCount) % optionsCount);
+        } else if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (highlightedIndex === 0) setParentZoneId(null);
+            else setParentZoneId(parentZones[highlightedIndex - 1].zoneId);
+            setIsDropdownOpen(false);
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            setIsDropdownOpen(false);
+        }
+    };
 
     const derivedZoneType = parentZoneId !== null ? 'SUB' : 'INNER';
 
@@ -66,7 +94,6 @@ export function ZoneFormModal({ isOpen, mode, editTarget, parentZones, drawnPoly
             const request: UpdateZoneRequest = { name };
             onSubmit(request);
         }
-        onClose();
     };
 
     const isFormValid = name.trim().length > 0 && (mode === 'edit' || drawnPolygon.length >= 3);
@@ -135,8 +162,12 @@ export function ZoneFormModal({ isOpen, mode, editTarget, parentZones, drawnPoly
                                         <div className="relative">
                                             <button
                                                 type="button"
+                                                aria-haspopup="listbox"
+                                                aria-expanded={isDropdownOpen}
+                                                aria-controls="zone-parent-options"
+                                                onKeyDown={handleKeyDown}
                                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                                className="w-full flex items-center justify-between px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none transition-all hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50"
+                                                className="w-full flex items-center justify-between px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none transition-all hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50 focus:outline-none"
                                             >
                                                 <span className={parentZoneId ? 'text-slate-800' : 'text-slate-400'}>
                                                     {parentZoneId === null
@@ -151,6 +182,8 @@ export function ZoneFormModal({ isOpen, mode, editTarget, parentZones, drawnPoly
                                                     <>
                                                         <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />
                                                         <motion.div
+                                                            id="zone-parent-options"
+                                                            role="listbox"
                                                             initial={{ opacity: 0, y: -10 }}
                                                             animate={{ opacity: 1, y: 0 }}
                                                             exit={{ opacity: 0, y: -10 }}
@@ -159,25 +192,29 @@ export function ZoneFormModal({ isOpen, mode, editTarget, parentZones, drawnPoly
                                                         >
                                                             <button
                                                                 type="button"
+                                                                role="option"
+                                                                aria-selected={parentZoneId === null}
                                                                 onClick={() => {
                                                                     setParentZoneId(null);
                                                                     setIsDropdownOpen(false);
                                                                 }}
-                                                                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors
-                                                                ${parentZoneId === null ? 'bg-orange-50 text-orange-600 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
+                                                                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors outline-none
+                                                                ${parentZoneId === null || highlightedIndex === 0 ? 'bg-orange-50 text-orange-600 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
                                                             >
                                                                 없음 (대구역으로 생성)
                                                             </button>
-                                                            {parentZones.map((zone) => (
+                                                            {parentZones.map((zone, index) => (
                                                                 <button
                                                                     key={zone.zoneId}
                                                                     type="button"
+                                                                    role="option"
+                                                                    aria-selected={parentZoneId === zone.zoneId}
                                                                     onClick={() => {
                                                                         setParentZoneId(zone.zoneId);
                                                                         setIsDropdownOpen(false);
                                                                     }}
-                                                                    className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors
-                                                                    ${parentZoneId === zone.zoneId ? 'bg-orange-50 text-orange-600 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
+                                                                    className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors outline-none
+                                                                    ${parentZoneId === zone.zoneId || highlightedIndex === index + 1 ? 'bg-orange-50 text-orange-600 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
                                                                 >
                                                                     {zone.name}
                                                                 </button>
