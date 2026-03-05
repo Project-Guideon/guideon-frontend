@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import type { AuditLogEntry, AuditLogType } from '@/features/auditLog/domain/entities/AuditLogEntry';
+import type { AuditLogEntry, AuditLogType, AuditLogSortOrder } from '@/features/auditLog/domain/entities/AuditLogEntry';
 
 /**
  * 감사 로그 필터 상태
@@ -10,6 +10,8 @@ interface AuditLogFilter {
     startDate: string;
     endDate: string;
     type: AuditLogType | '';
+    sortSite: string;
+    sortOrder: AuditLogSortOrder;
 }
 
 /**
@@ -78,6 +80,8 @@ export function useAuditLogs() {
         startDate: '',
         endDate: '',
         type: '',
+        sortSite: '전체',
+        sortOrder: 'DESC',
     });
 
     //페이지 상태
@@ -85,10 +89,24 @@ export function useAuditLogs() {
     const pageSize = 5;
 
     const filteredLogs = useMemo(() => {
-        return MOCK_PLATFORM_LOGS.filter((log) => {
+        let result = MOCK_PLATFORM_LOGS.filter((log) => {
             if (filter.type && log.type !== filter.type) return false;
             return true;
         });
+
+        result.sort((a, b) => {
+            if (filter.sortSite !== '전체') {
+                const siteA = a.site || '';
+                const siteB = b.site || '';
+                const siteComparison = siteA.localeCompare(siteB);
+                if (siteComparison !== 0) return siteComparison;
+            }
+            
+            //토글로 시간 정렬은 2순위로 적용시키기
+            return filter.sortOrder === 'DESC' ? b.id - a.id : a.id - b.id;
+        });
+
+        return result;
     }, [filter]);
 
     const totalPages = Math.ceil(filteredLogs.length / pageSize);

@@ -1,5 +1,5 @@
-import { HiOutlineMagnifyingGlass, HiChevronDown, HiOutlineBuildingLibrary, HiOutlineCalendar } from 'react-icons/hi2';
-import type { AuditLogType } from '@/features/auditLog/domain/entities/AuditLogEntry';
+import { HiOutlineMagnifyingGlass, HiChevronDown, HiChevronUp, HiOutlineBuildingLibrary, HiOutlineCalendar } from 'react-icons/hi2';
+import type { AuditLogType, AuditLogSortOrder } from '@/features/auditLog/domain/entities/AuditLogEntry';
 import { useRef, useEffect, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
@@ -13,13 +13,18 @@ interface AuditLogFilterProps {
     endDate: string;
     type: AuditLogType | '';
     searchTerm: string;
-    onFilterChange: (updates: { startDate?: string; endDate?: string; type?: AuditLogType | ''; searchTerm?: string; }) => void;
+    sortSite: string;
+    sortOrder: AuditLogSortOrder;
+    onFilterChange: (updates: { startDate?: string; endDate?: string; type?: AuditLogType | ''; searchTerm?: string; sortSite?: string; sortOrder?: AuditLogSortOrder;}) => void;
 }
 
 /**
  * AuditLogFilter — 감사 로그 필터 UI (날짜 범위, 유형 선택)
  */
-export function AuditLogFilter({ startDate, endDate, type, searchTerm, onFilterChange }: AuditLogFilterProps) {
+export function AuditLogFilter({ startDate, endDate, type, searchTerm, sortSite, sortOrder, onFilterChange }: AuditLogFilterProps) {
+    // 나중에는 데이터 들고와서 적용할 예정
+    const SITE_OPTIONS = ['전체', '에버랜드', '경복궁', '롯데월드'];
+
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
@@ -146,6 +151,22 @@ export function AuditLogFilter({ startDate, endDate, type, searchTerm, onFilterC
 
                     <div className="w-[1px] h-8 bg-slate-200 hidden md:block mx-6" />
 
+                        {/* 장소별 정렬 */}
+                        <div className="flex items-center gap-3">
+                            <span className="text-sm font-bold text-slate-500 whitespace-nowrap">장소</span>
+                            <select
+                                value={sortSite}
+                                onChange={(e) => onFilterChange({ sortSite: e.target.value })}
+                                className="h-[36px] px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-orange-500 transition-all"
+                            >
+                                {SITE_OPTIONS.map(name => (
+                                    <option key={name} value={name}>{name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                    <div className="w-[1px] h-8 bg-slate-200 hidden md:block mx-4" />
+                    
                     {/* 검색창 */}
                     <div className="flex items-center gap-4 ">
                         <span className="text-sm font-bold text-slate-500 whitespace-nowrap">검색</span>
@@ -162,6 +183,20 @@ export function AuditLogFilter({ startDate, endDate, type, searchTerm, onFilterC
                             />
                         </div>
                     </div>
+
+                    {/* 시간 순 토글 */}
+                    <button
+                        onClick={() => onFilterChange({ sortOrder: sortOrder === 'DESC' ? 'ASC' : 'DESC' })}
+                        className="flex items-center justify-center w-10 h-10 bg-slate-50 border border-slate-200 rounded-xl hover:border-orange-400 hover:bg-orange-50 transition-all group ml-auto"
+                        title={sortOrder === 'DESC' ? '최신순 (과거순으로 변경)' : '과거순 (최신순으로 변경)'}
+                    >
+                        {sortOrder === 'ASC' ? (
+                            <HiChevronUp className="w-5 h-5 text-orange-600 animate-bounce-short" />
+                        ) : (
+                            <HiChevronDown className="w-5 h-5 text-orange-600 animate-bounce-short" />
+                        )}
+                    </button>
+                    
                 </div>
             </div>
         </div>
