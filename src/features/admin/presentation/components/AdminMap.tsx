@@ -1,16 +1,8 @@
 'use client';
 
-import { MapContainer, TileLayer, Marker, Popup, useMap, Polygon } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import { useState } from 'react';
+import { Map, Polygon, CustomOverlayMap, useKakaoLoader } from 'react-kakao-maps-sdk';
 import { HiOutlineDeviceTablet } from 'react-icons/hi2';
-
-// 지도 중심 이동용 컴포넌트
-function ChangeView({ center, zoom }: { center: [number, number], zoom: number }) {
-    const map = useMap();
-    map.setView(center, zoom);
-    return null;
-}
 
 interface KioskLocation {
     id: string;
@@ -24,8 +16,8 @@ interface KioskLocation {
 interface ZoneInfo {
     id: string;
     name: string;
-    center: [number, number]; // 라벨 위치
-    paths: [number, number][]; // 다각형 좌표
+    center: [number, number];
+    paths: [number, number][];
     color: string;
 }
 
@@ -36,114 +28,147 @@ interface AdminMapProps {
     zones?: ZoneInfo[];
 }
 
-// 상태별 커스텀 마커 아이콘 생성 함수
-const createCustomIcon = (status: 'online' | 'warning' | 'offline') => {
-    let colorClass = '';
-    let ringClass = '';
+const STATUS_STYLES: Record<KioskLocation['status'], { dotColor: string; ringColor: string; badgeBackground: string; badgeText: string; label: string }> = {
+    online: {
+        dotColor: 'bg-green-500',
+        ringColor: 'bg-green-500/30',
+        badgeBackground: 'bg-green-100',
+        badgeText: 'text-green-600',
+        label: 'ONLINE',
+    },
+    warning: {
+        dotColor: 'bg-orange-500',
+        ringColor: 'bg-orange-500/30',
+        badgeBackground: 'bg-orange-100',
+        badgeText: 'text-orange-600',
+        label: 'WARNING',
+    },
+    offline: {
+        dotColor: 'bg-red-500',
+        ringColor: 'bg-red-500/30',
+        badgeBackground: 'bg-red-100',
+        badgeText: 'text-red-600',
+        label: 'OFFLINE',
+    },
+};
 
-    switch (status) {
-        case 'online':
-            colorClass = 'bg-green-500';
-            ringClass = 'bg-green-500/30';
-            break;
-        case 'warning':
-            colorClass = 'bg-orange-500';
-            ringClass = 'bg-orange-500/30';
-            break;
-        case 'offline':
-            colorClass = 'bg-red-500';
-            ringClass = 'bg-red-500/30';
-            break;
+/** 카카오맵 zoom level: 숫자가 작을수록 확대, 기존 Leaflet zoom과 반대 방향 */
+function convertLeafletZoomToKakaoLevel(leafletZoom: number): number {
+    const levelMap: Record<number, number> = {
+        13: 7,
+        14: 6,
+        15: 5,
+        16: 4,
+        17: 3,
+        18: 2,
+    };
+    return levelMap[leafletZoom] ?? 5;
+}
+
+export function AdminMap({ center, zoom, markers, zones = [] }: AdminMapProps) {
+    const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
+
+    const [loading, error] = useKakaoLoader({
+        appkey: process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY ?? '',
+    });
+
+    if (loading) {
+        return (
+            <div className="h-full w-full flex flex-col items-center justify-center bg-slate-50 text-slate-400 gap-2">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
+                <p className="text-sm font-medium">지도를 불러오는 중입니다...</p>
+            </div>
+        );
     }
 
-    return L.divIcon({
-        className: 'custom-marker',
-        html: `
-            <div class="relative w-6 h-6 flex items-center justify-center">
-                <span class="absolute w-full h-full rounded-full ${ringClass} animate-ping"></span>
-                <span class="absolute w-full h-full rounded-full ${ringClass} opacity-50"></span>
-                <span class="relative w-3 h-3 rounded-full ${colorClass} border-2 border-white shadow-sm"></span>
+    if (error) {
+        return (
+            <div className="h-full w-full flex flex-col items-center justify-center bg-slate-50 text-red-400 gap-2">
+                <p className="text-sm font-medium">지도를 불러오지 못했습니다.</p>
             </div>
-        `,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
-    });
-};
+        );
+    }
 
-// Zone 이름 라벨 아이콘
-const createLabelIcon = (name: string) => {
-    // Tailwind 색상 클래스를 직접 매핑하기 어려워 hex 컬러를 border/text에 적용
-    return L.divIcon({
-        className: 'zone-label',
-        html: `<div class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/90 border border-slate-300 text-slate-600 shadow-sm whitespace-nowrap transform -translate-x-1/2">${name}</div>`,
-        iconSize: [0, 0], // 아이콘 크기 0으로 하고 HTML 내용만 표시
-        iconAnchor: [0, 0],
-    });
-};
+    const kakaoLevel = convertLeafletZoomToKakaoLevel(zoom);
 
-export default function AdminMap({ center, zoom, markers, zones = [] }: AdminMapProps) {
     return (
-        <MapContainer
-            center={center}
-            zoom={zoom}
-            style={{ height: '100%', width: '100%', background: '#f8fafc', zIndex: 0 }}
+        <Map
+            center={{ lat: center[0], lng: center[1] }}
+            level={kakaoLevel}
+            style={{ width: '100%', height: '100%' }}
         >
-            <ChangeView center={center} zoom={zoom} />
-
-            <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-
             {/* Zone Polygons & Labels */}
             {zones.map((zone) => (
                 <div key={zone.id}>
                     <Polygon
-                        positions={zone.paths}
-                        pathOptions={{
-                            color: zone.color,
-                            fillColor: zone.color,
-                            fillOpacity: 0.15,
-                            weight: 2,
-                            dashArray: '5, 5'
-                        }}
+                        path={zone.paths.map(([lat, lng]) => ({ lat, lng }))}
+                        strokeWeight={2}
+                        strokeColor={zone.color}
+                        strokeOpacity={0.8}
+                        strokeStyle="shortdash"
+                        fillColor={zone.color}
+                        fillOpacity={0.15}
                     />
-                    <Marker
-                        position={zone.center}
-                        icon={createLabelIcon(zone.name)}
-                        zIndexOffset={-100}
-                    />
+                    <CustomOverlayMap
+                        position={{ lat: zone.center[0], lng: zone.center[1] }}
+                        zIndex={-1}
+                    >
+                        <div className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/90 border border-slate-300 text-slate-600 shadow-sm whitespace-nowrap -translate-x-1/2 pointer-events-none select-none">
+                            {zone.name}
+                        </div>
+                    </CustomOverlayMap>
                 </div>
             ))}
 
             {/* Kiosk Markers */}
-            {markers.map((kiosk) => (
-                <Marker
-                    key={kiosk.id}
-                    position={[kiosk.lat, kiosk.lng]}
-                    icon={createCustomIcon(kiosk.status)}
-                >
-                    <Popup className="custom-popup" closeButton={false} offset={[0, -10]}>
-                        <div className="p-1 min-w-[150px]">
-                            <div className="flex items-center justify-between mb-1">
-                                <span className="font-bold text-slate-800 flex items-center gap-1">
-                                    <HiOutlineDeviceTablet className="w-4 h-4 text-slate-500" />
-                                    {kiosk.id}
-                                </span>
-                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase
-                                    ${kiosk.status === 'online' ? 'bg-green-100 text-green-600' : ''}
-                                    ${kiosk.status === 'warning' ? 'bg-orange-100 text-orange-600' : ''}
-                                    ${kiosk.status === 'offline' ? 'bg-red-100 text-red-600' : ''}
-                                `}>
-                                    {kiosk.status}
-                                </span>
-                            </div>
-                            <p className="text-xs font-medium text-slate-600 mb-0.5">{kiosk.name}</p>
-                            <p className="text-[10px] text-slate-400">{kiosk.zone}</p>
-                        </div>
-                    </Popup>
-                </Marker>
-            ))}
-        </MapContainer>
+            {markers.map((kiosk) => {
+                const style = STATUS_STYLES[kiosk.status];
+                const isSelected = selectedMarkerId === kiosk.id;
+
+                return (
+                    <div key={kiosk.id}>
+                        {/* Custom marker overlay */}
+                        <CustomOverlayMap
+                            position={{ lat: kiosk.lat, lng: kiosk.lng }}
+                            zIndex={isSelected ? 10 : 1}
+                        >
+                            <button
+                                type="button"
+                                className="relative w-6 h-6 flex items-center justify-center cursor-pointer"
+                                onClick={() => setSelectedMarkerId(isSelected ? null : kiosk.id)}
+                                aria-label={`키오스크 ${kiosk.id} - ${kiosk.status}`}
+                            >
+                                <span className={`absolute w-full h-full rounded-full ${style.ringColor} animate-ping`} />
+                                <span className={`absolute w-full h-full rounded-full ${style.ringColor} opacity-50`} />
+                                <span className={`relative w-3 h-3 rounded-full ${style.dotColor} border-2 border-white shadow-sm`} />
+                            </button>
+                        </CustomOverlayMap>
+
+                        {/* Popup overlay */}
+                        {isSelected && (
+                            <CustomOverlayMap
+                                position={{ lat: kiosk.lat, lng: kiosk.lng }}
+                                yAnchor={1.4}
+                                zIndex={20}
+                            >
+                                <div className="bg-white rounded-xl shadow-xl border border-slate-200 p-2.5 min-w-[160px]">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="font-bold text-slate-800 flex items-center gap-1 text-sm">
+                                            <HiOutlineDeviceTablet className="w-4 h-4 text-slate-500" />
+                                            {kiosk.id}
+                                        </span>
+                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${style.badgeBackground} ${style.badgeText}`}>
+                                            {style.label}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs font-medium text-slate-600 mb-0.5">{kiosk.name}</p>
+                                    <p className="text-[10px] text-slate-400">{kiosk.zone}</p>
+                                </div>
+                            </CustomOverlayMap>
+                        )}
+                    </div>
+                );
+            })}
+        </Map>
     );
 }
