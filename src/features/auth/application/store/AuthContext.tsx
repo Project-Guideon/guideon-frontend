@@ -73,6 +73,8 @@ interface AuthProviderProps {
     children: ReactNode;
 }
 
+export const DEFAULT_SITE_ID = 2; // 경복궁
+
 /**
  * AuthProvider
  * Mock 데이터 기반 인증 상태 관리
@@ -80,7 +82,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
     const [user, setUser] = useState<AuthUser | null>(MOCK_PLATFORM_ADMIN); // 기본: 로그인 상태
     const [isLoading, setIsLoading] = useState(false);
-    const [currentSiteId, setCurrentSiteId] = useState<number | null>(2);
+    const [currentSiteId, setCurrentSiteId] = useState<number | null>(DEFAULT_SITE_ID);
 
     /**
      * Mock 로그인
@@ -93,7 +95,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         if (email === 'admin@guideon.com' && password === 'admin1234') {
             setUser(MOCK_PLATFORM_ADMIN);
-            setCurrentSiteId(2);
+            setCurrentSiteId(DEFAULT_SITE_ID);
             setIsLoading(false);
             return true;
         } else if (email === 'operator@example.com' && password === 'operator1234') {

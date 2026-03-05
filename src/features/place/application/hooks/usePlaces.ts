@@ -79,7 +79,11 @@ export function usePlaces() {
             if (currentSiteId !== null && place.siteId !== currentSiteId) return false;
             if (categoryFilter !== 'ALL' && place.category !== categoryFilter) return false;
             if (zoneIdFilter !== null && place.zoneId !== zoneIdFilter) return false;
-            if (searchKeyword && !place.name.includes(searchKeyword)) return false;
+            if (searchKeyword) {
+                const normalizedSearch = searchKeyword.trim().toLowerCase();
+                const normalizedName = place.name.trim().toLowerCase();
+                if (!normalizedName.includes(normalizedSearch)) return false;
+            }
             return true;
         });
     }, [places, currentSiteId, categoryFilter, zoneIdFilter, searchKeyword]);
@@ -87,10 +91,14 @@ export function usePlaces() {
     const selectedPlace = places.find((place) => place.placeId === selectedPlaceId) ?? null;
 
     const createPlace = useCallback((request: CreatePlaceRequest) => {
+        if (currentSiteId == null) {
+            throw new Error('현재 사이트가 선택되지 않았습니다.');
+        }
+
         const now = new Date().toISOString();
         const newPlace: Place = {
             placeId: Date.now(),
-            siteId: currentSiteId ?? INITIAL_PLACES[0].siteId, // Fallback to initial mock's siteId
+            siteId: currentSiteId,
             zoneId: request.zoneId ?? null,
             zoneSource: request.zoneSource ?? 'AUTO',
             name: request.name,
@@ -109,10 +117,14 @@ export function usePlaces() {
     }, [currentSiteId]);
 
     const updatePlace = useCallback((placeId: number, request: UpdatePlaceRequest) => {
+        const sanitizedRequest = Object.fromEntries(
+            Object.entries(request).filter(([, value]) => value !== undefined)
+        );
+
         setPlaces((previous) =>
             previous.map((place) =>
                 place.placeId === placeId
-                    ? { ...place, ...request, updatedAt: new Date().toISOString() }
+                    ? { ...place, ...sanitizedRequest, updatedAt: new Date().toISOString() }
                     : place,
             ),
         );

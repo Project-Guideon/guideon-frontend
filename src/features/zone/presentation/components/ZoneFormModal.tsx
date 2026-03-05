@@ -16,12 +16,13 @@ interface ZoneFormModalProps {
     onSubmit: (request: CreateZoneRequest | UpdateZoneRequest) => void;
 }
 
-/** 이름 기반 자동 코드 생성 (한글 → 영문 약어) */
 function generateZoneCode(name: string, zoneType: 'INNER' | 'SUB'): string {
     const prefix = zoneType === 'INNER' ? 'INNER' : 'SUB';
     const suffix = name.replace(/\s/g, '_').toUpperCase().slice(0, 6);
-    const random = Math.floor(Math.random() * 100);
-    return `${prefix}_${suffix}_${random}`;
+    const uniqueId = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID().split('-')[0].toUpperCase()
+        : Math.random().toString(36).substring(2, 8).toUpperCase();
+    return `${prefix}_${suffix}_${uniqueId}`;
 }
 
 /**

@@ -90,10 +90,14 @@ export function useZones() {
     const selectedZone = filteredZones.find((zone) => zone.zoneId === selectedZoneId) ?? null;
 
     const createZone = useCallback((request: CreateZoneRequest) => {
+        if (currentSiteId == null) {
+            throw new Error('현재 사이트가 선택되지 않았습니다.');
+        }
+
         const now = new Date().toISOString();
         const newZone: Zone = {
             zoneId: Date.now(),
-            siteId: currentSiteId ?? 1, // Fallback to 1
+            siteId: currentSiteId,
             name: request.name,
             code: request.code,
             zoneType: request.zoneType,

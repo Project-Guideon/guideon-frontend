@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineXMark, HiOutlineMapPin, HiOutlineChevronDown } from 'react-icons/hi2';
 import type { Place, PlaceCategory, CreatePlaceRequest, UpdatePlaceRequest } from '@/features/place/domain/entities/Place';
@@ -40,7 +41,7 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, selectedCoords
     const latitude = mode === 'edit' && editTarget ? editTarget.latitude : selectedCoords.lat;
     const longitude = mode === 'edit' && editTarget ? editTarget.longitude : selectedCoords.lng;
 
-    const handleSubmit = (event: React.FormEvent) => {
+    const handleSubmit = (event: FormEvent) => {
         event.preventDefault();
         const nameJson = nameEn ? { en: nameEn } : undefined;
 
@@ -52,7 +53,7 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, selectedCoords
                 longitude,
                 description: description || undefined,
                 nameJson,
-                zoneSource: zoneId ? 'MANUAL' : 'AUTO',
+                zoneSource: zoneId != null ? 'MANUAL' : 'AUTO',
                 zoneId: zoneId ?? undefined,
                 isActive,
             };
@@ -64,7 +65,7 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, selectedCoords
                 description: description || undefined,
                 nameJson,
                 isActive,
-                zoneSource: zoneId ? 'MANUAL' : 'AUTO',
+                zoneSource: zoneId != null ? 'MANUAL' : 'AUTO',
                 zoneId: zoneId ?? undefined,
             };
             onSubmit(request);
