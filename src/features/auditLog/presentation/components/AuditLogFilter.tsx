@@ -81,7 +81,7 @@ export function AuditLogFilter({ startDate, endDate, type, searchTerm, sortSite,
                     minDate={startDate ? new Date(startDate) : undefined}
                 />
 
-                <div className="w-[1px] h-8 bg-slate-200 hidden md:block mx-6" />
+                <div className="w-[1px] h-8 bg-slate-200 hidden md:block mx-4" />
 
                 {/* 로그 유형 */}
                 <div className="flex items-center gap-4">
@@ -150,7 +150,7 @@ export function AuditLogFilter({ startDate, endDate, type, searchTerm, sortSite,
                         </div>
                     </div>
 
-                    <div className="w-[1px] h-8 bg-slate-200 hidden md:block mx-3" />
+                    <div className="w-[1px] h-8 bg-slate-200 hidden md:block mx-2" />
 
                         {/* 장소별 정렬 */}
                         <div className="flex items-center gap-3">
@@ -203,7 +203,7 @@ export function AuditLogFilter({ startDate, endDate, type, searchTerm, sortSite,
                             </div>
                         </div>
 
-                    <div className="w-[1px] h-8 bg-slate-200 hidden md:block mx-3" />
+                    <div className="w-[1px] h-8 bg-slate-200 hidden md:block mx-2" />
                     
                     {/* 검색창 */}
                     <div className="flex items-center gap-4 ">
@@ -223,23 +223,26 @@ export function AuditLogFilter({ startDate, endDate, type, searchTerm, sortSite,
                     </div>
 
                     {/* 시간 순 토글 */}
-                    <div className="ml-auto flex items-center">
+                    <div className="ml-auto relative group">
                         <button
                             onClick={() => onFilterChange({ sortOrder: sortOrder === 'DESC' ? 'ASC' : 'DESC' })}
                             className={`
-                                flex flex-col items-center justify-center w-[36px] h-[36px] rounded-xl border transition-all duration-200
+                                flex items-center justify-center w-[36px] h-[36px] rounded-xl border transition-all duration-200
                                 ${sortOrder === 'DESC' 
                                     ? 'bg-orange-50 border-orange-200 text-orange-600 shadow-sm shadow-orange-100' 
-                                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-orange-300'}
+                                    : 'bg-slate-50 border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500'}
                             `}
-                            title={sortOrder === 'DESC' ? '최신순' : '과거순'}
                         >
                             {sortOrder === 'ASC' ? (
-                                <HiChevronUp className="w-5 h-5 transition-transform active:scale-90" />
+                                <HiChevronUp className="w-5 h-5 active:scale-90 transition-transform" />
                             ) : (
-                                <HiChevronDown className="w-5 h-5 transition-transform active:scale-90" />
+                                <HiChevronDown className="w-5 h-5 active:scale-90 transition-transform" />
                             )}
                         </button>
+                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2.5 py-1.5 bg-slate-800 text-white text-[10px] font-bold rounded-lg opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 pointer-events-none whitespace-nowrap z-[60] shadow-xl">
+                            {sortOrder === 'DESC' ? '최신순' : '오래된순'}
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+                        </div>
                     </div>
                 </div>
             </div>

@@ -38,7 +38,7 @@ export function AuditLogListView() {
                 startDate={filter.startDate}
                 endDate={filter.endDate}
                 type={filter.type}
-                searchTerm=""
+                searchTerm={filter.searchTerm}
                 sortSite={filter.sortSite}
                 sortOrder={filter.sortOrder}
                 onFilterChange={updateFilter}

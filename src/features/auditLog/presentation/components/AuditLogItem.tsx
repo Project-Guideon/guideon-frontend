@@ -49,7 +49,7 @@ export function AuditLogItem({ log }: AuditLogItemProps) {
     const typeBadgeStyle = TYPE_BADGE_STYLES[log.type];
 
     return (
-        <div className="flex items-start gap-4 p-3 hover:bg-slate-50 rounded-xl transition-colors group">
+        <div className="flex items-start gap-4 p-4 hover:bg-slate-50 rounded-xl transition-colors group">
             {/* 상태 아이콘 */}
             <div className={`mt-1 shrink-0 w-8 h-8 rounded-full flex items-center justify-center border ${statusStyle.container}`}>
                 <StatusIcon className={`w-5 h-5 ${log.status === 'error' ? 'rotate-45' : ''}`} />
@@ -64,10 +64,12 @@ export function AuditLogItem({ log }: AuditLogItemProps) {
                             <span className="font-normal text-slate-500 ml-1">@ {log.site}</span>
                         )}
                     </p>
-                    <span className="flex items-center text-xs text-slate-400 shrink-0">
-                        <HiOutlineClock className="w-3 h-3 mr-1" />
-                        {log.time}
-                    </span>
+                    <div className="flex items-center gap-1.5 text-slate-400 w-44 shrink-0 mt-0.5 justify-start">
+                        <HiOutlineClock className="w-3.5 h-3.5 shrink-0" />
+                        <span className="text-[11px] font-medium tabular-nums whitespace-nowrap">
+                            {log.time}
+                        </span>
+                    </div>
                 </div>
                 <p className="text-xs text-slate-600 mt-1 line-clamp-1">{log.message}</p>
                 <div className="flex items-center gap-2 mt-2">

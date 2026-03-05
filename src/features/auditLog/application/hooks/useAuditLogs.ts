@@ -12,6 +12,7 @@ interface AuditLogFilter {
     type: AuditLogType | '';
     sortSite: string;
     sortOrder: AuditLogSortOrder;
+    searchTerm:string;
 }
 
 /**
@@ -97,6 +98,7 @@ export function useAuditLogs() {
         type: '',
         sortSite: '전체',
         sortOrder: 'DESC',
+        searchTerm: '',
     });
 
     //페이지 상태
@@ -113,7 +115,17 @@ export function useAuditLogs() {
             if (filter.endDate && logDate > filter.endDate) return false;
             // 장소 필터
             if (filter.sortSite !== '전체') { if (log.site !== filter.sortSite) return false; }
-
+            //검색 필터
+            if (filter.searchTerm) {
+                const searchLower = filter.searchTerm.toLowerCase();
+                const matchesSearch = 
+                    (log.site?.toLowerCase().includes(searchLower)) ||
+                    (log.action.toLowerCase().includes(searchLower)) ||
+                    (log.target.toLowerCase().includes(searchLower)) ||
+                    (log.message.toLowerCase().includes(searchLower));
+                
+                if (!matchesSearch) return false;
+            }
             return true;
         });
 
