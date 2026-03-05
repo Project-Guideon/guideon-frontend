@@ -41,10 +41,17 @@ function ZoneTreeItem({
 }) {
     return (
         <div>
-            <button
-                type="button"
+            <div
+                role="button"
+                tabIndex={0}
                 onClick={onSelect}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all duration-200 group
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onSelect();
+                    }
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all duration-200 group cursor-pointer
                     ${isSelected
                         ? 'bg-orange-50 border border-orange-200 text-orange-700'
                         : 'hover:bg-slate-50 text-slate-700 border border-transparent'
@@ -75,7 +82,7 @@ function ZoneTreeItem({
                         <HiOutlineTrash className="w-3.5 h-3.5" />
                     </button>
                 </div>
-            </button>
+            </div>
             {subZones.length > 0 && (
                 <div className="ml-4 mt-1 space-y-1 border-l-2 border-slate-100 pl-2">
                     {subZones.map((sub) => (
@@ -120,10 +127,17 @@ function PlaceListItem({
     const meta = PLACE_CATEGORY_META[place.category];
 
     return (
-        <button
-            type="button"
+        <div
+            role="button"
+            tabIndex={0}
             onClick={onSelect}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200 group
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelect();
+                }
+            }}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200 group cursor-pointer
                 ${isSelected
                     ? 'bg-orange-50 border border-orange-200'
                     : 'hover:bg-slate-50 border border-transparent'
@@ -167,7 +181,7 @@ function PlaceListItem({
                     <HiOutlineTrash className="w-3.5 h-3.5" />
                 </button>
             </div>
-        </button>
+        </div>
     );
 }
 

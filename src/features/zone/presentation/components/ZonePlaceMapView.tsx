@@ -12,6 +12,7 @@ import {
     HiOutlineCheckCircle,
     HiOutlineChevronRight,
     HiOutlineChevronLeft,
+    HiOutlineChevronDown,
 } from 'react-icons/hi2';
 import { useZones } from '@/features/zone/application/hooks/useZones';
 import { usePlaces } from '@/features/place/application/hooks/usePlaces';
@@ -23,6 +24,7 @@ import { PlaceDeleteDialog } from '@/features/place/presentation/components/Plac
 import type { Zone, CreateZoneRequest, UpdateZoneRequest } from '@/features/zone/domain/entities/Zone';
 import type { Place, CreatePlaceRequest, UpdatePlaceRequest } from '@/features/place/domain/entities/Place';
 import type { MapInteractionMode } from './ZonePlaceMap';
+import { useAuth, useSiteContext } from '@/features/auth/application/hooks/useAuth';
 
 const ZonePlaceMap = dynamic(
     () => import('./ZonePlaceMap').then((module) => module.ZonePlaceMap),
@@ -67,8 +69,12 @@ export function ZonePlaceMapView() {
         deletePlace,
     } = usePlaces();
 
+    const { isPlatformAdmin } = useAuth();
+    const { currentSite, sites, setCurrentSite } = useSiteContext();
+
     const [activeTab, setActiveTab] = useState<SidePanelTab>('zones');
     const [isPanelOpen, setIsPanelOpen] = useState(true);
+    const [isSiteDropdownOpen, setIsSiteDropdownOpen] = useState(false);
 
     // ───────── 지도 인터랙션 모드 ─────────
     const [interactionMode, setInteractionMode] = useState<MapInteractionMode>('idle');
@@ -224,14 +230,61 @@ export function ZonePlaceMapView() {
                 />
             </div>
 
-            {/* ═══════ 좌상단: 페이지 타이틀 배지 ═══════ */}
-            <div className="absolute top-4 left-4 z-10">
+            {/* ═══════ 좌상단: 페이지 타이틀 배지 & 사이트 선택 ═══════ */}
+            <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
                 <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 px-5 py-3">
-                    <h2 className="text-base font-black text-slate-800 flex items-center gap-2">
-                        <HiOutlineMapPin className="w-5 h-5 text-orange-500" />
-                        구역·장소 관리
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                    <div className="flex items-center gap-2 mb-1.5">
+                        <HiOutlineMapPin className="w-5 h-5 text-orange-500 shrink-0" />
+                        {isPlatformAdmin ? (
+                            <div className="relative">
+                                <button
+                                    onClick={() => setIsSiteDropdownOpen(!isSiteDropdownOpen)}
+                                    className="flex items-center gap-1.5 bg-transparent text-base font-black text-slate-800 outline-none hover:text-orange-600 transition-colors"
+                                >
+                                    {currentSite?.name ?? '관광지 선택'}
+                                    <HiOutlineChevronDown className={`w-4 h-4 transition-transform duration-200 ${isSiteDropdownOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                <AnimatePresence>
+                                    {isSiteDropdownOpen && (
+                                        <>
+                                            <div
+                                                className="fixed inset-0 z-40"
+                                                onClick={() => setIsSiteDropdownOpen(false)}
+                                            />
+                                            <motion.div
+                                                initial={{ opacity: 0, y: -10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -10 }}
+                                                transition={{ duration: 0.15 }}
+                                                className="absolute top-full left-0 mt-2 w-40 bg-white/95 backdrop-blur-xl rounded-xl shadow-xl border border-white/50 py-1.5 z-50 overflow-hidden"
+                                            >
+                                                {sites.map((site) => (
+                                                    <button
+                                                        key={site.siteId}
+                                                        onClick={() => {
+                                                            setCurrentSite(site.siteId);
+                                                            setIsSiteDropdownOpen(false);
+                                                        }}
+                                                        className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-all
+                                                            ${currentSite?.siteId === site.siteId
+                                                                ? 'bg-orange-50/50 text-orange-600'
+                                                                : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                                                            }`}
+                                                    >
+                                                        {site.name}
+                                                    </button>
+                                                ))}
+                                            </motion.div>
+                                        </>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        ) : (
+                            <h2 className="text-base font-black text-slate-800">{currentSite?.name ?? '알 수 없는 관광지'}</h2>
+                        )}
+                    </div>
+                    <p className="text-xs text-slate-500 font-medium">
                         구역 <span className="font-bold text-orange-600">{zones.length}</span> · 장소 <span className="font-bold text-orange-600">{filteredPlaces.length}</span>
                     </p>
                 </div>

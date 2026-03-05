@@ -64,9 +64,9 @@ const MOCK_SITE_ADMIN: AuthUser = {
 };
 
 const MOCK_SITES: Site[] = [
+    { siteId: 2, name: '경복궁', isActive: true },
     { siteId: 1, name: '에버랜드', isActive: true },
-    { siteId: 2, name: '롯데월드', isActive: true },
-    { siteId: 3, name: '서울랜드', isActive: false },
+    { siteId: 3, name: '롯데월드', isActive: false },
 ];
 
 interface AuthProviderProps {
@@ -80,7 +80,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
     const [user, setUser] = useState<AuthUser | null>(MOCK_PLATFORM_ADMIN); // 기본: 로그인 상태
     const [isLoading, setIsLoading] = useState(false);
-    const [currentSiteId, setCurrentSiteId] = useState<number | null>(1);
+    const [currentSiteId, setCurrentSiteId] = useState<number | null>(2);
 
     /**
      * Mock 로그인
@@ -91,15 +91,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Mock: 간단한 지연
         await new Promise((resolve) => setTimeout(resolve, 500));
 
-        // Mock 로그인 로직
         if (email === 'admin@guideon.com' && password === 'admin1234') {
             setUser(MOCK_PLATFORM_ADMIN);
-            setCurrentSiteId(1);
+            setCurrentSiteId(2);
             setIsLoading(false);
             return true;
         } else if (email === 'operator@example.com' && password === 'operator1234') {
             setUser(MOCK_SITE_ADMIN);
-            setCurrentSiteId(1);
+            setCurrentSiteId(2);
             setIsLoading(false);
             return true;
         }

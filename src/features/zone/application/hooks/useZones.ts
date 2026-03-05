@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { Zone, CreateZoneRequest, UpdateZoneRequest } from '@/features/zone/domain/entities/Zone';
+import { useSiteContext } from '@/features/auth/application/hooks/useAuth';
 
 /** 경복궁 기준 Mock Zone 데이터 */
 const INITIAL_ZONES: Zone[] = [
@@ -72,20 +73,27 @@ export function useZones() {
     const [zones, setZones] = useState<Zone[]>(INITIAL_ZONES);
     const [selectedZoneId, setSelectedZoneId] = useState<number | null>(null);
 
-    const innerZones = zones.filter((zone) => zone.zoneType === 'INNER');
+    const { currentSiteId } = useSiteContext();
+
+    const filteredZones = useMemo(() => {
+        if (currentSiteId === null) return [];
+        return zones.filter((zone) => zone.siteId === currentSiteId);
+    }, [zones, currentSiteId]);
+
+    const innerZones = filteredZones.filter((zone) => zone.zoneType === 'INNER');
 
     const getSubZones = useCallback(
-        (parentZoneId: number) => zones.filter((zone) => zone.parentZoneId === parentZoneId),
-        [zones],
+        (parentZoneId: number) => filteredZones.filter((zone) => zone.parentZoneId === parentZoneId),
+        [filteredZones],
     );
 
-    const selectedZone = zones.find((zone) => zone.zoneId === selectedZoneId) ?? null;
+    const selectedZone = filteredZones.find((zone) => zone.zoneId === selectedZoneId) ?? null;
 
     const createZone = useCallback((request: CreateZoneRequest) => {
         const now = new Date().toISOString();
         const newZone: Zone = {
             zoneId: Date.now(),
-            siteId: 2,
+            siteId: currentSiteId ?? 1, // Fallback to 1
             name: request.name,
             code: request.code,
             zoneType: request.zoneType,
@@ -97,7 +105,7 @@ export function useZones() {
         };
         setZones((previous) => [...previous, newZone]);
         return newZone;
-    }, []);
+    }, [currentSiteId]);
 
     const updateZone = useCallback((zoneId: number, request: UpdateZoneRequest) => {
         setZones((previous) =>
@@ -117,7 +125,7 @@ export function useZones() {
     }, []);
 
     return {
-        zones,
+        zones: filteredZones,
         innerZones,
         getSubZones,
         selectedZone,

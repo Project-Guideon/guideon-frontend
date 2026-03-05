@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import type { Place, PlaceCategory, CreatePlaceRequest, UpdatePlaceRequest } from '@/features/place/domain/entities/Place';
+import { useSiteContext } from '@/features/auth/application/hooks/useAuth';
 
 /** 경복궁 기준 Mock Place 데이터 */
 const INITIAL_PLACES: Place[] = [
@@ -71,14 +72,17 @@ export function usePlaces() {
     const [zoneIdFilter, setZoneIdFilter] = useState<number | null>(null);
     const [searchKeyword, setSearchKeyword] = useState('');
 
+    const { currentSiteId } = useSiteContext();
+
     const filteredPlaces = useMemo(() => {
         return places.filter((place) => {
+            if (currentSiteId !== null && place.siteId !== currentSiteId) return false;
             if (categoryFilter !== 'ALL' && place.category !== categoryFilter) return false;
             if (zoneIdFilter !== null && place.zoneId !== zoneIdFilter) return false;
             if (searchKeyword && !place.name.includes(searchKeyword)) return false;
             return true;
         });
-    }, [places, categoryFilter, zoneIdFilter, searchKeyword]);
+    }, [places, currentSiteId, categoryFilter, zoneIdFilter, searchKeyword]);
 
     const selectedPlace = places.find((place) => place.placeId === selectedPlaceId) ?? null;
 
@@ -86,7 +90,7 @@ export function usePlaces() {
         const now = new Date().toISOString();
         const newPlace: Place = {
             placeId: Date.now(),
-            siteId: 2,
+            siteId: currentSiteId ?? 1, // Fallback to 1
             zoneId: request.zoneId ?? null,
             zoneSource: request.zoneSource ?? 'AUTO',
             name: request.name,
@@ -102,7 +106,7 @@ export function usePlaces() {
         };
         setPlaces((previous) => [...previous, newPlace]);
         return newPlace;
-    }, []);
+    }, [currentSiteId]);
 
     const updatePlace = useCallback((placeId: number, request: UpdatePlaceRequest) => {
         setPlaces((previous) =>
