@@ -1,4 +1,4 @@
-import { HiOutlineMagnifyingGlass, HiChevronDown, HiChevronUp, HiOutlineBuildingLibrary, HiOutlineCalendar } from 'react-icons/hi2';
+import { HiOutlineMagnifyingGlass, HiOutlineMapPin, HiCheck, HiChevronDown, HiOutlineClipboardDocumentList, HiChevronUp, HiOutlineBuildingLibrary, HiOutlineCalendar } from 'react-icons/hi2';
 import type { AuditLogType, AuditLogSortOrder } from '@/features/auditLog/domain/entities/AuditLogEntry';
 import { useRef, useEffect, useState } from 'react';
 import DatePicker from 'react-datepicker';
@@ -25,13 +25,14 @@ export function AuditLogFilter({ startDate, endDate, type, searchTerm, sortSite,
     // 나중에는 데이터 들고와서 적용할 예정
     const SITE_OPTIONS = ['전체', '에버랜드', '경복궁', '롯데월드'];
 
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
+    const [isTypeOpen, setIsTypeOpen] = useState(false);
+    const [isSiteOpen, setIsSiteOpen] = useState(false);
+    const typeRef = useRef<HTMLDivElement>(null);
+    const siteRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsDropdownOpen(false);
-            }
+            if (typeRef.current && !typeRef.current.contains(event.target as Node)) setIsTypeOpen(false);
+            if (siteRef.current && !siteRef.current.contains(event.target as Node)) setIsSiteOpen(false);
         }
         document.addEventListener("mousedown", handleClickOutside);
         return () => {
@@ -87,23 +88,23 @@ export function AuditLogFilter({ startDate, endDate, type, searchTerm, sortSite,
                     <span className="flex items-center gap-1 text-sm font-bold text-slate-500 whitespace-nowrap">
                         로그 유형
                     </span>
-                    <div className="relative" ref={dropdownRef}>
+                    <div className="relative" ref={typeRef}>
                         <button
-                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                            onClick={() => setIsTypeOpen(!isTypeOpen)}
                             className={`flex items-center gap-2 px-3 py-1.5 bg-white border rounded-xl transition-all duration-200 outline-none h-[36px]
-                                ${isDropdownOpen
+                                ${isTypeOpen
                                     ? 'border-orange-500 ring-4 ring-orange-50 text-slate-800'
                                     : 'border-slate-200 hover:border-orange-400 text-slate-600 hover:bg-orange-50'
                                 }
                             `}
                         >
                             <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors ${
-                                isDropdownOpen ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-500'
+                                isTypeOpen ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-500'
                             }`}>
-                                <HiOutlineBuildingLibrary className="w-3.5 h-3.5" />
+                                <HiOutlineClipboardDocumentList className="w-3.5 h-3.5" />
                             </div>
 
-                            <span className="text-xs font-bold min-w-[60px] text-left">
+                            <span className="text-xs font-bold min-w-[50px] text-left">
                                 {type === '' ? '전체'
                                     : type === 'SYSTEM' ? 'SYSTEM'
                                     : type === 'USER' ? 'USER'
@@ -112,14 +113,14 @@ export function AuditLogFilter({ startDate, endDate, type, searchTerm, sortSite,
 
                             <HiChevronDown
                                 className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
-                                    isDropdownOpen ? 'rotate-180 text-orange-500' : ''
+                                    isTypeOpen ? 'rotate-180 text-orange-500' : ''
                                 }`}
                             />
                         </button>
 
                         {/* Dropdown Menu */}
                         <div className={`absolute right-0 mt-2 w-40 bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden transition-all duration-200 origin-top-right
-                            ${isDropdownOpen
+                            ${isTypeOpen
                                 ? 'opacity-100 scale-100 translate-y-0 visible'
                                 : 'opacity-0 scale-95 -translate-y-2 invisible pointer-events-none'
                             }
@@ -130,7 +131,7 @@ export function AuditLogFilter({ startDate, endDate, type, searchTerm, sortSite,
                                         key={item || 'ALL'}
                                         onClick={() => {
                                             onFilterChange({ type: item });
-                                            setIsDropdownOpen(false);
+                                            setIsSiteOpen(false);
                                         }}
                                         className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors
                                             ${type === item
@@ -149,23 +150,60 @@ export function AuditLogFilter({ startDate, endDate, type, searchTerm, sortSite,
                         </div>
                     </div>
 
-                    <div className="w-[1px] h-8 bg-slate-200 hidden md:block mx-6" />
+                    <div className="w-[1px] h-8 bg-slate-200 hidden md:block mx-3" />
 
                         {/* 장소별 정렬 */}
                         <div className="flex items-center gap-3">
                             <span className="text-sm font-bold text-slate-500 whitespace-nowrap">장소</span>
-                            <select
-                                value={sortSite}
-                                onChange={(e) => onFilterChange({ sortSite: e.target.value })}
-                                className="h-[36px] px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-orange-500 transition-all"
-                            >
-                                {SITE_OPTIONS.map(name => (
-                                    <option key={name} value={name}>{name}</option>
-                                ))}
-                            </select>
+                            <div className="relative" ref={siteRef}>
+                                <button
+                                    onClick={() => setIsSiteOpen(!isSiteOpen)}
+                                    className={`flex items-center gap-2 px-3 py-1.5 bg-white border rounded-xl transition-all duration-200 outline-none h-[36px]
+                                        ${isSiteOpen 
+                                            ? 'border-orange-500 ring-4 ring-orange-50 text-slate-800' 
+                                            : 'border-slate-200 hover:border-orange-400 text-slate-600 hover:bg-orange-50'}
+                                    `}
+                                >
+                                    <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors ${
+                                        isSiteOpen ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-500'
+                                    }`}>
+                                        <HiOutlineMapPin className="w-3.5 h-3.5" />
+                                    </div>
+                                    <span className="text-xs font-bold min-w-[50px] text-left">{sortSite}</span>
+                                    <HiChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isSiteOpen ? 'rotate-180 text-orange-500' : ''}`} />
+                                </button>
+
+                                {/* Dropdown Menu */}
+                                <div className={`absolute left-0 mt-2 w-44 bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden transition-all duration-200 origin-top-left
+                                    ${isSiteOpen 
+                                        ? 'opacity-100 scale-100 translate-y-0 visible' 
+                                        : 'opacity-0 scale-95 -translate-y-2 invisible pointer-events-none'
+                                    }
+                                `}>
+                                    <div className="p-1">
+                                        {SITE_OPTIONS.map((site) => (
+                                            <button
+                                                key={site}
+                                                onClick={() => {
+                                                    onFilterChange({ sortSite: site });
+                                                    setIsSiteOpen(false);
+                                                }}
+                                                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors
+                                                    ${sortSite === site 
+                                                        ? 'bg-orange-50 text-orange-700 font-bold' 
+                                                        : 'text-slate-600 hover:bg-slate-50 hover:text-orange-600 font-medium'}
+                                                `}
+                                            >
+                                                <span>{site}</span>
+                                                {sortSite === site && <HiCheck className="w-3.5 h-3.5 text-orange-600" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                    <div className="w-[1px] h-8 bg-slate-200 hidden md:block mx-4" />
+                    <div className="w-[1px] h-8 bg-slate-200 hidden md:block mx-3" />
                     
                     {/* 검색창 */}
                     <div className="flex items-center gap-4 ">
@@ -185,18 +223,24 @@ export function AuditLogFilter({ startDate, endDate, type, searchTerm, sortSite,
                     </div>
 
                     {/* 시간 순 토글 */}
-                    <button
-                        onClick={() => onFilterChange({ sortOrder: sortOrder === 'DESC' ? 'ASC' : 'DESC' })}
-                        className="flex items-center justify-center w-10 h-10 bg-slate-50 border border-slate-200 rounded-xl hover:border-orange-400 hover:bg-orange-50 transition-all group ml-auto"
-                        title={sortOrder === 'DESC' ? '최신순 (과거순으로 변경)' : '과거순 (최신순으로 변경)'}
-                    >
-                        {sortOrder === 'ASC' ? (
-                            <HiChevronUp className="w-5 h-5 text-orange-600 animate-bounce-short" />
-                        ) : (
-                            <HiChevronDown className="w-5 h-5 text-orange-600 animate-bounce-short" />
-                        )}
-                    </button>
-                    
+                    <div className="ml-auto flex items-center">
+                        <button
+                            onClick={() => onFilterChange({ sortOrder: sortOrder === 'DESC' ? 'ASC' : 'DESC' })}
+                            className={`
+                                flex flex-col items-center justify-center w-[36px] h-[36px] rounded-xl border transition-all duration-200
+                                ${sortOrder === 'DESC' 
+                                    ? 'bg-orange-50 border-orange-200 text-orange-600 shadow-sm shadow-orange-100' 
+                                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-orange-300'}
+                            `}
+                            title={sortOrder === 'DESC' ? '최신순' : '과거순'}
+                        >
+                            {sortOrder === 'ASC' ? (
+                                <HiChevronUp className="w-5 h-5 transition-transform active:scale-90" />
+                            ) : (
+                                <HiChevronDown className="w-5 h-5 transition-transform active:scale-90" />
+                            )}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
