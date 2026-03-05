@@ -14,7 +14,7 @@ interface SiteFilter {
 /**
  * Mock 데이터 — 향후 API 연동 시 이 부분만 교체
  */
-const INITIAL_MOCK_SITES: Site[] = [
+export const INITIAL_MOCK_SITES: Site[] = [
     {
         siteId: 1,
         name: '에버랜드',

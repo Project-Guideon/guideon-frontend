@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
 import type { AdminRole } from '@/shared/types/auth';
+import { INITIAL_MOCK_SITES } from '@/features/site/application/hooks/useSites';
 
 /**
  * Mock 사용자 정보
@@ -63,15 +64,13 @@ const MOCK_SITE_ADMIN: AuthUser = {
     siteIds: [1],
 };
 
-const MOCK_SITES: Site[] = [
-    { siteId: 1, name: '에버랜드', isActive: true },
-    { siteId: 2, name: '롯데월드', isActive: true },
-    { siteId: 3, name: '서울랜드', isActive: false },
-];
+
 
 interface AuthProviderProps {
     children: ReactNode;
 }
+
+export const DEFAULT_SITE_ID = 2; // 경복궁
 
 /**
  * AuthProvider
@@ -80,7 +79,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
     const [user, setUser] = useState<AuthUser | null>(MOCK_PLATFORM_ADMIN); // 기본: 로그인 상태
     const [isLoading, setIsLoading] = useState(false);
-    const [currentSiteId, setCurrentSiteId] = useState<number | null>(1);
+    const [currentSiteId, setCurrentSiteId] = useState<number | null>(DEFAULT_SITE_ID);
 
     /**
      * Mock 로그인
@@ -91,15 +90,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Mock: 간단한 지연
         await new Promise((resolve) => setTimeout(resolve, 500));
 
-        // Mock 로그인 로직
         if (email === 'admin@guideon.com' && password === 'admin1234') {
             setUser(MOCK_PLATFORM_ADMIN);
-            setCurrentSiteId(1);
+            setCurrentSiteId(DEFAULT_SITE_ID);
             setIsLoading(false);
             return true;
         } else if (email === 'operator@example.com' && password === 'operator1234') {
             setUser(MOCK_SITE_ADMIN);
-            setCurrentSiteId(1);
+            setCurrentSiteId(MOCK_SITE_ADMIN.siteIds.length > 0 ? MOCK_SITE_ADMIN.siteIds[0] : null);
             setIsLoading(false);
             return true;
         }
@@ -129,8 +127,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
      */
     const availableSites = useMemo(() => {
         if (!user) return [];
-        if (user.role === 'PLATFORM_ADMIN') return MOCK_SITES;
-        return MOCK_SITES.filter((site) => user.siteIds.includes(site.siteId));
+        if (user.role === 'PLATFORM_ADMIN') return INITIAL_MOCK_SITES;
+        return INITIAL_MOCK_SITES.filter((site) => user.siteIds.includes(site.siteId));
     }, [user]);
 
     const value = useMemo<AuthContextType>(
