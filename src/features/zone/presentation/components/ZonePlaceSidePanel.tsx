@@ -1,9 +1,11 @@
 'use client';
 
+import { memo } from 'react';
 import { HiOutlineMapPin, HiOutlineMap, HiOutlinePencilSquare, HiOutlineTrash } from 'react-icons/hi2';
 import type { Zone } from '@/features/zone/domain/entities/Zone';
 import type { Place } from '@/features/place/domain/entities/Place';
 import { PLACE_CATEGORY_META } from '@/features/place/domain/entities/Place';
+import { PlaceCategoryIcon } from '@/features/place/presentation/components/PlaceCategoryIcon';
 
 type TabType = 'zones' | 'places';
 
@@ -22,7 +24,6 @@ interface ZonePlaceSidePanelProps {
     onDeletePlace: (place: Place) => void;
 }
 
-/** Zone 트리 구조 렌더링 */
 function ZoneTreeItem({
     zone,
     subZones,
@@ -75,7 +76,6 @@ function ZoneTreeItem({
                     </button>
                 </div>
             </button>
-            {/* SUB zones */}
             {subZones.length > 0 && (
                 <div className="ml-4 mt-1 space-y-1 border-l-2 border-slate-100 pl-2">
                     {subZones.map((sub) => (
@@ -102,7 +102,6 @@ function ZoneTreeItem({
     );
 }
 
-/** Place 리스트 아이템 */
 function PlaceListItem({
     place,
     zoneName,
@@ -130,12 +129,12 @@ function PlaceListItem({
                     : 'hover:bg-slate-50 border border-transparent'
                 }`}
         >
-            <span
-                className={`flex items-center justify-center w-9 h-9 rounded-xl text-white text-sm shrink-0 ${!place.isActive ? 'opacity-50 grayscale' : ''}`}
-                style={{ backgroundColor: meta.color }}
-            >
-                {meta.emoji}
-            </span>
+            <PlaceCategoryIcon
+                category={place.category}
+                size="lg"
+                color={meta.color}
+                className={!place.isActive ? 'opacity-50 grayscale' : ''}
+            />
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                     <p className={`text-sm font-bold truncate ${!place.isActive ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
@@ -172,7 +171,7 @@ function PlaceListItem({
     );
 }
 
-export function ZonePlaceSidePanel({
+function ZonePlaceSidePanelInner({
     activeTab,
     onChangeTab,
     zones,
@@ -194,8 +193,7 @@ export function ZonePlaceSidePanel({
     };
 
     return (
-        <div className="h-full flex flex-col bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-            {/* 탭 헤더 */}
+        <div className="h-full flex flex-col overflow-hidden">
             <div className="flex border-b border-slate-100 shrink-0">
                 <button
                     type="button"
@@ -223,7 +221,6 @@ export function ZonePlaceSidePanel({
                 </button>
             </div>
 
-            {/* 탭 내용 */}
             <div className="flex-1 overflow-y-auto p-3 space-y-1">
                 {activeTab === 'zones' && (
                     <>
@@ -272,3 +269,5 @@ export function ZonePlaceSidePanel({
         </div>
     );
 }
+
+export const ZonePlaceSidePanel = memo(ZonePlaceSidePanelInner);

@@ -1,77 +1,85 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineXMark, HiOutlineMap } from 'react-icons/hi2';
-import type { Zone, ZoneType, CreateZoneRequest, UpdateZoneRequest } from '@/features/zone/domain/entities/Zone';
+import type { Zone, CreateZoneRequest, UpdateZoneRequest, GeoJsonPolygon } from '@/features/zone/domain/entities/Zone';
 
 interface ZoneFormModalProps {
     isOpen: boolean;
     mode: 'create' | 'edit';
     editTarget: Zone | null;
     parentZones: Zone[];
+    /** 지도에서 그린 폴리곤 좌표 (create 모드에서 사용) */
+    drawnPolygon: { lat: number; lng: number }[];
     onClose: () => void;
     onSubmit: (request: CreateZoneRequest | UpdateZoneRequest) => void;
 }
 
-export function ZoneFormModal({ isOpen, mode, editTarget, parentZones, onClose, onSubmit }: ZoneFormModalProps) {
-    const [name, setName] = useState('');
-    const [code, setCode] = useState('');
-    const [zoneType, setZoneType] = useState<ZoneType>('INNER');
-    const [parentZoneId, setParentZoneId] = useState<number | null>(null);
+/** 이름 기반 자동 코드 생성 (한글 → 영문 약어) */
+function generateZoneCode(name: string, zoneType: 'INNER' | 'SUB'): string {
+    const prefix = zoneType === 'INNER' ? 'INNER' : 'SUB';
+    const suffix = name.replace(/\s/g, '_').toUpperCase().slice(0, 6);
+    const random = Math.floor(Math.random() * 100);
+    return `${prefix}_${suffix}_${random}`;
+}
 
-    useEffect(() => {
-        if (isOpen) {
-            if (mode === 'edit' && editTarget) {
-                setName(editTarget.name);
-                setCode(editTarget.code);
-                setZoneType(editTarget.zoneType);
-                setParentZoneId(editTarget.parentZoneId);
-            } else {
-                setName('');
-                setCode('');
-                setZoneType('INNER');
-                setParentZoneId(null);
-            }
-        }
-    }, [isOpen, mode, editTarget]);
+/**
+ * 구역 생성/수정 모달 (경량)
+ *
+ * - 지도에서 폴리곤을 미리 그린 후 이 모달이 열림
+ * - 코드는 이름 기반 자동 생성
+ * - 상위 구역 선택 시 자동 SUB 결정
+ */
+export function ZoneFormModal({ isOpen, mode, editTarget, parentZones, drawnPolygon, onClose, onSubmit }: ZoneFormModalProps) {
+    const [name, setName] = useState(mode === 'edit' && editTarget ? editTarget.name : '');
+    const [parentZoneId, setParentZoneId] = useState<number | null>(
+        mode === 'edit' && editTarget ? editTarget.parentZoneId : null,
+    );
+
+    const derivedZoneType = parentZoneId !== null ? 'SUB' : 'INNER';
 
     const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();
         if (mode === 'create') {
+            const code = generateZoneCode(name, derivedZoneType);
+            // drawnPolygon → GeoJSON 변환 (닫힘 보장)
+            const coords = drawnPolygon.map((p) => [p.lng, p.lat]);
+            if (coords.length > 0 && (coords[0][0] !== coords[coords.length - 1][0] || coords[0][1] !== coords[coords.length - 1][1])) {
+                coords.push([...coords[0]]);
+            }
+            const areaGeojson: GeoJsonPolygon = {
+                type: 'Polygon',
+                coordinates: [coords],
+            };
             const request: CreateZoneRequest = {
                 name,
                 code,
-                zoneType,
-                parentZoneId: zoneType === 'SUB' ? parentZoneId : null,
-                areaGeojson: {
-                    type: 'Polygon',
-                    coordinates: [[[126.976, 37.578], [126.978, 37.578], [126.978, 37.580], [126.976, 37.580], [126.976, 37.578]]],
-                },
+                zoneType: derivedZoneType,
+                parentZoneId: derivedZoneType === 'SUB' ? parentZoneId : null,
+                areaGeojson,
             };
             onSubmit(request);
         } else {
-            const request: UpdateZoneRequest = { name, code };
+            const request: UpdateZoneRequest = { name };
             onSubmit(request);
         }
         onClose();
     };
 
-    const isFormValid = name.trim().length > 0 && code.trim().length > 0 && (zoneType === 'INNER' || parentZoneId !== null);
+    const isFormValid = name.trim().length > 0 && (mode === 'edit' || drawnPolygon.length >= 3);
 
     return (
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    {/* 백드롭 */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/40"
                         onClick={onClose}
                     />
-                    {/* 모달 */}
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -79,7 +87,6 @@ export function ZoneFormModal({ isOpen, mode, editTarget, parentZones, onClose, 
                         transition={{ duration: 0.2 }}
                         className="relative w-full max-w-md mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden"
                     >
-                        {/* 헤더 */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
                             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                                 <HiOutlineMap className="w-5 h-5 text-blue-500" />
@@ -94,8 +101,16 @@ export function ZoneFormModal({ isOpen, mode, editTarget, parentZones, onClose, 
                             </button>
                         </div>
 
-                        {/* 폼 */}
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                            {/* 영역 정보 (create 모드) */}
+                            {mode === 'create' && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                                    <p className="text-xs font-bold text-blue-600 mb-0.5">지도에서 그린 영역</p>
+                                    <p className="text-sm font-medium text-blue-800">{drawnPolygon.length}개의 꼭짓점으로 구성</p>
+                                </div>
+                            )}
+
+                            {/* 구역명 */}
                             <div>
                                 <label htmlFor="zone-name" className="block text-sm font-bold text-slate-700 mb-1.5">구역명 *</label>
                                 <input
@@ -105,70 +120,35 @@ export function ZoneFormModal({ isOpen, mode, editTarget, parentZones, onClose, 
                                     onChange={(event) => setName(event.target.value)}
                                     placeholder="예: 근정전 권역"
                                     maxLength={50}
+                                    autoFocus
                                     className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50"
                                 />
                             </div>
 
-                            <div>
-                                <label htmlFor="zone-code" className="block text-sm font-bold text-slate-700 mb-1.5">구역 코드 *</label>
-                                <input
-                                    id="zone-code"
-                                    type="text"
-                                    value={code}
-                                    onChange={(event) => setCode(event.target.value)}
-                                    placeholder="예: INNER_A"
-                                    maxLength={50}
-                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50"
-                                />
-                            </div>
-
+                            {/* 상위 구역 — 선택하면 자동 SUB */}
                             {mode === 'create' && (
-                                <>
-                                    <div>
-                                        <label htmlFor="zone-type" className="block text-sm font-bold text-slate-700 mb-1.5">구역 타입 *</label>
-                                        <div className="flex gap-2">
-                                            {(['INNER', 'SUB'] as ZoneType[]).map((type) => (
-                                                <button
-                                                    key={type}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setZoneType(type);
-                                                        if (type === 'INNER') setParentZoneId(null);
-                                                    }}
-                                                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 border
-                                                        ${zoneType === type
-                                                            ? type === 'INNER'
-                                                                ? 'bg-blue-50 border-blue-300 text-blue-700'
-                                                                : 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                                                            : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
-                                                        }`}
-                                                >
-                                                    {type === 'INNER' ? '🏛 INNER (대구역)' : '📍 SUB (하위)'}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {zoneType === 'SUB' && (
-                                        <div>
-                                            <label htmlFor="parent-zone" className="block text-sm font-bold text-slate-700 mb-1.5">상위 구역 *</label>
-                                            <select
-                                                id="parent-zone"
-                                                value={parentZoneId ?? ''}
-                                                onChange={(event) => setParentZoneId(event.target.value ? Number(event.target.value) : null)}
-                                                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none transition-all hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50"
-                                            >
-                                                <option value="">상위 구역 선택...</option>
-                                                {parentZones.map((zone) => (
-                                                    <option key={zone.zoneId} value={zone.zoneId}>{zone.name} ({zone.code})</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    )}
-                                </>
+                                <div>
+                                    <label htmlFor="parent-zone" className="block text-sm font-bold text-slate-700 mb-1.5">상위 구역 (선택)</label>
+                                    <select
+                                        id="parent-zone"
+                                        value={parentZoneId ?? ''}
+                                        onChange={(event) => setParentZoneId(event.target.value ? Number(event.target.value) : null)}
+                                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none transition-all hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50"
+                                    >
+                                        <option value="">없음 (대구역으로 생성)</option>
+                                        {parentZones.map((zone) => (
+                                            <option key={zone.zoneId} value={zone.zoneId}>{zone.name}</option>
+                                        ))}
+                                    </select>
+                                    <p className="mt-1.5 text-xs text-slate-400 font-medium">
+                                        {derivedZoneType === 'INNER'
+                                            ? '대구역(INNER)으로 생성됩니다'
+                                            : '하위구역(SUB)으로 생성됩니다'
+                                        }
+                                    </p>
+                                </div>
                             )}
 
-                            {/* 액션 버튼 */}
                             <div className="flex gap-3 pt-2">
                                 <button
                                     type="button"

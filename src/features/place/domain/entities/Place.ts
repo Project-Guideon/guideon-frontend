@@ -61,13 +61,13 @@ export interface UpdatePlaceRequest {
 }
 
 /** 카테고리 표시용 메타데이터 */
-export const PLACE_CATEGORY_META: Record<PlaceCategory, { label: string; emoji: string; color: string }> = {
-    TOILET: { label: '화장실', emoji: '🚻', color: '#6366f1' },
-    TICKET: { label: '매표소', emoji: '🎫', color: '#f59e0b' },
-    RESTAURANT: { label: '식당', emoji: '🍽️', color: '#ef4444' },
-    SHOP: { label: '매점·기념품', emoji: '🛍️', color: '#ec4899' },
-    INFO: { label: '안내소', emoji: '📍', color: '#3b82f6' },
-    ATTRACTION: { label: '관람·체험', emoji: '🎭', color: '#8b5cf6' },
-    PARKING: { label: '주차장', emoji: '🅿️', color: '#64748b' },
-    OTHER: { label: '기타', emoji: '📌', color: '#94a3b8' },
+export const PLACE_CATEGORY_META: Record<PlaceCategory, { label: string; color: string }> = {
+    TOILET: { label: '화장실', color: '#6366f1' },
+    TICKET: { label: '매표소', color: '#f59e0b' },
+    RESTAURANT: { label: '식당', color: '#ef4444' },
+    SHOP: { label: '매점·기념품', color: '#ec4899' },
+    INFO: { label: '안내소', color: '#3b82f6' },
+    ATTRACTION: { label: '관람·체험', color: '#8b5cf6' },
+    PARKING: { label: '주차장', color: '#64748b' },
+    OTHER: { label: '기타', color: '#94a3b8' },
 };

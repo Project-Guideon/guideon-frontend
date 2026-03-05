@@ -1,11 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     HiOutlineMapPin,
     HiOutlinePlusCircle,
     HiOutlineMap,
+    HiOutlineXMark,
+    HiOutlineArrowUturnLeft,
+    HiOutlineCheckCircle,
+    HiOutlineChevronRight,
+    HiOutlineChevronLeft,
 } from 'react-icons/hi2';
 import { useZones } from '@/features/zone/application/hooks/useZones';
 import { usePlaces } from '@/features/place/application/hooks/usePlaces';
@@ -16,8 +22,8 @@ import { PlaceFormModal } from '@/features/place/presentation/components/PlaceFo
 import { PlaceDeleteDialog } from '@/features/place/presentation/components/PlaceDeleteDialog';
 import type { Zone, CreateZoneRequest, UpdateZoneRequest } from '@/features/zone/domain/entities/Zone';
 import type { Place, CreatePlaceRequest, UpdatePlaceRequest } from '@/features/place/domain/entities/Place';
+import type { MapInteractionMode } from './ZonePlaceMap';
 
-/** SSR 비활성 — 카카오맵은 브라우저 전용 */
 const ZonePlaceMap = dynamic(
     () => import('./ZonePlaceMap').then((module) => module.ZonePlaceMap),
     {
@@ -33,18 +39,18 @@ const ZonePlaceMap = dynamic(
 
 type SidePanelTab = 'zones' | 'places';
 
-/** 경복궁 기준 지도 초기 위치 */
 const DEFAULT_MAP_CENTER = { lat: 37.5796, lng: 126.9770 };
 const DEFAULT_MAP_LEVEL = 4;
 
 /**
  * 구역·장소 통합 관리 뷰
  *
- * 카카오맵 + 사이드패널(구역 트리 / 장소 목록) 2컬럼 레이아웃
+ * 전체 너비 지도 + 플로팅 사이드패널 + FAB 버튼 레이아웃
  */
 export function ZonePlaceMapView() {
     const {
         zones,
+        innerZones,
         selectedZoneId,
         setSelectedZoneId,
         createZone,
@@ -62,168 +68,318 @@ export function ZonePlaceMapView() {
     } = usePlaces();
 
     const [activeTab, setActiveTab] = useState<SidePanelTab>('zones');
+    const [isPanelOpen, setIsPanelOpen] = useState(true);
 
-    // 모달 상태 (커밋 3에서 실제 모달 연결)
+    // ───────── 지도 인터랙션 모드 ─────────
+    const [interactionMode, setInteractionMode] = useState<MapInteractionMode>('idle');
+    const [drawingPoints, setDrawingPoints] = useState<{ lat: number; lng: number }[]>([]);
+    const [placingPosition, setPlacingPosition] = useState<{ lat: number; lng: number } | null>(null);
+
+    // ───────── Zone 모달 상태 ─────────
     const [isZoneFormOpen, setIsZoneFormOpen] = useState(false);
     const [zoneFormMode, setZoneFormMode] = useState<'create' | 'edit'>('create');
     const [zoneEditTarget, setZoneEditTarget] = useState<Zone | null>(null);
     const [isZoneDeleteOpen, setIsZoneDeleteOpen] = useState(false);
     const [zoneDeleteTarget, setZoneDeleteTarget] = useState<Zone | null>(null);
+    const [drawnPolygon, setDrawnPolygon] = useState<{ lat: number; lng: number }[]>([]);
 
+    // ───────── Place 모달 상태 ─────────
     const [isPlaceFormOpen, setIsPlaceFormOpen] = useState(false);
     const [placeFormMode, setPlaceFormMode] = useState<'create' | 'edit'>('create');
     const [placeEditTarget, setPlaceEditTarget] = useState<Place | null>(null);
     const [isPlaceDeleteOpen, setIsPlaceDeleteOpen] = useState(false);
     const [placeDeleteTarget, setPlaceDeleteTarget] = useState<Place | null>(null);
+    const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number }>({ lat: 37.5796, lng: 126.9770 });
 
-    // ───────────── 이벤트 핸들러 ─────────────
+    // ───────── 모드 전환 ─────────
+    const startDrawingMode = useCallback(() => {
+        setInteractionMode('drawing');
+        setDrawingPoints([]);
+        setSelectedZoneId(null);
+        setSelectedPlaceId(null);
+    }, [setSelectedZoneId, setSelectedPlaceId]);
 
-    const handleClickCreateZone = () => {
+    const startPlacingMode = useCallback(() => {
+        setInteractionMode('placing');
+        setPlacingPosition(null);
+        setSelectedZoneId(null);
+        setSelectedPlaceId(null);
+    }, [setSelectedZoneId, setSelectedPlaceId]);
+
+    const cancelMode = useCallback(() => {
+        setInteractionMode('idle');
+        setDrawingPoints([]);
+        setPlacingPosition(null);
+    }, []);
+
+    const undoLastPoint = useCallback(() => {
+        setDrawingPoints((previous) => previous.slice(0, -1));
+    }, []);
+
+    const handleMapClick = useCallback((lat: number, lng: number) => {
+        if (interactionMode === 'drawing') {
+            setDrawingPoints((previous) => [...previous, { lat, lng }]);
+        } else if (interactionMode === 'placing') {
+            setPlacingPosition({ lat, lng });
+            setSelectedCoords({ lat, lng });
+            setPlaceFormMode('create');
+            setPlaceEditTarget(null);
+            setIsPlaceFormOpen(true);
+            setInteractionMode('idle');
+        }
+    }, [interactionMode]);
+
+    const finishDrawing = useCallback(() => {
+        if (drawingPoints.length < 3) return;
+        setDrawnPolygon([...drawingPoints]);
+        setInteractionMode('idle');
         setZoneFormMode('create');
         setZoneEditTarget(null);
         setIsZoneFormOpen(true);
-    };
+        setDrawingPoints([]);
+    }, [drawingPoints]);
 
-    const handleClickCreatePlace = () => {
-        setPlaceFormMode('create');
-        setPlaceEditTarget(null);
-        setIsPlaceFormOpen(true);
-    };
-
-    const handleEditZone = (zone: Zone) => {
+    // ───────── CRUD ─────────
+    const handleEditZone = useCallback((zone: Zone) => {
         setZoneFormMode('edit');
         setZoneEditTarget(zone);
         setIsZoneFormOpen(true);
-    };
+    }, []);
 
-    const handleDeleteZone = (zone: Zone) => {
+    const handleDeleteZone = useCallback((zone: Zone) => {
         setZoneDeleteTarget(zone);
         setIsZoneDeleteOpen(true);
-    };
+    }, []);
 
-    const handleEditPlace = (place: Place) => {
+    const handleEditPlace = useCallback((place: Place) => {
         setPlaceFormMode('edit');
         setPlaceEditTarget(place);
+        setSelectedCoords({ lat: place.latitude, lng: place.longitude });
         setIsPlaceFormOpen(true);
-    };
+    }, []);
 
-    const handleDeletePlace = (place: Place) => {
+    const handleDeletePlace = useCallback((place: Place) => {
         setPlaceDeleteTarget(place);
         setIsPlaceDeleteOpen(true);
-    };
+    }, []);
 
-    const handleConfirmDeleteZone = () => {
+    const handleConfirmDeleteZone = useCallback(() => {
         if (zoneDeleteTarget) {
             deleteZone(zoneDeleteTarget.zoneId);
             setIsZoneDeleteOpen(false);
             setZoneDeleteTarget(null);
         }
-    };
+    }, [zoneDeleteTarget, deleteZone]);
 
-    const handleConfirmDeletePlace = () => {
+    const handleConfirmDeletePlace = useCallback(() => {
         if (placeDeleteTarget) {
             deletePlace(placeDeleteTarget.placeId);
             setIsPlaceDeleteOpen(false);
             setPlaceDeleteTarget(null);
         }
-    };
+    }, [placeDeleteTarget, deletePlace]);
 
-    const handleSubmitZoneForm = (request: CreateZoneRequest | UpdateZoneRequest) => {
+    const handleSubmitZoneForm = useCallback((request: CreateZoneRequest | UpdateZoneRequest) => {
         if (zoneFormMode === 'create') {
             createZone(request as CreateZoneRequest);
         } else if (zoneEditTarget) {
             updateZone(zoneEditTarget.zoneId, request as UpdateZoneRequest);
         }
-    };
+        setDrawnPolygon([]);
+    }, [zoneFormMode, zoneEditTarget, createZone, updateZone]);
 
-    const handleSubmitPlaceForm = (request: CreatePlaceRequest | UpdatePlaceRequest) => {
+    const handleSubmitPlaceForm = useCallback((request: CreatePlaceRequest | UpdatePlaceRequest) => {
         if (placeFormMode === 'create') {
             createPlace(request as CreatePlaceRequest);
         } else if (placeEditTarget) {
             updatePlace(placeEditTarget.placeId, request as UpdatePlaceRequest);
         }
-    };
+        setPlacingPosition(null);
+    }, [placeFormMode, placeEditTarget, createPlace, updatePlace]);
 
-    const innerZones = zones.filter((zone) => zone.zoneType === 'INNER');
-    const hasSubZones = zoneDeleteTarget
-        ? zones.some((zone) => zone.parentZoneId === zoneDeleteTarget.zoneId)
-        : false;
+    const hasSubZones = useMemo(
+        () => zoneDeleteTarget ? zones.some((zone) => zone.parentZoneId === zoneDeleteTarget.zoneId) : false,
+        [zones, zoneDeleteTarget],
+    );
+
+    const isInteracting = interactionMode !== 'idle';
 
     return (
-        <div className="flex flex-col gap-4 h-[calc(100vh-90px)]">
-            {/* 페이지 헤더 */}
-            <div className="flex items-center justify-between shrink-0">
-                <div>
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <HiOutlineMapPin className="w-7 h-7 text-orange-500" />
+        <div className="relative h-[calc(100vh-90px)] w-full">
+            {/* ═══════ 전체 너비 지도 ═══════ */}
+            <div className="absolute inset-0 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+                <ZonePlaceMap
+                    zones={zones}
+                    places={filteredPlaces}
+                    selectedZoneId={selectedZoneId}
+                    selectedPlaceId={selectedPlaceId}
+                    onSelectZone={setSelectedZoneId}
+                    onSelectPlace={setSelectedPlaceId}
+                    mapCenter={DEFAULT_MAP_CENTER}
+                    mapLevel={DEFAULT_MAP_LEVEL}
+                    mode={interactionMode}
+                    drawingPoints={drawingPoints}
+                    placingPosition={placingPosition}
+                    onMapClick={handleMapClick}
+                />
+            </div>
+
+            {/* ═══════ 좌상단: 페이지 타이틀 배지 ═══════ */}
+            <div className="absolute top-4 left-4 z-10">
+                <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 px-5 py-3">
+                    <h2 className="text-base font-black text-slate-800 flex items-center gap-2">
+                        <HiOutlineMapPin className="w-5 h-5 text-orange-500" />
                         구역·장소 관리
                     </h2>
-                    <p className="text-sm text-slate-500 mt-1 font-medium">
-                        구역 <span className="font-bold text-orange-600">{zones.length}</span>개 · 장소 <span className="font-bold text-orange-600">{filteredPlaces.length}</span>개
+                    <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                        구역 <span className="font-bold text-orange-600">{zones.length}</span> · 장소 <span className="font-bold text-orange-600">{filteredPlaces.length}</span>
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={handleClickCreateZone}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm
-                            hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 active:scale-[0.98]"
-                    >
-                        <HiOutlineMap className="w-4 h-4" />
-                        구역 추가
-                    </button>
-                    <button
-                        onClick={handleClickCreatePlace}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-xl font-bold text-sm
-                            hover:bg-orange-600 shadow-lg shadow-orange-200 transition-all duration-200 active:scale-[0.98]"
-                    >
-                        <HiOutlinePlusCircle className="w-4 h-4" />
-                        장소 추가
-                    </button>
-                </div>
             </div>
 
-            {/* 지도 + 사이드패널 */}
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
-                {/* 지도 (좌측 2/3) */}
-                <div className="lg:col-span-2 rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-slate-50 min-h-[400px]">
-                    <ZonePlaceMap
-                        zones={zones}
-                        places={filteredPlaces}
-                        selectedZoneId={selectedZoneId}
-                        selectedPlaceId={selectedPlaceId}
-                        onSelectZone={setSelectedZoneId}
-                        onSelectPlace={setSelectedPlaceId}
-                        mapCenter={DEFAULT_MAP_CENTER}
-                        mapLevel={DEFAULT_MAP_LEVEL}
-                    />
-                </div>
+            {/* ═══════ Drawing/Placing 모드 툴바 (상단 중앙) ═══════ */}
+            <AnimatePresence>
+                {isInteracting && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="absolute top-4 left-1/2 -translate-x-1/2 z-20"
+                    >
+                        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 px-4 py-2.5 flex items-center gap-3">
+                            {interactionMode === 'drawing' && (
+                                <>
+                                    <div className="flex items-center gap-2 text-sm font-bold text-orange-600">
+                                        <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                                        폴리곤 그리기
+                                        <span className="text-slate-400 font-medium">
+                                            ({drawingPoints.length}점{drawingPoints.length < 3 ? ' · 최소 3점' : ''})
+                                        </span>
+                                    </div>
+                                    <div className="w-px h-5 bg-slate-200" />
+                                    <button
+                                        onClick={undoLastPoint}
+                                        disabled={drawingPoints.length === 0}
+                                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition-all disabled:opacity-30"
+                                    >
+                                        <HiOutlineArrowUturnLeft className="w-3.5 h-3.5" />
+                                        되돌리기
+                                    </button>
+                                    <button
+                                        onClick={finishDrawing}
+                                        disabled={drawingPoints.length < 3}
+                                        className="flex items-center gap-1 px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-lg hover:bg-green-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                    >
+                                        <HiOutlineCheckCircle className="w-3.5 h-3.5" />
+                                        완료
+                                    </button>
+                                </>
+                            )}
+                            {interactionMode === 'placing' && (
+                                <div className="flex items-center gap-2 text-sm font-bold text-blue-600">
+                                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                    지도를 클릭하여 장소 위치를 선택하세요
+                                </div>
+                            )}
+                            <button
+                                onClick={cancelMode}
+                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                            >
+                                <HiOutlineXMark className="w-3.5 h-3.5" />
+                                취소
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-                {/* 사이드패널 (우측 1/3) */}
-                <div className="min-h-[400px]">
-                    <ZonePlaceSidePanel
-                        activeTab={activeTab}
-                        onChangeTab={setActiveTab}
-                        zones={zones}
-                        places={filteredPlaces}
-                        selectedZoneId={selectedZoneId}
-                        selectedPlaceId={selectedPlaceId}
-                        onSelectZone={setSelectedZoneId}
-                        onSelectPlace={setSelectedPlaceId}
-                        onEditZone={handleEditZone}
-                        onDeleteZone={handleDeleteZone}
-                        onEditPlace={handleEditPlace}
-                        onDeletePlace={handleDeletePlace}
-                    />
-                </div>
+            {/* ═══════ 좌하단: FAB 액션 버튼 ═══════ */}
+            <AnimatePresence>
+                {!isInteracting && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        className="absolute bottom-6 left-6 z-10 flex flex-col gap-2"
+                    >
+                        <button
+                            onClick={startDrawingMode}
+                            className="group flex items-center gap-2.5 pl-4 pr-5 py-3 bg-white/95 backdrop-blur-md border border-white/50 text-slate-700 rounded-2xl shadow-lg
+                                hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 hover:shadow-xl transition-all duration-200 active:scale-[0.97]"
+                        >
+                            <div className="w-8 h-8 rounded-xl bg-blue-500 group-hover:bg-blue-600 flex items-center justify-center transition-colors">
+                                <HiOutlineMap className="w-4 h-4 text-white" />
+                            </div>
+                            <span className="text-sm font-bold">구역 추가</span>
+                        </button>
+                        <button
+                            onClick={startPlacingMode}
+                            className="group flex items-center gap-2.5 pl-4 pr-5 py-3 bg-white/95 backdrop-blur-md border border-white/50 text-slate-700 rounded-2xl shadow-lg
+                                hover:bg-orange-50 hover:border-orange-200 hover:text-orange-700 hover:shadow-xl transition-all duration-200 active:scale-[0.97]"
+                        >
+                            <div className="w-8 h-8 rounded-xl bg-orange-500 group-hover:bg-orange-600 flex items-center justify-center transition-colors">
+                                <HiOutlinePlusCircle className="w-4 h-4 text-white" />
+                            </div>
+                            <span className="text-sm font-bold">장소 추가</span>
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ═══════ 우측: 플로팅 사이드패널 ═══════ */}
+            <div className="absolute top-4 right-4 bottom-4 z-10 flex items-stretch gap-2">
+                {/* 패널 토글 버튼 */}
+                <button
+                    onClick={() => setIsPanelOpen(!isPanelOpen)}
+                    className="self-center bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-white/50 p-2 hover:bg-slate-50 transition-all"
+                    aria-label={isPanelOpen ? '패널 닫기' : '패널 열기'}
+                >
+                    {isPanelOpen
+                        ? <HiOutlineChevronRight className="w-4 h-4 text-slate-500" />
+                        : <HiOutlineChevronLeft className="w-4 h-4 text-slate-500" />
+                    }
+                </button>
+
+                {/* 사이드패널 */}
+                <AnimatePresence>
+                    {isPanelOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, x: 30, width: 0 }}
+                            animate={{ opacity: 1, x: 0, width: 320 }}
+                            exit={{ opacity: 0, x: 30, width: 0 }}
+                            transition={{ duration: 0.25, ease: 'easeOut' }}
+                            className="overflow-hidden"
+                        >
+                            <div className="h-full w-[320px] bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 overflow-hidden">
+                                <ZonePlaceSidePanel
+                                    activeTab={activeTab}
+                                    onChangeTab={setActiveTab}
+                                    zones={zones}
+                                    places={filteredPlaces}
+                                    selectedZoneId={selectedZoneId}
+                                    selectedPlaceId={selectedPlaceId}
+                                    onSelectZone={setSelectedZoneId}
+                                    onSelectPlace={setSelectedPlaceId}
+                                    onEditZone={handleEditZone}
+                                    onDeleteZone={handleDeleteZone}
+                                    onEditPlace={handleEditPlace}
+                                    onDeletePlace={handleDeletePlace}
+                                />
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
-            {/* Zone 모달 */}
+            {/* ═══════ 모달 ═══════ */}
             <ZoneFormModal
+                key={`zone-${zoneFormMode}-${zoneEditTarget?.zoneId ?? 'new'}-${isZoneFormOpen}`}
                 isOpen={isZoneFormOpen}
                 mode={zoneFormMode}
                 editTarget={zoneEditTarget}
                 parentZones={innerZones}
-                onClose={() => setIsZoneFormOpen(false)}
+                drawnPolygon={drawnPolygon}
+                onClose={() => { setIsZoneFormOpen(false); setDrawnPolygon([]); }}
                 onSubmit={handleSubmitZoneForm}
             />
             <ZoneDeleteDialog
@@ -233,14 +389,14 @@ export function ZonePlaceMapView() {
                 onClose={() => setIsZoneDeleteOpen(false)}
                 onConfirm={handleConfirmDeleteZone}
             />
-
-            {/* Place 모달 */}
             <PlaceFormModal
+                key={`place-${placeFormMode}-${placeEditTarget?.placeId ?? 'new'}-${isPlaceFormOpen}`}
                 isOpen={isPlaceFormOpen}
                 mode={placeFormMode}
                 editTarget={placeEditTarget}
                 zones={zones}
-                onClose={() => setIsPlaceFormOpen(false)}
+                selectedCoords={selectedCoords}
+                onClose={() => { setIsPlaceFormOpen(false); setPlacingPosition(null); }}
                 onSubmit={handleSubmitPlaceForm}
             />
             <PlaceDeleteDialog

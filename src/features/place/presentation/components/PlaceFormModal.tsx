@@ -1,56 +1,43 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineXMark, HiOutlineMapPin } from 'react-icons/hi2';
 import type { Place, PlaceCategory, CreatePlaceRequest, UpdatePlaceRequest } from '@/features/place/domain/entities/Place';
 import { PLACE_CATEGORY_META } from '@/features/place/domain/entities/Place';
+import { PlaceCategoryIcon } from '@/features/place/presentation/components/PlaceCategoryIcon';
 import type { Zone } from '@/features/zone/domain/entities/Zone';
 
-const CATEGORIES = Object.entries(PLACE_CATEGORY_META) as [PlaceCategory, { label: string; emoji: string; color: string }][];
+const CATEGORIES = Object.entries(PLACE_CATEGORY_META) as [PlaceCategory, { label: string; color: string }][];
 
 interface PlaceFormModalProps {
     isOpen: boolean;
     mode: 'create' | 'edit';
     editTarget: Place | null;
     zones: Zone[];
+    /** 메인 지도에서 클릭한 좌표 (create 모드) */
+    selectedCoords: { lat: number; lng: number };
     onClose: () => void;
     onSubmit: (request: CreatePlaceRequest | UpdatePlaceRequest) => void;
 }
 
-export function PlaceFormModal({ isOpen, mode, editTarget, zones, onClose, onSubmit }: PlaceFormModalProps) {
-    const [name, setName] = useState('');
-    const [category, setCategory] = useState<PlaceCategory>('ATTRACTION');
-    const [latitude, setLatitude] = useState('');
-    const [longitude, setLongitude] = useState('');
-    const [description, setDescription] = useState('');
-    const [nameEn, setNameEn] = useState('');
-    const [zoneId, setZoneId] = useState<number | null>(null);
-    const [isActive, setIsActive] = useState(true);
+/**
+ * 장소 생성/수정 모달 (경량 — 지도 없음)
+ *
+ * - 좌표는 메인 지도에서 미리 클릭하여 선택된 상태로 전달됨
+ * - Material Design 아이콘 기반 카테고리 그리드
+ * - key prop 기반 remount
+ */
+export function PlaceFormModal({ isOpen, mode, editTarget, zones, selectedCoords, onClose, onSubmit }: PlaceFormModalProps) {
+    const [name, setName] = useState(mode === 'edit' && editTarget ? editTarget.name : '');
+    const [category, setCategory] = useState<PlaceCategory>(mode === 'edit' && editTarget ? editTarget.category : 'ATTRACTION');
+    const [description, setDescription] = useState(mode === 'edit' && editTarget ? (editTarget.description ?? '') : '');
+    const [nameEn, setNameEn] = useState(mode === 'edit' && editTarget ? (editTarget.nameJson?.en ?? '') : '');
+    const [zoneId, setZoneId] = useState<number | null>(mode === 'edit' && editTarget ? editTarget.zoneId : null);
+    const [isActive, setIsActive] = useState(mode === 'edit' && editTarget ? editTarget.isActive : true);
 
-    useEffect(() => {
-        if (isOpen) {
-            if (mode === 'edit' && editTarget) {
-                setName(editTarget.name);
-                setCategory(editTarget.category);
-                setLatitude(String(editTarget.latitude));
-                setLongitude(String(editTarget.longitude));
-                setDescription(editTarget.description ?? '');
-                setNameEn(editTarget.nameJson?.en ?? '');
-                setZoneId(editTarget.zoneId);
-                setIsActive(editTarget.isActive);
-            } else {
-                setName('');
-                setCategory('ATTRACTION');
-                setLatitude('37.5796');
-                setLongitude('126.9770');
-                setDescription('');
-                setNameEn('');
-                setZoneId(null);
-                setIsActive(true);
-            }
-        }
-    }, [isOpen, mode, editTarget]);
+    const latitude = mode === 'edit' && editTarget ? editTarget.latitude : selectedCoords.lat;
+    const longitude = mode === 'edit' && editTarget ? editTarget.longitude : selectedCoords.lng;
 
     const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();
@@ -60,8 +47,8 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, onClose, onSub
             const request: CreatePlaceRequest = {
                 name,
                 category,
-                latitude: parseFloat(latitude),
-                longitude: parseFloat(longitude),
+                latitude,
+                longitude,
                 description: description || undefined,
                 nameJson,
                 zoneSource: zoneId ? 'MANUAL' : 'AUTO',
@@ -73,8 +60,6 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, onClose, onSub
             const request: UpdatePlaceRequest = {
                 name,
                 category,
-                latitude: parseFloat(latitude),
-                longitude: parseFloat(longitude),
                 description: description || undefined,
                 nameJson,
                 isActive,
@@ -84,7 +69,7 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, onClose, onSub
         onClose();
     };
 
-    const isFormValid = name.trim().length > 0 && latitude.length > 0 && longitude.length > 0;
+    const isFormValid = name.trim().length > 0;
 
     return (
         <AnimatePresence>
@@ -94,7 +79,7 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, onClose, onSub
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/40"
                         onClick={onClose}
                     />
                     <motion.div
@@ -104,7 +89,6 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, onClose, onSub
                         transition={{ duration: 0.2 }}
                         className="relative w-full max-w-lg mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
                     >
-                        {/* 헤더 */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
                             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                                 <HiOutlineMapPin className="w-5 h-5 text-orange-500" />
@@ -119,8 +103,22 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, onClose, onSub
                             </button>
                         </div>
 
-                        {/* 폼 */}
                         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
+                            {/* 선택된 좌표 배너 */}
+                            {mode === 'create' && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white shrink-0">
+                                        <HiOutlineMapPin className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-blue-600 mb-0.5">선택된 위치</p>
+                                        <p className="text-[11px] font-medium text-blue-800">
+                                            {latitude.toFixed(6)}, {longitude.toFixed(6)}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* 장소명 */}
                             <div>
                                 <label htmlFor="place-name" className="block text-sm font-bold text-slate-700 mb-1.5">장소명 *</label>
@@ -131,6 +129,7 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, onClose, onSub
                                     onChange={(event) => setName(event.target.value)}
                                     placeholder="예: 근정전 화장실"
                                     maxLength={100}
+                                    autoFocus
                                     className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50"
                                 />
                             </div>
@@ -148,7 +147,7 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, onClose, onSub
                                 />
                             </div>
 
-                            {/* 카테고리 */}
+                            {/* 카테고리 — Material Design 아이콘 */}
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 mb-1.5">카테고리 *</label>
                                 <div className="grid grid-cols-4 gap-1.5">
@@ -157,44 +156,20 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, onClose, onSub
                                             key={key}
                                             type="button"
                                             onClick={() => setCategory(key)}
-                                            className={`flex flex-col items-center gap-0.5 py-2 rounded-xl text-xs font-bold transition-all border
+                                            className={`flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-bold transition-all border
                                                 ${category === key
                                                     ? 'border-orange-300 bg-orange-50 text-orange-700 shadow-sm'
                                                     : 'border-slate-100 text-slate-500 hover:bg-slate-50'
                                                 }`}
                                         >
-                                            <span className="text-base">{meta.emoji}</span>
-                                            <span>{meta.label}</span>
+                                            <PlaceCategoryIcon
+                                                category={key}
+                                                size="md"
+                                                color={category === key ? meta.color : '#94a3b8'}
+                                            />
+                                            <span className="mt-0.5">{meta.label}</span>
                                         </button>
                                     ))}
-                                </div>
-                            </div>
-
-                            {/* 좌표 */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label htmlFor="place-lat" className="block text-sm font-bold text-slate-700 mb-1.5">위도 *</label>
-                                    <input
-                                        id="place-lat"
-                                        type="number"
-                                        step="any"
-                                        value={latitude}
-                                        onChange={(event) => setLatitude(event.target.value)}
-                                        placeholder="37.5796"
-                                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50"
-                                    />
-                                </div>
-                                <div>
-                                    <label htmlFor="place-lng" className="block text-sm font-bold text-slate-700 mb-1.5">경도 *</label>
-                                    <input
-                                        id="place-lng"
-                                        type="number"
-                                        step="any"
-                                        value={longitude}
-                                        onChange={(event) => setLongitude(event.target.value)}
-                                        placeholder="126.9770"
-                                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50"
-                                    />
                                 </div>
                             </div>
 
@@ -210,7 +185,7 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, onClose, onSub
                                     <option value="">자동 배정 (좌표 기반)</option>
                                     {zones.map((zone) => (
                                         <option key={zone.zoneId} value={zone.zoneId}>
-                                            {zone.zoneType === 'SUB' ? '  └ ' : ''}{zone.name} ({zone.code})
+                                            {zone.zoneType === 'SUB' ? '  └ ' : ''}{zone.name}
                                         </option>
                                     ))}
                                 </select>
