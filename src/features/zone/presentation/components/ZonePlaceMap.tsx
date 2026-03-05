@@ -235,19 +235,6 @@ function ZonePlaceMapInner({
                 )}
             </Map>
 
-            {/* ───── 모드별 상단 배너 ───── */}
-            {mode === 'drawing' && (
-                <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-orange-500 text-white px-5 py-2.5 rounded-xl shadow-xl text-sm font-bold flex items-center gap-2 animate-pulse">
-                    <span className="w-2 h-2 rounded-full bg-white" />
-                    지도를 클릭하여 구역 영역을 그려주세요 ({drawingPoints.length}점{drawingPoints.length < 3 ? ' · 최소 3점' : ' ✓'})
-                </div>
-            )}
-            {mode === 'placing' && (
-                <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-blue-500 text-white px-5 py-2.5 rounded-xl shadow-xl text-sm font-bold flex items-center gap-2 animate-pulse">
-                    <span className="w-2 h-2 rounded-full bg-white" />
-                    지도를 클릭하여 장소 위치를 선택하세요
-                </div>
-            )}
         </div>
     );
 }
