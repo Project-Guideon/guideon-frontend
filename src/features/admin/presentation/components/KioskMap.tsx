@@ -9,16 +9,19 @@ import {
     HiCheck
 } from 'react-icons/hi2';
 
-// Dynamic Import for Leaflet (SSR False)
-const AdminMap = dynamic(() => import('./AdminMap'), {
-    ssr: false,
-    loading: () => (
-        <div className="h-full w-full flex flex-col items-center justify-center bg-slate-50 text-slate-400 gap-2">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-            <p className="text-sm font-medium">지도를 불러오는 중입니다...</p>
-        </div>
-    )
-});
+// Dynamic Import for Kakao Map (SSR 비활성화)
+const AdminMap = dynamic(
+    () => import('./AdminMap').then((module) => module.AdminMap),
+    {
+        ssr: false,
+        loading: () => (
+            <div className="h-full w-full flex flex-col items-center justify-center bg-slate-50 text-slate-400 gap-2">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
+                <p className="text-sm font-medium">지도를 불러오는 중입니다...</p>
+            </div>
+        ),
+    }
+);
 
 // Mock Data (Sites & Kiosks & Zones)
 interface SiteOption {
