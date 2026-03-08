@@ -1,35 +1,92 @@
 'use client';
 
 import { useState } from 'react';
-import { HiOutlineDocumentText, HiOutlinePlus } from 'react-icons/hi2';
+import { HiOutlineDocumentText, HiOutlineDocumentPlus, HiOutlineMagnifyingGlass, HiOutlineFunnel } from 'react-icons/hi2';
 import { DocumentEntry } from '../../domain/entities/DocumentEntry';
 import { DocumentTable } from './DocumentTable';
 
 export function DocumentListView() {
     const [documents, setDocuments] = useState<DocumentEntry[]>([
-        { id: '1', fileName: 'everland_guide_v1.pdf', status: 'COMPLETED', size: '2.4MB', uploadedAt: '2024-03-20' },
-        { id: '2', fileName: 'safety_manual_jp.docx', status: 'PROCESSING', size: '1.1MB', uploadedAt: '2024-03-21' },
-        { id: '3', fileName: 'zone_info_data.xlsx', status: 'FAILED', size: '450KB', uploadedAt: '2024-03-22' },
-        { id: '4', fileName: 'new_kiosk_manual.pdf', status: 'PENDING', size: '5.2MB', uploadedAt: '2024-03-23' },
+        { id: '1', fileName: 'everland_guide_v1.pdf', extension: 'pdf', status: 'COMPLETED', size: '2.4MB', uploadedAt: '2024-03-20' },
+        { id: '2', fileName: 'safety_manual_jp.docx', extension: 'docx', status: 'PROCESSING', size: '1.1MB', uploadedAt: '2024-03-21' },
+        { id: '3', fileName: 'zone_info_data.xlsx', extension: 'xlsx', status: 'FAILED', size: '450KB', uploadedAt: '2024-03-22' },
+        { id: '4', fileName: 'new_kiosk_manual.pdf', extension: 'pdf', status: 'PENDING', size: '5.2MB', uploadedAt: '2024-03-23' },
     ]);
 
     const handleDelete = (id: string) => {
-        console.log(`Delete request for: ${id}`);
+        setDocuments(prev => prev.filter(doc => doc.id !== id));
+        console.log(`삭제 요청: ${id}`);
+    };
+
+    const handleDownload = (doc: DocumentEntry) => {
+        console.log(`다운로드 시작: ${doc.fileName}`);
     };
 
     return (
-        <div className="flex flex-col h-full">
-            {/* 헤더 생략 */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm flex-1 flex flex-col overflow-hidden">
-                <div className="p-6 border-b border-slate-50 flex items-center justify-between">
-                    <h3 className="font-bold text-slate-800">문서 목록</h3>
-                    <span className="text-xs font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
-                        Total {documents.length}
-                    </span>
+        <div className="flex flex-col">
+            {/* 헤더 */}
+            <div className="shrink-0 -mt-2">
+                <div className="flex items-center gap-2">
+                    <h2 className="justify-between mb-3 text-2xl font-bold text-slate-800 flex items-center gap-2">
+                        <HiOutlineDocumentText className="w-7 h-7 text-orange-500" />
+                        문서 관리
+                    </h2>
+                    <p className="justify-between mb-3 text-sm text-slate-500 mt-1 font-medium">
+                        AI 학습을 위한 도메인 문서를 업로드하고 관리합니다.
+                    </p>
+                </div>
+            </div>
+
+            {/* 검색 부분 */}
+            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-3">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    {/* 검색 영역 */}
+                    <div className="flex items-center gap-4 flex-1">
+                        <span className="text-sm font-bold text-slate-500 whitespace-nowrap">문서 검색</span>
+                        <div className="relative group w-48 max-w-md">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md bg-slate-100 group-hover:bg-orange-100 flex items-center justify-center text-slate-500 group-hover:text-orange-600 transition-colors pointer-events-none">
+                                <HiOutlineMagnifyingGlass className="w-3.5 h-3.5" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="검색어를 입력하세요"
+                                className="w-full h-[36px] pl-10 pr-4 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 placeholder:text-slate-400 placeholder:font-medium outline-none transition-all duration-200 hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50"
+                            />
+                        </div>
+                    </div>
+
+                <div className="hidden lg:flex items-center gap-2 px-5 h-[36px] rounded-xl bg-slate-50 border border-slate-100">
+                    <span className="text-xs font-bold text-slate-500">Total: <span className="text-orange-600">{documents.length}</span></span>
                 </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-                    <DocumentTable documents={documents} onDelete={handleDelete} />
+                    {/* 액션 버튼 영역 */}
+                    <div className="flex items-center gap-3">
+                        <div className="hidden sm:block w-[1px] h-8 bg-slate-200 mx-2" />
+                        <button className="flex items-center gap-2 px-5 h-[36px] bg-slate-900 text-white rounded-xl font-bold text-xs hover:bg-orange-600 transition-all shadow-md active:scale-95 group">
+                            <HiOutlineDocumentPlus className="w-4 h-4 group-hover:rotate-15 transition-transform duration-300" />
+                            <span>새 문서 업로드</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* 문서 목록 */}
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col transition-all hover:shadow-md">
+                <div className="p-6 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
+                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                        문서 목록
+                        <span className="text-[10px] font-black text-orange-600 bg-orange-100 px-2 py-0.5 rounded-md uppercase">
+                            Storage
+                        </span>
+                    </h3>
+                </div>
+
+                <div className="flex-1 overflow-x-auto custom-scrollbar">
+                    <DocumentTable 
+                        documents={documents} 
+                        onDelete={handleDelete} 
+                        onDownload={handleDownload}
+                    />
                 </div>
             </div>
         </div>
