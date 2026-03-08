@@ -12,7 +12,7 @@ export interface DocumentEntry {
     id: string;
     fileName: string;
     status: DocumentStatus;
-    extension: 'pdf' | 'docx' | 'xlsx' | 'txt' | 'zip';
+    extension: 'pdf' | 'docx' | 'xlsx' | 'txt' ;
     size: string;
     uploadedAt: string;
 }
