@@ -78,7 +78,7 @@ export function DocumentTable({ documents, onDelete, onDownload }: DocumentTable
                                                 {doc.fileName}
                                             </span>
                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
-                                                {theme.label}
+                                                {doc.site}
                                             </span>
                                         </div>
                                     </div>

@@ -1,21 +1,30 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { HiOutlineDocumentText, HiOutlineDocumentPlus, HiOutlineMagnifyingGlass, HiOutlineFunnel, HiOutlineMapPin, HiChevronDown, HiCheck } from 'react-icons/hi2';
 import { DocumentEntry } from '../../domain/entities/DocumentEntry';
 import { DocumentTable } from './DocumentTable';
 
 export function DocumentListView() {
     const [documents, setDocuments] = useState<DocumentEntry[]>([
-        { id: '1', fileName: 'everland_guide_v1.pdf', extension: 'pdf', status: 'COMPLETED', size: '2.4MB', uploadedAt: '2024-03-20' },
-        { id: '2', fileName: 'safety_manual_jp.docx', extension: 'docx', status: 'PROCESSING', size: '1.1MB', uploadedAt: '2024-03-21' },
-        { id: '3', fileName: 'zone_info_data.xlsx', extension: 'xlsx', status: 'FAILED', size: '450KB', uploadedAt: '2024-03-22' },
-        { id: '4', fileName: 'new_kiosk_manual.pdf', extension: 'pdf', status: 'PENDING', size: '5.2MB', uploadedAt: '2024-03-23' },
+        { id: '1', fileName: 'everland_guide_v1.pdf', extension: 'pdf', status: 'COMPLETED', size: '2.4MB', uploadedAt: '2024-03-20', site:'에버랜드' },
+        { id: '2', fileName: 'safety_manual_jp.docx', extension: 'docx', status: 'PROCESSING', size: '1.1MB', uploadedAt: '2024-03-21', site:'에버랜드' },
+        { id: '3', fileName: 'zone_info_data.xlsx', extension: 'xlsx', status: 'FAILED', size: '450KB', uploadedAt: '2024-03-22', site:'경복궁'},
+        { id: '4', fileName: 'new_kiosk_manual.pdf', extension: 'pdf', status: 'PENDING', size: '5.2MB', uploadedAt: '2024-03-23' , site:'롯데월드'},
     ]);
 
     const [selectedSite, setSelectedSite] = useState('전체 장소');
     const [isSiteOpen, setIsSiteOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const siteRef = useRef<HTMLDivElement>(null);
+
+    const filteredDocuments = useMemo(() => {
+        return documents.filter(doc => {
+            const matchesSite = selectedSite === '전체 장소' || doc.site === selectedSite;
+            const matchesSearch = doc.fileName.toLowerCase().includes(searchQuery.toLowerCase());
+            return matchesSite && matchesSearch;
+        });
+    }, [documents, selectedSite, searchQuery]);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -27,10 +36,9 @@ export function DocumentListView() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const sites = ['전체 장소', '에버랜드', '경복궁', '롯데월드', '제주민속촌']
+    const sites = ['전체 장소', '에버랜드', '경복궁', '롯데월드', '제주민속촌'];
 
     const handleDelete = (id: string) => {
-        setDocuments(prev => prev.filter(doc => doc.id !== id));
         console.log(`삭제 요청: ${id}`);
     };
 
@@ -65,6 +73,8 @@ export function DocumentListView() {
                             </div>
                             <input
                                 type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="검색어를 입력하세요"
                                 className="w-full h-[36px] pl-10 pr-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none transition-all hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50"
                             />
@@ -92,10 +102,8 @@ export function DocumentListView() {
                             <HiChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isSiteOpen ? 'rotate-180 text-orange-500' : ''}`} />
                         </button>
 
-                        <div className={`absolute right-0 mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden transition-all origin-top-right
-                            ${isSiteOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}
-                        >
-                            <div className="p-1">
+                        {isSiteOpen && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-xl z-50 p-1">
                                 {sites.map((site) => (
                                     <button
                                         key={site}
@@ -103,23 +111,23 @@ export function DocumentListView() {
                                             setSelectedSite(site);
                                             setIsSiteOpen(false);
                                         }}
-                                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors
-                                            ${selectedSite === site 
-                                                ? 'bg-orange-50 text-orange-700 font-bold' 
-                                                : 'text-slate-600 hover:bg-slate-50 hover:text-orange-600'
-                                            }`}
+                                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
+                                            selectedSite === site ? 'bg-orange-50 text-orange-700 font-bold' : 'text-slate-600 hover:bg-slate-50'
+                                        }`}
                                     >
-                                        <span>{site}</span>
+                                        {site}
                                         {selectedSite === site && <HiCheck className="w-3.5 h-3.5" />}
                                     </button>
                                 ))}
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
 
                 <div className="hidden lg:flex items-center gap-2 px-5 h-[36px] rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-xs font-bold text-slate-500">Total: <span className="text-orange-600">{documents.length}</span></span>
+                    <span className="text-xs font-bold text-slate-500">
+                        Total: <span className="text-orange-600">{filteredDocuments.length}</span>
+                    </span>
                 </div>
 
                     {/* 액션 버튼 영역 */}
@@ -134,14 +142,12 @@ export function DocumentListView() {
             </div>
 
             {/* 문서 목록 */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col transition-all hover:shadow-md">
-                <div className="flex-1 overflow-x-auto custom-scrollbar">
-                    <DocumentTable 
-                        documents={documents} 
-                        onDelete={handleDelete} 
-                        onDownload={handleDownload}
-                    />
-                </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <DocumentTable 
+                    documents={filteredDocuments} 
+                    onDelete={handleDelete} 
+                    onDownload={handleDownload}
+                />
             </div>
         </div>
     );

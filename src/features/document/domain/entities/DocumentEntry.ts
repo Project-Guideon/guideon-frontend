@@ -15,4 +15,5 @@ export interface DocumentEntry {
     extension: 'pdf' | 'docx' | 'xlsx' | 'txt' ;
     size: string;
     uploadedAt: string;
+    site: string;
 }
