@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import type { DocumentEntry } from "../../domain/entities/DocumentEntry";
 
 export function useDocument() {
@@ -24,6 +24,18 @@ export function useDocument() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedSite, setSelectedSite] = useState('전체 장소');
     const itemsPerPage = 6;
+
+    const addDocument = useCallback((newDoc: Omit<DocumentEntry, 'id' | 'uploadedAt' | 'status'>) => {
+        const doc: DocumentEntry = {
+            ...newDoc,
+            id: Math.random().toString(36).substr(2, 9),
+            uploadedAt: new Date().toISOString().split('T')[0], 
+            status: 'COMPLETED' 
+        };
+        
+        setDocuments(prev => [doc, ...prev]); 
+        setPage(0);
+    }, []);
 
     const filteredResults = useMemo(() => {
         return documents.filter(doc => {
@@ -56,6 +68,7 @@ export function useDocument() {
         setSearchQuery,
         selectedSite,
         setSelectedSite,
-        deleteDocument
+        deleteDocument: (id: string) => setDocuments(prev => prev.filter(doc => doc.id !== id)),
+        addDocument
     };
 }

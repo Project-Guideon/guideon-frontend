@@ -11,7 +11,7 @@ import { useDocument } from '@/features/document/application/hooks/useDocument';
 import { DocumentEntry } from '../../domain/entities/DocumentEntry';
 
 export function DocumentListView() {
-    const { documents, page, setPage, totalPages, totalCount, searchQuery, setSearchQuery, selectedSite, setSelectedSite,deleteDocument } = useDocument();
+    const { documents,addDocument, page, setPage, totalPages, totalCount, searchQuery, setSearchQuery, selectedSite, setSelectedSite,deleteDocument } = useDocument();
 
     useEffect(() => {
         setPage(0);
@@ -34,6 +34,18 @@ export function DocumentListView() {
     const handleDownload = (doc: DocumentEntry) => {
         console.log(`다운로드 시작: ${doc.fileName}`);
     };
+
+    const handleFileUpload = (files: File[]) => {
+    files.forEach(file => {
+        const extension = file.name.split('.').pop() as any;
+        addDocument({
+            fileName: file.name,
+            extension: ['pdf', 'docx', 'xlsx', 'txt'].includes(extension) ? extension : 'txt',
+            size: (file.size / (1024 * 1024)).toFixed(1) + 'MB',
+            site: selectedSite === '전체 장소' ? '에버랜드' : selectedSite // 현재 선택된 장소로 자동 할당
+        });
+    });
+}
 
     return (
         <div className="relative flex flex-col">
@@ -76,7 +88,7 @@ export function DocumentListView() {
             </div>
             <AnimatePresence>
                 {isUploadOpen && (
-                    <DocumentUploadPanel onClose={() => setIsUploadOpen(false)} />
+                    <DocumentUploadPanel onClose={() => setIsUploadOpen(false)} onUpload={handleFileUpload}/>
                 )}
             </AnimatePresence>
         </div>
