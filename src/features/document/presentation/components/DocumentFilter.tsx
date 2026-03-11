@@ -10,9 +10,10 @@ interface DocumentFilterProps {
     selectedSite: string;
     setSelectedSite: (site: string) => void;
     totalCount: number;
+    onUploadClick: () => void;
 }
 
-export function DocumentFilter({ searchQuery, setSearchQuery, selectedSite, setSelectedSite, totalCount }: DocumentFilterProps) {
+export function DocumentFilter({ searchQuery, setSearchQuery, selectedSite, setSelectedSite, totalCount, onUploadClick }: DocumentFilterProps) {
     const [isSiteOpen, setIsSiteOpen] = useState(false);
     const siteRef = useRef<HTMLDivElement>(null);
     const sites = ['전체 장소', '에버랜드', '경복궁', '롯데월드', '제주민속촌'];
@@ -98,7 +99,7 @@ export function DocumentFilter({ searchQuery, setSearchQuery, selectedSite, setS
                 </div>
 
                 {/* 액션 버튼 영역 */}
-                <button className="flex items-center gap-2 px-5 h-[36px] bg-slate-900 text-white rounded-xl font-bold text-xs hover:bg-orange-600 transition-all shadow-md active:scale-95 group">
+                <button onClick={onUploadClick} className="flex items-center gap-2 px-5 h-[36px] bg-slate-900 text-white rounded-xl font-bold text-xs hover:bg-orange-600 transition-all shadow-md active:scale-95 group">
                     <HiOutlineDocumentPlus className="w-4 h-4 group-hover:rotate-15 transition-transform duration-300" />
                     <span>새 문서 업로드</span>
                 </button>

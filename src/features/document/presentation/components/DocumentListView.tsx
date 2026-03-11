@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { HiOutlineDocumentText, HiOutlineDocumentPlus,HiChevronRight, HiChevronLeft, HiOutlineMagnifyingGlass, HiOutlineFunnel, HiOutlineMapPin, HiChevronDown, HiCheck } from 'react-icons/hi2';
 import { DocumentTable } from './DocumentTable';
 import { DocumentPagination } from './DocumentPagination';
 import { DocumentFilter } from './DocumentFilter';
+import { DocumentUploadPanel } from './DocumentUploadPanel';
 import { useDocument } from '@/features/document/application/hooks/useDocument';
 import { DocumentEntry } from '../../domain/entities/DocumentEntry';
 
@@ -15,6 +17,7 @@ export function DocumentListView() {
         setPage(0);
     }, [searchQuery, selectedSite, setPage]);
 
+    const [isUploadOpen, setIsUploadOpen] = useState(false);
 
     const filteredDocuments = useMemo(() => {
         return documents.filter((doc: DocumentEntry) => {
@@ -33,7 +36,7 @@ export function DocumentListView() {
     };
 
     return (
-        <div className="flex flex-col">
+        <div className="relative flex flex-col">
             {/* 헤더 */}
             <div className="shrink-0 -mt-2">
                 <div className="flex items-center gap-2">
@@ -53,14 +56,16 @@ export function DocumentListView() {
                 selectedSite={selectedSite}
                 setSelectedSite={setSelectedSite}
                 totalCount={totalCount}
+                onUploadClick={() => setIsUploadOpen(true)}
             />
 
             {/* 문서 목록 */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col transition-all">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                 <div className="flex-1">
                     <DocumentTable 
                         documents={documents} 
                         onDelete={deleteDocument} 
+                        onDownload={(doc) => console.log(doc.fileName)}
                     />
                 </div>
                 <DocumentPagination 
@@ -69,6 +74,11 @@ export function DocumentListView() {
                     onPageChange={setPage} 
                 />
             </div>
+            <AnimatePresence>
+                {isUploadOpen && (
+                    <DocumentUploadPanel onClose={() => setIsUploadOpen(false)} />
+                )}
+            </AnimatePresence>
         </div>
     );
 }
