@@ -1,25 +1,24 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { HiOutlineDocumentText, HiOutlineDocumentPlus, HiOutlineMagnifyingGlass, HiOutlineFunnel, HiOutlineMapPin, HiChevronDown, HiCheck } from 'react-icons/hi2';
-import { DocumentEntry } from '../../domain/entities/DocumentEntry';
+import { HiOutlineDocumentText, HiOutlineDocumentPlus,HiChevronRight, HiChevronLeft, HiOutlineMagnifyingGlass, HiOutlineFunnel, HiOutlineMapPin, HiChevronDown, HiCheck } from 'react-icons/hi2';
 import { DocumentTable } from './DocumentTable';
+import { DocumentPagination } from './DocumentPagination';
+import { useDocument } from '@/features/document/application/hooks/useDocument';
+import { DocumentEntry } from '../../domain/entities/DocumentEntry';
 
 export function DocumentListView() {
-    const [documents, setDocuments] = useState<DocumentEntry[]>([
-        { id: '1', fileName: 'everland_guide_v1.pdf', extension: 'pdf', status: 'COMPLETED', size: '2.4MB', uploadedAt: '2024-03-20', site:'에버랜드' },
-        { id: '2', fileName: 'safety_manual_jp.docx', extension: 'docx', status: 'PROCESSING', size: '1.1MB', uploadedAt: '2024-03-21', site:'에버랜드' },
-        { id: '3', fileName: 'zone_info_data.xlsx', extension: 'xlsx', status: 'FAILED', size: '450KB', uploadedAt: '2024-03-22', site:'경복궁'},
-        { id: '4', fileName: 'new_kiosk_manual.pdf', extension: 'pdf', status: 'PENDING', size: '5.2MB', uploadedAt: '2024-03-23' , site:'롯데월드'},
-    ]);
+    const { documents, page, setPage, totalPages, totalCount, searchQuery, setSearchQuery, selectedSite, setSelectedSite,deleteDocument } = useDocument();
 
-    const [selectedSite, setSelectedSite] = useState('전체 장소');
+    useEffect(() => {
+        setPage(0);
+    }, [searchQuery, selectedSite, setPage]);
+
     const [isSiteOpen, setIsSiteOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
     const siteRef = useRef<HTMLDivElement>(null);
 
     const filteredDocuments = useMemo(() => {
-        return documents.filter(doc => {
+        return documents.filter((doc: DocumentEntry) => {
             const matchesSite = selectedSite === '전체 장소' || doc.site === selectedSite;
             const matchesSearch = doc.fileName.toLowerCase().includes(searchQuery.toLowerCase());
             return matchesSite && matchesSearch;
@@ -81,58 +80,55 @@ export function DocumentListView() {
                         </div>
                     </div>
 
-                <div className="flex items-center gap-3 shrink-0">
-                    <div className="hidden sm:block w-[1px] h-8 bg-slate-200 mx-2" />
-                    <span className="text-sm font-bold text-slate-500 whitespace-nowrap">장소</span>
-                    <div className="relative" ref={siteRef}>
-                        <button
-                            onClick={() => setIsSiteOpen(!isSiteOpen)}
-                            className={`flex items-center gap-2 px-3 py-1.5 bg-white border rounded-xl transition-all duration-200 outline-none h-[36px] min-w-[130px]
-                                ${isSiteOpen 
-                                    ? 'border-orange-500 ring-4 ring-orange-50 text-slate-800' 
-                                    : 'border-slate-200 hover:border-orange-400 text-slate-600 hover:bg-orange-50'
-                                }`}
-                        >
-                            <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors ${
-                                isSiteOpen ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-500'
-                            }`}>
-                                <HiOutlineMapPin className="w-3.5 h-3.5" />
-                            </div>
-                            <span className="text-xs font-bold flex-1 text-left">{selectedSite}</span>
-                            <HiChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isSiteOpen ? 'rotate-180 text-orange-500' : ''}`} />
-                        </button>
-
-                        {isSiteOpen && (
-                            <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-xl z-50 p-1">
-                                {sites.map((site) => (
-                                    <button
-                                        key={site}
-                                        onClick={() => {
-                                            setSelectedSite(site);
-                                            setIsSiteOpen(false);
-                                        }}
-                                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
-                                            selectedSite === site ? 'bg-orange-50 text-orange-700 font-bold' : 'text-slate-600 hover:bg-slate-50'
-                                        }`}
-                                    >
-                                        {site}
-                                        {selectedSite === site && <HiCheck className="w-3.5 h-3.5" />}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                <div className="hidden lg:flex items-center gap-2 px-5 h-[36px] rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-xs font-bold text-slate-500">
-                        Total: <span className="text-orange-600">{filteredDocuments.length}</span>
-                    </span>
-                </div>
-
-                    {/* 액션 버튼 영역 */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 shrink-0">
                         <div className="hidden sm:block w-[1px] h-8 bg-slate-200 mx-2" />
+                        <span className="text-sm font-bold text-slate-500 whitespace-nowrap">장소</span>
+                        <div className="relative" ref={siteRef}>
+                            <button
+                                onClick={() => setIsSiteOpen(!isSiteOpen)}
+                                className={`flex items-center gap-2 px-3 py-1.5 bg-white border rounded-xl transition-all duration-200 outline-none h-[36px] min-w-[130px]
+                                    ${isSiteOpen 
+                                        ? 'border-orange-500 ring-4 ring-orange-50 text-slate-800' 
+                                        : 'border-slate-200 hover:border-orange-400 text-slate-600 hover:bg-orange-50'
+                                    }`}
+                            >
+                                <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors ${
+                                    isSiteOpen ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-500'
+                                }`}>
+                                    <HiOutlineMapPin className="w-3.5 h-3.5" />
+                                </div>
+                                <span className="text-xs font-bold flex-1 text-left">{selectedSite}</span>
+                                <HiChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isSiteOpen ? 'rotate-180 text-orange-500' : ''}`} />
+                            </button>
+
+                            {isSiteOpen && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-xl z-50 p-1">
+                                    {sites.map((site) => (
+                                        <button
+                                            key={site}
+                                            onClick={() => {
+                                                setSelectedSite(site);
+                                                setIsSiteOpen(false);
+                                            }}
+                                            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
+                                                selectedSite === site ? 'bg-orange-50 text-orange-700 font-bold' : 'text-slate-600 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            {site}
+                                            {selectedSite === site && <HiCheck className="w-3.5 h-3.5" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="hidden lg:flex items-center gap-2 px-5 h-[36px] rounded-xl bg-slate-50 border border-slate-100">
+                            <span className="text-xs font-bold text-slate-500">
+                                Total: <span className="text-orange-600">{totalCount}</span>
+                            </span>
+                        </div>
+
+                        {/* 액션 버튼 영역 */}
                         <button className="flex items-center gap-2 px-5 h-[36px] bg-slate-900 text-white rounded-xl font-bold text-xs hover:bg-orange-600 transition-all shadow-md active:scale-95 group">
                             <HiOutlineDocumentPlus className="w-4 h-4 group-hover:rotate-15 transition-transform duration-300" />
                             <span>새 문서 업로드</span>
@@ -142,11 +138,17 @@ export function DocumentListView() {
             </div>
 
             {/* 문서 목록 */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <DocumentTable 
-                    documents={filteredDocuments} 
-                    onDelete={handleDelete} 
-                    onDownload={handleDownload}
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col transition-all">
+                <div className="flex-1">
+                    <DocumentTable 
+                        documents={documents} 
+                        onDelete={deleteDocument} 
+                    />
+                </div>
+                <DocumentPagination 
+                    currentPage={page} 
+                    totalPages={totalPages} 
+                    onPageChange={setPage} 
                 />
             </div>
         </div>
