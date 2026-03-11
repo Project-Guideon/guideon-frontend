@@ -51,14 +51,14 @@ export function DocumentTable({ documents, onDelete, onDownload }: DocumentTable
     }
     return (
         <div className="w-full overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse table-fixed">
                 <thead>
-                    <tr className="border-b border-slate-100">
-                        <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">파일명</th>
-                        <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">학습 상태</th>
-                        <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">파일 크기</th>
-                        <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">업로드 일시</th>
-                        <th className="px-4 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">작업</th>
+                    <tr className="border-b border-slate-100 bg-slate-50/30">
+                        <th className="w-[40%] px-25 py-4 text-[13px] font-black text-slate-400 uppercase tracking-widest">파일명</th>
+                        <th className="w-[15%] px-4 py-4 text-[13px] font-black text-slate-400 uppercase tracking-widest text-center">학습 상태</th>
+                        <th className="w-[13%] px-4 py-4 text-[13px] font-black text-slate-400 uppercase tracking-widest text-center">용량</th>
+                        <th className="w-[18%] px-4 py-4 text-[13px] font-black text-slate-400 uppercase tracking-widest text-center">업로드 일시</th>
+                        <th className="w-[12%] px-16 py-4 text-[13px] font-black text-slate-400 uppercase tracking-widest text-right">작업</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -68,8 +68,8 @@ export function DocumentTable({ documents, onDelete, onDownload }: DocumentTable
                         return (
                             <tr key={doc.id} className="group hover:bg-slate-50/50 transition-colors">
                                 {/* 파일명, 아이콘 */}
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
+                                <td className="px-8 py-4">
+                                    <div className="flex items-center gap-4">
                                         <div className={`w-12 h-12 rounded-2xl ${theme.border} border flex items-center justify-center ${theme.color} shadow-sm group-hover:scale-105 transition-transform duration-300`}>
                                             <Icon className="w-5 h-5" />
                                         </div>
@@ -86,25 +86,28 @@ export function DocumentTable({ documents, onDelete, onDownload }: DocumentTable
 
                                 {/* 상태 */}
                                 <td className="px-6 py-4 text-center">
-                                    <DocumentStatusBadge status={doc.status} />
+                                    <div className="flex justify-center">
+                                        <DocumentStatusBadge status={doc.status} />
+                                    </div>
                                 </td>
 
                                 {/*파일 크기 */}
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-4 text-center">
                                     <span className="text-xs text-slate-500 font-bold tabular-nums">
                                         {doc.size}
                                     </span>
                                 </td>
 
                                 {/* 업로드 일시 */}
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-4 text-center">
                                     <span className="text-xs text-slate-500 font-medium tabular-nums">
                                         {doc.uploadedAt}
                                     </span>
                                 </td>
 
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {/* 작업 */}
+                                <td className="px-8 py-4">
+                                    <div className="flex items-center justify-end gap-1 opacity-0 opacity-100 transition-opacity">
                                         <button 
                                             onClick={() => onDownload?.(doc)}
                                             className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"

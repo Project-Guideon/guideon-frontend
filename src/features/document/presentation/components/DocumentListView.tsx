@@ -61,7 +61,7 @@ export function DocumentListView() {
                         <span className="text-sm font-bold text-slate-500 whitespace-nowrap">검색</span>
                         <div className="relative group flex-1 max-w-sm">
                             <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md bg-slate-100 group-hover:bg-orange-100 flex items-center justify-center text-slate-500 group-hover:text-orange-600 transition-colors pointer-events-none">
-                                <HiOutlineMagnifyingGlass className="w-3.5 h-3.5" />
+                                <HiOutlineMagnifyingGlass className="w-3.5 h-3.5"/>
                             </div>
                             <input
                                 type="text"
@@ -135,15 +135,6 @@ export function DocumentListView() {
 
             {/* 문서 목록 */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col transition-all hover:shadow-md">
-                <div className="p-6 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
-                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                        문서 목록
-                        <span className="text-[10px] font-black text-orange-600 bg-orange-100 px-2 py-0.5 rounded-md uppercase">
-                            Storage
-                        </span>
-                    </h3>
-                </div>
-
                 <div className="flex-1 overflow-x-auto custom-scrollbar">
                     <DocumentTable 
                         documents={documents} 
