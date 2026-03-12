@@ -170,7 +170,7 @@ export function AdminSidebar({ user, currentSite, isPlatformAdmin, onLogout }: A
 
             {/* 유저 프로필 */}
             <div className="p-4 border-t border-slate-100">
-                <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors group cursor-pointer">
+                <Link href="/admin/profile" className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors group cursor-pointer">
                     <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 ring-2 ring-white shadow-sm group-hover:ring-orange-200 transition-all">
                         <HiOutlineUserCircle className="w-6 h-6" />
                     </div>
@@ -183,13 +183,16 @@ export function AdminSidebar({ user, currentSite, isPlatformAdmin, onLogout }: A
                         </p>
                     </div>
                     <button
-                        onClick={onLogout}
+                        onClick={(e)=> {
+                            e.preventDefault();
+                            onLogout();
+                        }}
                         className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                         title="로그아웃"
                     >
                         <HiOutlineArrowRightOnRectangle className="w-4 h-4" />
                     </button>
-                </div>
+                </Link>
             </div>
         </div>
     );
