@@ -1,20 +1,45 @@
 'use client';
 
-import { useState } from 'react';
-import { HiOutlineDocumentText, HiOutlineDocumentPlus, HiOutlineMagnifyingGlass, HiOutlineFunnel } from 'react-icons/hi2';
-import { DocumentEntry } from '../../domain/entities/DocumentEntry';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { HiOutlineDocumentText, HiOutlineDocumentPlus,HiChevronRight, HiChevronLeft, HiOutlineMagnifyingGlass, HiOutlineFunnel, HiOutlineMapPin, HiChevronDown, HiCheck } from 'react-icons/hi2';
 import { DocumentTable } from './DocumentTable';
+import { DocumentPagination } from './DocumentPagination';
+import { DocumentFilter } from './DocumentFilter';
+import { DocumentUploadPanel } from './DocumentUploadPanel';
+import { useDocument } from '@/features/document/application/hooks/useDocument';
+import { DocumentEntry } from '../../domain/entities/DocumentEntry';
 
 export function DocumentListView() {
-    const [documents, setDocuments] = useState<DocumentEntry[]>([
-        { id: '1', fileName: 'everland_guide_v1.pdf', extension: 'pdf', status: 'COMPLETED', size: '2.4MB', uploadedAt: '2024-03-20' },
-        { id: '2', fileName: 'safety_manual_jp.docx', extension: 'docx', status: 'PROCESSING', size: '1.1MB', uploadedAt: '2024-03-21' },
-        { id: '3', fileName: 'zone_info_data.xlsx', extension: 'xlsx', status: 'FAILED', size: '450KB', uploadedAt: '2024-03-22' },
-        { id: '4', fileName: 'new_kiosk_manual.pdf', extension: 'pdf', status: 'PENDING', size: '5.2MB', uploadedAt: '2024-03-23' },
-    ]);
+    const { documents,addDocument, page, setPage, totalPages, totalCount, searchQuery, setSearchQuery, selectedSite, setSelectedSite,deleteDocument } = useDocument();
+
+    const ALLOWED_EXTENSIONS = ['pdf', 'docx', 'xlsx', 'txt'] as const;
+    type AllowedExtension = (typeof ALLOWED_EXTENSIONS)[number];
+    const MAX_FILE_SIZE = 20 * 1024 * 1024;
+
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+    useEffect(() => {
+        setPage(0);
+    }, [searchQuery, selectedSite, setPage]);
+
+    const [isUploadOpen, setIsUploadOpen] = useState(false);
+
+    const filteredDocuments = useMemo(() => {
+        return documents.filter((doc: DocumentEntry) => {
+            const matchesSite = selectedSite === '전체 장소' || doc.site === selectedSite;
+            const matchesSearch = doc.fileName.toLowerCase().includes(searchQuery.toLowerCase());
+            return matchesSite && matchesSearch;
+        });
+    }, [documents, selectedSite, searchQuery]);
 
     const handleDelete = (id: string) => {
-        setDocuments(prev => prev.filter(doc => doc.id !== id));
         console.log(`삭제 요청: ${id}`);
     };
 
@@ -22,8 +47,46 @@ export function DocumentListView() {
         console.log(`다운로드 시작: ${doc.fileName}`);
     };
 
+    const handleFileUpload = async (files: File[]) => {
+        const validFiles: File[] = [];
+        const errors: string[] = [];
+
+        files.forEach((file) => {
+            const rawExt = file.name.split('.').pop()?.toLowerCase() || '';
+            const isAllowedExt = ALLOWED_EXTENSIONS.includes(rawExt as AllowedExtension);
+            const isAllowedSize = file.size <= MAX_FILE_SIZE;
+
+            if (!isAllowedExt) {
+                errors.push(`[${file.name}]: 지원하지 않는 형식입니다.`);
+            } else if (!isAllowedSize) {
+                errors.push(`[${file.name}]: 용량이 너무 큽니다. (최대 20MB)`);
+            } else {
+                validFiles.push(file);
+            }
+        });
+
+        if (errors.length > 0) {
+            alert(`일부 파일 업로드 실패:\n\n${errors.join('\n')}`);
+        }
+
+        // 검증 통과한 파일만
+        if (validFiles.length > 0) {
+            for (const file of validFiles) {
+                const extension = file.name.split('.').pop()?.toLowerCase() as AllowedExtension;
+
+                await addDocument({
+                    fileName: file.name,
+                    extension: extension,
+                    size: formatFileSize(file.size),
+                    site: selectedSite === '전체 장소' ? 'internal' : selectedSite
+                });
+            }
+            setIsUploadOpen(false);
+        }
+    };
+
     return (
-        <div className="flex flex-col">
+        <div className="relative flex flex-col w-full pb-10">
             {/* 헤더 */}
             <div className="shrink-0 -mt-2">
                 <div className="flex items-center gap-2">
@@ -37,58 +100,46 @@ export function DocumentListView() {
                 </div>
             </div>
 
-            {/* 검색 부분 */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-3">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    {/* 검색 영역 */}
-                    <div className="flex items-center gap-4 flex-1">
-                        <span className="text-sm font-bold text-slate-500 whitespace-nowrap">문서 검색</span>
-                        <div className="relative group w-48 max-w-md">
-                            <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md bg-slate-100 group-hover:bg-orange-100 flex items-center justify-center text-slate-500 group-hover:text-orange-600 transition-colors pointer-events-none">
-                                <HiOutlineMagnifyingGlass className="w-3.5 h-3.5" />
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="검색어를 입력하세요"
-                                className="w-full h-[36px] pl-10 pr-4 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 placeholder:text-slate-400 placeholder:font-medium outline-none transition-all duration-200 hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50"
-                            />
-                        </div>
-                    </div>
-
-                <div className="hidden lg:flex items-center gap-2 px-5 h-[36px] rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-xs font-bold text-slate-500">Total: <span className="text-orange-600">{documents.length}</span></span>
-                </div>
-
-                    {/* 액션 버튼 영역 */}
-                    <div className="flex items-center gap-3">
-                        <div className="hidden sm:block w-[1px] h-8 bg-slate-200 mx-2" />
-                        <button className="flex items-center gap-2 px-5 h-[36px] bg-slate-900 text-white rounded-xl font-bold text-xs hover:bg-orange-600 transition-all shadow-md active:scale-95 group">
-                            <HiOutlineDocumentPlus className="w-4 h-4 group-hover:rotate-15 transition-transform duration-300" />
-                            <span>새 문서 업로드</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <DocumentFilter 
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                selectedSite={selectedSite}
+                setSelectedSite={setSelectedSite}
+                totalCount={totalCount}
+                onUploadClick={() => setIsUploadOpen(true)}
+            />
 
             {/* 문서 목록 */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col transition-all hover:shadow-md">
-                <div className="p-6 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
-                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                        문서 목록
-                        <span className="text-[10px] font-black text-orange-600 bg-orange-100 px-2 py-0.5 rounded-md uppercase">
-                            Storage
-                        </span>
-                    </h3>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col transition-all min-h-[600px] overflow-hidden">
+                <div className="flex-1 bg-white relative">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={page} // 페이지 번호가 바뀔 때마다 실행
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -5 }}
+                            transition={{ duration: 0.2, ease: "easeInOut" }}
+                            className="w-full h-full overflow-hidden scrollbar-hide"
+                        >
+                            <DocumentTable 
+                                documents={documents} 
+                                onDelete={deleteDocument} 
+                                onDownload={(doc) => console.log(doc.fileName)}
+                            />
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
-
-                <div className="flex-1 overflow-x-auto custom-scrollbar">
-                    <DocumentTable 
-                        documents={documents} 
-                        onDelete={handleDelete} 
-                        onDownload={handleDownload}
-                    />
-                </div>
+                <DocumentPagination 
+                    currentPage={page} 
+                    totalPages={totalPages} 
+                    onPageChange={setPage} 
+                />
             </div>
+            <AnimatePresence>
+                {isUploadOpen && (
+                    <DocumentUploadPanel onClose={() => setIsUploadOpen(false)} onUpload={handleFileUpload}/>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
