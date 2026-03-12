@@ -72,8 +72,8 @@ export function DocumentListView() {
             />
 
             {/* 문서 목록 */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <div className="flex-1">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col transition-all min-h-[600px]">
+                <div className="flex-1 bg-white">
                     <DocumentTable 
                         documents={documents} 
                         onDelete={deleteDocument} 
