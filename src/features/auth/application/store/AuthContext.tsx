@@ -1,11 +1,12 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode, useMemo } from 'react';
 import type { AdminRole } from '@/shared/types/auth';
-import { INITIAL_MOCK_SITES } from '@/features/site/application/hooks/useSites';
+import { loginApi, getMeApi, logoutApi } from '@/api/endpoints/auth';
+import { tokenStorage } from '@/api/client';
 
 /**
- * Mock 사용자 정보
+ * 인증된 사용자 정보
  */
 export interface AuthUser {
     adminId: number;
@@ -15,7 +16,7 @@ export interface AuthUser {
 }
 
 /**
- * Mock 사이트 정보
+ * 사이트 정보
  */
 export interface Site {
     siteId: number;
@@ -39,7 +40,7 @@ interface AuthContextState {
  */
 interface AuthContextActions {
     login: (email: string, password: string) => Promise<boolean>;
-    logout: () => void;
+    logout: () => Promise<void>;
     setCurrentSite: (siteId: number) => void;
 }
 
@@ -47,72 +48,99 @@ type AuthContextType = AuthContextState & AuthContextActions;
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/**
- * Mock 데이터
- */
-const MOCK_PLATFORM_ADMIN: AuthUser = {
-    adminId: 1,
-    email: 'admin@guideon.com',
-    role: 'PLATFORM_ADMIN',
-    siteIds: [],
-};
-
-const MOCK_SITE_ADMIN: AuthUser = {
-    adminId: 2,
-    email: 'operator@example.com',
-    role: 'SITE_ADMIN',
-    siteIds: [1],
-};
-
-
-
 interface AuthProviderProps {
     children: ReactNode;
 }
 
-export const DEFAULT_SITE_ID = 2; // 경복궁
-
 /**
  * AuthProvider
- * Mock 데이터 기반 인증 상태 관리
+ * 실제 백엔드 API 기반 인증 상태 관리
  */
 export function AuthProvider({ children }: AuthProviderProps) {
-    const [user, setUser] = useState<AuthUser | null>(MOCK_PLATFORM_ADMIN); // 기본: 로그인 상태
-    const [isLoading, setIsLoading] = useState(false);
-    const [currentSiteId, setCurrentSiteId] = useState<number | null>(DEFAULT_SITE_ID);
+    const [user, setUser] = useState<AuthUser | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [currentSiteId, setCurrentSiteId] = useState<number | null>(null);
+    const [sites] = useState<Site[]>([]);
 
     /**
-     * Mock 로그인
+     * 저장된 토큰으로 사용자 정보 복원 (새로고침 대응)
+     */
+    const restoreSession = useCallback(async () => {
+        const accessToken = tokenStorage.getAccessToken();
+        if (!accessToken) {
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            const response = await getMeApi();
+            const me = response.data;
+            setUser({
+                adminId: me.admin_id,
+                email: me.email,
+                role: me.role,
+                siteIds: me.site_ids,
+            });
+
+            if (me.role === 'SITE_ADMIN' && me.site_ids.length > 0) {
+                setCurrentSiteId(me.site_ids[0]);
+            }
+        } catch {
+            tokenStorage.clearTokens();
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        restoreSession();
+    }, [restoreSession]);
+
+    /**
+     * 로그인
      */
     const login = useCallback(async (email: string, password: string): Promise<boolean> => {
         setIsLoading(true);
 
-        // Mock: 간단한 지연
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        try {
+            const response = await loginApi({ email, password });
+            const data = response.data;
 
-        if (email === 'admin@guideon.com' && password === 'admin1234') {
-            setUser(MOCK_PLATFORM_ADMIN);
-            setCurrentSiteId(DEFAULT_SITE_ID);
-            setIsLoading(false);
+            tokenStorage.setTokens(data.access_token, data.refresh_token);
+
+            setUser({
+                adminId: data.admin_id,
+                email: data.email,
+                role: data.role,
+                siteIds: data.site_ids ?? [],
+            });
+
+            if (data.role === 'SITE_ADMIN' && data.site_ids && data.site_ids.length > 0) {
+                setCurrentSiteId(data.site_ids[0]);
+            }
+
             return true;
-        } else if (email === 'operator@example.com' && password === 'operator1234') {
-            setUser(MOCK_SITE_ADMIN);
-            setCurrentSiteId(MOCK_SITE_ADMIN.siteIds.length > 0 ? MOCK_SITE_ADMIN.siteIds[0] : null);
+        } catch {
+            return false;
+        } finally {
             setIsLoading(false);
-            return true;
         }
-
-        setIsLoading(false);
-        return false;
     }, []);
 
     /**
      * 로그아웃
      */
-    const logout = useCallback(() => {
-        setUser(null);
-        setCurrentSiteId(null);
-        // 실제 구현 시: localStorage 정리, 리다이렉트
+    const logout = useCallback(async () => {
+        try {
+            await logoutApi();
+        } catch {
+            // 로그아웃 API 실패해도 로컬 정리는 진행
+        } finally {
+            tokenStorage.clearTokens();
+            setUser(null);
+            setCurrentSiteId(null);
+            window.location.href = '/login';
+        }
     }, []);
 
     /**
@@ -122,27 +150,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setCurrentSiteId(siteId);
     }, []);
 
-    /**
-     * 접근 가능한 사이트 목록
-     */
-    const availableSites = useMemo(() => {
-        if (!user) return [];
-        if (user.role === 'PLATFORM_ADMIN') return INITIAL_MOCK_SITES;
-        return INITIAL_MOCK_SITES.filter((site) => user.siteIds.includes(site.siteId));
-    }, [user]);
-
     const value = useMemo<AuthContextType>(
         () => ({
             user,
             isAuthenticated: !!user,
             isLoading,
             currentSiteId,
-            sites: availableSites,
+            sites,
             login,
             logout,
             setCurrentSite,
         }),
-        [user, isLoading, currentSiteId, availableSites, login, logout, setCurrentSite]
+        [user, isLoading, currentSiteId, sites, login, logout, setCurrentSite],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
