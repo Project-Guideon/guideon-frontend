@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { DocumentEntry } from "../../domain/entities/DocumentEntry";
 
 export function useDocument() {
@@ -38,6 +38,24 @@ export function useDocument() {
     const [selectedSite, setSelectedSite] = useState('전체 장소');
     const itemsPerPage = 6;
 
+    const filteredResults = useMemo(() => {
+        const filtered = documents.filter(doc => {
+            const matchesSite = selectedSite === '전체 장소' || doc.site === selectedSite;
+            const matchesSearch = doc.fileName.toLowerCase().includes(searchQuery.toLowerCase());
+            return matchesSite && matchesSearch;
+        });
+        return filtered.sort((a, b) =>  new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+    }, [documents, searchQuery, selectedSite]);
+
+    const totalCount = filteredResults.length; 
+    const totalPages = Math.ceil(totalCount / itemsPerPage) || 1; 
+    
+    useEffect(() => {
+        if (page >= totalPages && totalPages > 0) {
+            setPage(totalPages - 1);
+        }
+    }, [totalPages, page]);
+
     const addDocument = useCallback((newDoc: Omit<DocumentEntry, 'id' | 'uploadedAt' | 'status'>) => {
         const now = new Date();
         const doc: DocumentEntry = {
@@ -49,30 +67,26 @@ export function useDocument() {
         setPage(0);
     }, []);
 
-    const filteredResults = useMemo(() => {
-        const filtered = documents.filter(doc => {
-            const matchesSite = selectedSite === '전체 장소' || doc.site === selectedSite;
-            const matchesSearch = doc.fileName.toLowerCase().includes(searchQuery.toLowerCase());
-            return matchesSite && matchesSearch;
-        });
-        return filtered.sort((a, b) => {
-            return new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime();
-        });
-    }, [documents, searchQuery, selectedSite]);
-
-
     const paginatedDocuments = useMemo(() => {
         const startIndex = page * itemsPerPage;
         return filteredResults.slice(startIndex, startIndex + itemsPerPage);
     }, [filteredResults, page]);
 
-    const totalCount = filteredResults.length; 
-    const totalPages = Math.ceil(totalCount / itemsPerPage) || 1; 
-    
-    const deleteDocument = (id: string) => {
-        setDocuments(prev => prev.filter(doc => doc.id !== id));
-        console.log(`문서 삭제 완료: ${id}`);
-    };
+    const deleteDocument = useCallback((id: string) => {
+        setDocuments(prev => {
+            const newDocs = prev.filter(doc => doc.id !== id);
+            const nextFilteredCount = newDocs.filter((doc: DocumentEntry) => {
+                const matchesSite = selectedSite === '전체 장소' || doc.site === selectedSite;
+                const matchesSearch = doc.fileName.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchesSite && matchesSearch;
+            }).length;
+            const nextTotalPages = Math.ceil(nextFilteredCount / itemsPerPage) || 1;
+             if (page >= nextTotalPages && page > 0) {
+                setPage(nextTotalPages - 1);
+            }
+            return newDocs;
+        });
+    }, [page, selectedSite, searchQuery]);
 
     return {
         documents: paginatedDocuments,
@@ -84,7 +98,7 @@ export function useDocument() {
         setSearchQuery,
         selectedSite,
         setSelectedSite,
-        deleteDocument: (id: string) => setDocuments(prev => prev.filter(doc => doc.id !== id)),
+        deleteDocument,
         addDocument
     };
 }
