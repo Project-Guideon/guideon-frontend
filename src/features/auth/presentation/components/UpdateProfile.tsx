@@ -49,7 +49,7 @@ export function UpdateProfile() {
                         <div>
                             <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">관리자 권한</label>
                             <div className="inline-flex items-center px-2.5 py-1 rounded-full bg-orange-50 text-orange-700 text-xs font-bold border border-orange-100">
-                                {user?.role === 'PLATFORM_ADMIN' ? '사이트 운영자' : '플랫폼 관리자'}
+                                {user?.role === 'PLATFORM_ADMIN' ? '플랫폼 관리자' : '사이트 운영자'}
                             </div>
                         </div>
                     </div>
