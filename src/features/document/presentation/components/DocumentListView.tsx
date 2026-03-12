@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { HiOutlineDocumentText, HiOutlineDocumentPlus,HiChevronRight, HiChevronLeft, HiOutlineMagnifyingGlass, HiOutlineFunnel, HiOutlineMapPin, HiChevronDown, HiCheck } from 'react-icons/hi2';
 import { DocumentTable } from './DocumentTable';
 import { DocumentPagination } from './DocumentPagination';
@@ -48,7 +48,7 @@ export function DocumentListView() {
 }
 
     return (
-        <div className="relative flex flex-col">
+        <div className="relative flex flex-col w-full pb-10">
             {/* 헤더 */}
             <div className="shrink-0 -mt-2">
                 <div className="flex items-center gap-2">
@@ -72,13 +72,24 @@ export function DocumentListView() {
             />
 
             {/* 문서 목록 */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col transition-all min-h-[600px]">
-                <div className="flex-1 bg-white">
-                    <DocumentTable 
-                        documents={documents} 
-                        onDelete={deleteDocument} 
-                        onDownload={(doc) => console.log(doc.fileName)}
-                    />
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col transition-all min-h-[600px] overflow-hidden">
+                <div className="flex-1 bg-white relative">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={page} // 페이지 번호가 바뀔 때마다 실행
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -5 }}
+                            transition={{ duration: 0.2, ease: "easeInOut" }}
+                            className="w-full h-full overflow-hidden scrollbar-hide"
+                        >
+                            <DocumentTable 
+                                documents={documents} 
+                                onDelete={deleteDocument} 
+                                onDownload={(doc) => console.log(doc.fileName)}
+                            />
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
                 <DocumentPagination 
                     currentPage={page} 
