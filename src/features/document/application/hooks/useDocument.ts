@@ -58,9 +58,10 @@ export function useDocument() {
 
     const addDocument = useCallback((newDoc: Omit<DocumentEntry, 'id' | 'uploadedAt' | 'status'>) => {
         const now = new Date();
+        const uploadedAt = new Intl.DateTimeFormat('sv-SE').format(now);
         const doc: DocumentEntry = {
             ...newDoc, id: Math.random().toString(36).substr(2, 9),
-            uploadedAt: now.toISOString().split('T')[0], 
+            uploadedAt, 
             status: 'COMPLETED'
         };
         setDocuments(prev => [doc, ...prev]); 

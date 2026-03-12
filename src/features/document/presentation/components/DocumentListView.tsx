@@ -13,6 +13,18 @@ import { DocumentEntry } from '../../domain/entities/DocumentEntry';
 export function DocumentListView() {
     const { documents,addDocument, page, setPage, totalPages, totalCount, searchQuery, setSearchQuery, selectedSite, setSelectedSite,deleteDocument } = useDocument();
 
+    const ALLOWED_EXTENSIONS = ['pdf', 'docx', 'xlsx', 'txt'] as const;
+    type AllowedExtension = (typeof ALLOWED_EXTENSIONS)[number];
+    const MAX_FILE_SIZE = 20 * 1024 * 1024;
+
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
     useEffect(() => {
         setPage(0);
     }, [searchQuery, selectedSite, setPage]);
@@ -35,17 +47,43 @@ export function DocumentListView() {
         console.log(`다운로드 시작: ${doc.fileName}`);
     };
 
-    const handleFileUpload = (files: File[]) => {
-    files.forEach(file => {
-        const extension = file.name.split('.').pop() as any;
-        addDocument({
-            fileName: file.name,
-            extension: ['pdf', 'docx', 'xlsx', 'txt'].includes(extension) ? extension : 'txt',
-            size: (file.size / (1024 * 1024)).toFixed(1) + 'MB',
-            site: selectedSite === '전체 장소' ? '에버랜드' : selectedSite // 현재 선택된 장소로 자동 할당
+    const handleFileUpload = async (files: File[]) => {
+        const validFiles: File[] = [];
+        const errors: string[] = [];
+
+        files.forEach((file) => {
+            const rawExt = file.name.split('.').pop()?.toLowerCase() || '';
+            const isAllowedExt = ALLOWED_EXTENSIONS.includes(rawExt as AllowedExtension);
+            const isAllowedSize = file.size <= MAX_FILE_SIZE;
+
+            if (!isAllowedExt) {
+                errors.push(`[${file.name}]: 지원하지 않는 형식입니다.`);
+            } else if (!isAllowedSize) {
+                errors.push(`[${file.name}]: 용량이 너무 큽니다. (최대 20MB)`);
+            } else {
+                validFiles.push(file);
+            }
         });
-    });
-}
+
+        if (errors.length > 0) {
+            alert(`일부 파일 업로드 실패:\n\n${errors.join('\n')}`);
+        }
+
+        // 검증 통과한 파일만
+        if (validFiles.length > 0) {
+            for (const file of validFiles) {
+                const extension = file.name.split('.').pop()?.toLowerCase() as AllowedExtension;
+
+                await addDocument({
+                    fileName: file.name,
+                    extension: extension,
+                    size: formatFileSize(file.size),
+                    site: selectedSite === '전체 장소' ? 'internal' : selectedSite
+                });
+            }
+            setIsUploadOpen(false);
+        }
+    };
 
     return (
         <div className="relative flex flex-col w-full pb-10">

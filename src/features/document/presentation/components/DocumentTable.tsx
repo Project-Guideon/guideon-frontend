@@ -41,7 +41,7 @@ const EXTENSION_THEMES = {
 export function DocumentTable({ documents, onDelete, onDownload }: DocumentTableProps) {
     if (documents.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+            <div className="flex flex-col items-center min-h-[400px] justify-center py-20 text-slate-400">
                 <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center mb-4">
                     <HiOutlineDocumentText className="w-10 h-10 text-slate-200" />
                 </div>
@@ -51,8 +51,8 @@ export function DocumentTable({ documents, onDelete, onDownload }: DocumentTable
         );
     }
     return (
-        <div className="w-full overflow-x-auto overflow-y-hidden bg-white scrollbar-hide">
-            <table className="w-full text-left border-separate border-spacing-0 bg-white min-w-[800px]">
+        <div className="w-full overflow-y-hidden bg-white scrollbar-hide">
+            <table className="w-full text-left border-separate border-spacing-0 bg-white min-w-[800px] table-fixed">
                 <thead>
                     <tr className="bg-slate-50/30">
                         <th className="w-[40%] px-25 py-4 text-[13px] font-black text-slate-400 border-b border-slate-100">파일명</th>
@@ -63,15 +63,15 @@ export function DocumentTable({ documents, onDelete, onDownload }: DocumentTable
                     </tr>
                 </thead>
                 <tbody className="bg-white">
-                    <AnimatePresence mode="wait" initial={false}>
+                    <AnimatePresence mode="popLayout" initial={false}>
                         {documents.map((doc) => {
                             const theme = EXTENSION_THEMES[doc.extension] || EXTENSION_THEMES.txt;
                             const Icon = theme.icon;
                             return (
-                                <motion.tr key={doc.id} initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }} 
-                                        exit={{ opacity: 0, scale: 0.98 }}
-                                        transition={{ duration: 0.2 }}
+                                <motion.tr key={doc.id} layout initial={{ opacity: 0, scale: 0.98 }}
+                                        animate={{ opacity: 1, y: 1 }} 
+                                        exit={{ opacity: 0, scale: 0.98,
+                                        transition: { duration: 0.2 }}}
                                         className="group hover:bg-slate-50/50 transition-colors">
                                     {/* 파일명, 아이콘 */}
                                     <td className="px-8 py-4 border-b border-slate-50 bg-white">
