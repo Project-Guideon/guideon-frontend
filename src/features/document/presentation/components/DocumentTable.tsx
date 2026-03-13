@@ -18,24 +18,24 @@ const EXTENSION_THEMES = {
         border: 'border-red-100',
         label: 'PDF Document'
     },
-    docx: {
-        icon: HiOutlineDocument,
-        color: 'text-blue-500',
-        border: 'border-blue-100',
-        label: 'Word Document'
-    },
+    // docx: {
+    //     icon: HiOutlineDocument,
+    //     color: 'text-blue-500',
+    //     border: 'border-blue-100',
+    //     label: 'Word Document'
+    // },
     xlsx: {
         icon: HiOutlineTableCells,
         color: 'text-emerald-500',
         border: 'border-emerald-100',
         label: 'Excel Sheet'
     },
-    txt: {
-        icon: HiOutlineDocument,
-        color: 'text-slate-500',
-        border: 'border-slate-100',
-        label: 'Text File'
-    },
+    // txt: {
+    //     icon: HiOutlineDocument,
+    //     color: 'text-slate-500',
+    //     border: 'border-slate-100',
+    //     label: 'Text File'
+    // },
 }
 
 export function DocumentTable({ documents, onDelete, onDownload }: DocumentTableProps) {
@@ -65,7 +65,7 @@ export function DocumentTable({ documents, onDelete, onDownload }: DocumentTable
                 <tbody className="bg-white">
                     <AnimatePresence mode="popLayout" initial={false}>
                         {documents.map((doc) => {
-                            const theme = EXTENSION_THEMES[doc.extension] || EXTENSION_THEMES.txt;
+                            const theme = EXTENSION_THEMES[doc.extension] || EXTENSION_THEMES.pdf;
                             const Icon = theme.icon;
                             return (
                                 <motion.tr key={doc.id} layout initial={{ opacity: 0, scale: 0.98 }}

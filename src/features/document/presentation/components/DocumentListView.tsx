@@ -13,7 +13,7 @@ import { DocumentEntry } from '../../domain/entities/DocumentEntry';
 export function DocumentListView() {
     const { documents,addDocument, page, setPage, totalPages, totalCount, searchQuery, setSearchQuery, selectedSite, setSelectedSite,deleteDocument } = useDocument();
 
-    const ALLOWED_EXTENSIONS = ['pdf', 'docx', 'xlsx', 'txt'] as const;
+    const ALLOWED_EXTENSIONS = ['pdf', 'xlsx'] as const;
     type AllowedExtension = (typeof ALLOWED_EXTENSIONS)[number];
     const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
@@ -78,7 +78,7 @@ export function DocumentListView() {
                     fileName: file.name,
                     extension: extension,
                     size: formatFileSize(file.size),
-                    site: selectedSite === '전체 장소' ? 'internal' : selectedSite
+                    site: selectedSite === '전체 장소' ? '장소 선택하여 다시 업로드해주세요.' : selectedSite
                 });
             }
             setIsUploadOpen(false);
