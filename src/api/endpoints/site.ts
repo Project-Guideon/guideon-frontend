@@ -1,5 +1,5 @@
 import { apiClient } from '../client';
-import type { ApiResponse, PaginatedResponse } from '@/shared/types/api';
+import type { ApiResponse } from '@/shared/types/api';
 
 /**
  * Site 응답 타입
@@ -45,7 +45,7 @@ export interface InviteResponse {
  * 관광지 목록 조회 (PLATFORM_ADMIN 전용)
  */
 export const getSitesApi = async (params?: { page?: number; size?: number }) => {
-    const response = await apiClient.get<ApiResponse<PaginatedResponse<SiteResponse>>>(
+    const response = await apiClient.get<ApiResponse<SiteResponse[]>>(
         '/admin/sites',
         { params },
     );

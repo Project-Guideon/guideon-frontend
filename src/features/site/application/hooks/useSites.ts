@@ -47,7 +47,7 @@ function toInvite(response: InviteResponse): SiteInvite {
 }
 
 /**
- * useSites — 관광지 데이터 CRUD 및 필터 관리 훅 (API 연동)
+ * useSites - 관광지 데이터 CRUD 및 필터 관리 훅 (API 연동)
  */
 export function useSites() {
     const [sites, setSites] = useState<Site[]>([]);
@@ -60,14 +60,14 @@ export function useSites() {
     });
     const [page, setPage] = useState(0);
 
-    // ───────────── 데이터 로드 ─────────────
+    // 데이터 로드
 
     const fetchSites = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
             const response = await getSitesApi({ size: 1000 });
-            setSites(response.data.items.map(toSite));
+            setSites(response.data.map(toSite));
         } catch {
             setError('관광지 목록을 불러오는 데 실패했습니다.');
         } finally {
@@ -89,7 +89,7 @@ export function useSites() {
         fetchInvites();
     }, [fetchSites, fetchInvites]);
 
-    // ───────────── 필터링 ─────────────
+    // 필터링
 
     const filteredSites = useMemo(() => {
         return sites.filter((site) => {
@@ -103,7 +103,7 @@ export function useSites() {
         });
     }, [sites, filter]);
 
-    // ───────────── 페이지네이션 ─────────────
+    // 페이지네이션
 
     const totalPages = Math.ceil(filteredSites.length / PAGE_SIZE);
 
@@ -112,7 +112,7 @@ export function useSites() {
         return filteredSites.slice(start, start + PAGE_SIZE);
     }, [filteredSites, page]);
 
-    // ───────────── CRUD 액션 ─────────────
+    // CRUD 액션
 
     /** 관광지 생성 */
     const createSite = useCallback(async (request: CreateSiteRequest) => {
@@ -129,10 +129,17 @@ export function useSites() {
     const updateSite = useCallback(async (siteId: number, request: UpdateSiteRequest) => {
         try {
             const response = await updateSiteApi(siteId, { name: request.name });
-            const updated = toSite(response.data);
-            setSites((previous) =>
-                previous.map((site) => site.siteId === siteId ? updated : site),
-            );
+            const updatedSiteData = response?.data;
+            if (updatedSiteData && updatedSiteData.siteId) {
+                const updated = toSite(updatedSiteData);
+                setSites((previous) =>
+                    previous.map((site) => site.siteId === siteId ? updated : site),
+                );
+            } else {
+                setSites((previous) =>
+                    previous.map((site) => site.siteId === siteId ? { ...site, name: request.name } : site),
+                );
+            }
         } catch (err: unknown) {
             const apiError = err as { response?: { data?: { error?: { message?: string } } } };
             setError(apiError.response?.data?.error?.message ?? '관광지 수정에 실패했습니다.');
@@ -145,20 +152,31 @@ export function useSites() {
         if (!target) return;
 
         try {
-            const response = target.isActive
-                ? await deactivateSiteApi(siteId)
-                : await activateSiteApi(siteId);
-            const updated = toSite(response.data);
-            setSites((previous) =>
-                previous.map((site) => site.siteId === siteId ? updated : site),
-            );
+            const isActivating = !target.isActive;
+            const response = isActivating
+                ? await activateSiteApi(siteId)
+                : await deactivateSiteApi(siteId);
+            
+            const updatedSiteData = response?.data;
+            if (updatedSiteData && updatedSiteData.siteId) {
+                // 응답에 업데이트된 관광지 정보가 있을 경우
+                const updated = toSite(updatedSiteData);
+                setSites((previous) =>
+                    previous.map((site) => site.siteId === siteId ? updated : site),
+                );
+            } else {
+                // 응답에 데이터가 없을 경우 (수동 상태 변경)
+                setSites((previous) =>
+                    previous.map((site) => site.siteId === siteId ? { ...site, isActive: isActivating } : site),
+                );
+            }
         } catch (err: unknown) {
             const apiError = err as { response?: { data?: { error?: { message?: string } } } };
             setError(apiError.response?.data?.error?.message ?? '상태 변경에 실패했습니다.');
         }
     }, [sites]);
 
-    /** 관광지 삭제 — API 스펙에 삭제 엔드포인트 없음, 비활성화로 대체 */
+    /** 관광지 삭제 - API 스펙에 삭제 엔드포인트 없음, 비활성화로 대체 */
     const deleteSite = useCallback(async (siteId: number) => {
         try {
             await deactivateSiteApi(siteId);
@@ -174,14 +192,14 @@ export function useSites() {
         }
     }, []);
 
-    // ───────────── 필터 업데이트 ─────────────
+    // 필터 업데이트
 
     const updateFilter = useCallback((updates: Partial<SiteFilter>) => {
         setFilter((previous) => ({ ...previous, ...updates }));
         setPage(0);
     }, []);
 
-    // ───────────── 초대 액션 ─────────────
+    // 초대 액션
 
     /** 관광지에 운영자 초대 */
     const inviteSiteAdmin = useCallback(async (siteId: number, email: string) => {
