@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode, useMemo } from 'react';
 import type { AdminRole } from '@/shared/types/auth';
 import { loginApi, getMeApi, logoutApi } from '@/api/endpoints/auth';
+import { getSitesApi, getSiteApi } from '@/api/endpoints/site';
 import { tokenStorage } from '@/api/client';
 
 /**
@@ -60,7 +61,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [currentSiteId, setCurrentSiteId] = useState<number | null>(null);
-    const [sites] = useState<Site[]>([]);
+    const [sites, setSites] = useState<Site[]>([]);
+
+    /**
+     * 사이트 목록 로드
+     * PLATFORM_ADMIN: GET /admin/sites 전체 목록
+     * SITE_ADMIN: 본인 site_ids로 개별 조회
+     */
+    const fetchSites = useCallback(async (role: AdminRole, siteIds: number[]) => {
+        try {
+            if (role === 'PLATFORM_ADMIN') {
+                const response = await getSitesApi();
+                const siteList = response.data.items.map((site) => ({
+                    siteId: site.siteId,
+                    name: site.name,
+                    isActive: site.isActive,
+                }));
+                setSites(siteList);
+            } else if (siteIds.length > 0) {
+                const siteList = await Promise.all(
+                    siteIds.map(async (siteId) => {
+                        const response = await getSiteApi(siteId);
+                        return {
+                            siteId: response.data.siteId,
+                            name: response.data.name,
+                            isActive: response.data.isActive,
+                        };
+                    }),
+                );
+                setSites(siteList);
+            }
+        } catch {
+            setSites([]);
+        }
+    }, []);
 
     /**
      * 저장된 토큰으로 사용자 정보 복원 (새로고침 대응)
@@ -75,12 +109,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
             const response = await getMeApi();
             const me = response.data;
-            setUser({
+            const authUser: AuthUser = {
                 adminId: me.admin_id,
                 email: me.email,
                 role: me.role,
                 siteIds: me.site_ids,
-            });
+            };
+            setUser(authUser);
+
+            await fetchSites(me.role, me.site_ids);
 
             if (me.role === 'SITE_ADMIN' && me.site_ids.length > 0) {
                 setCurrentSiteId(me.site_ids[0]);
@@ -90,7 +127,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [fetchSites]);
 
     useEffect(() => {
         restoreSession();
@@ -105,6 +142,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
             const response = await loginApi({ email, password });
             const data = response.data;
+            const siteIds = data.site_ids ?? [];
 
             tokenStorage.setTokens(data.access_token, data.refresh_token);
 
@@ -112,11 +150,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 adminId: data.admin_id,
                 email: data.email,
                 role: data.role,
-                siteIds: data.site_ids ?? [],
+                siteIds,
             });
 
-            if (data.role === 'SITE_ADMIN' && data.site_ids && data.site_ids.length > 0) {
-                setCurrentSiteId(data.site_ids[0]);
+            await fetchSites(data.role, siteIds);
+
+            if (data.role === 'SITE_ADMIN' && siteIds.length > 0) {
+                setCurrentSiteId(siteIds[0]);
             }
 
             return true;
@@ -125,7 +165,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [fetchSites]);
 
     /**
      * 로그아웃
