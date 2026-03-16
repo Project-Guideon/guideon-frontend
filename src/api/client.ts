@@ -7,7 +7,7 @@ const REFRESH_TOKEN_KEY = 'refreshToken';
  * API 클라이언트
  */
 export const apiClient = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1',
+    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8081/api/v1',
     timeout: 10000,
     headers: {
         'Content-Type': 'application/json',
@@ -49,6 +49,17 @@ apiClient.interceptors.request.use(
     },
     (error) => Promise.reject(error),
 );
+
+/**
+ * 토큰 갱신 API 호출
+ * auth.ts의 refreshTokenApi를 사용하면 순환 import 발생하므로 여기서 직접 정의
+ */
+async function requestTokenRefresh(refreshToken: string) {
+    const response = await apiClient.post<{
+        data: { access_token: string; refresh_token: string };
+    }>('/admin/auth/refresh', { refresh_token: refreshToken });
+    return response.data.data;
+}
 
 /**
  * 토큰 갱신 중복 방지
@@ -120,15 +131,12 @@ apiClient.interceptors.response.use(
             }
 
             try {
-                const response = await apiClient.post('/admin/auth/refresh', {
-                    refresh_token: refreshToken,
-                });
-                const { access_token, refresh_token } = response.data.data;
+                const tokens = await requestTokenRefresh(refreshToken);
 
-                tokenStorage.setTokens(access_token, refresh_token);
-                processPendingRequests(access_token);
+                tokenStorage.setTokens(tokens.access_token, tokens.refresh_token);
+                processPendingRequests(tokens.access_token);
 
-                originalRequest.headers.Authorization = `Bearer ${access_token}`;
+                originalRequest.headers.Authorization = `Bearer ${tokens.access_token}`;
                 return apiClient(originalRequest);
             } catch (refreshError) {
                 processPendingRequests(null, refreshError);
