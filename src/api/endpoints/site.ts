@@ -22,9 +22,10 @@ export interface SiteResponse {
 /**
  * 관광지 목록 조회 (PLATFORM_ADMIN 전용)
  */
-export const getSitesApi = async () => {
+export const getSitesApi = async (params?: { page?: number; size?: number }) => {
     const response = await apiClient.get<ApiResponse<PaginatedResponse<SiteResponse>>>(
         '/admin/sites',
+        { params },
     );
     return response.data;
 };

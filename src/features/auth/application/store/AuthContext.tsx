@@ -65,13 +65,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     /**
      * 사이트 목록 로드
-     * PLATFORM_ADMIN: GET /admin/sites 전체 목록
-     * SITE_ADMIN: 본인 site_ids로 개별 조회
+     * PLATFORM_ADMIN: GET /admin/sites 전체 목록 (size=1000으로 한 번에 조회)
+     * SITE_ADMIN: 본인 site_ids로 개별 조회 (Promise.allSettled로 부분 실패 허용)
      */
     const fetchSites = useCallback(async (role: AdminRole, siteIds: number[]) => {
         try {
             if (role === 'PLATFORM_ADMIN') {
-                const response = await getSitesApi();
+                const response = await getSitesApi({ size: 1000 });
                 const siteList = response.data.items.map((site) => ({
                     siteId: site.siteId,
                     name: site.name,
@@ -79,16 +79,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 }));
                 setSites(siteList);
             } else if (siteIds.length > 0) {
-                const siteList = await Promise.all(
-                    siteIds.map(async (siteId) => {
-                        const response = await getSiteApi(siteId);
-                        return {
-                            siteId: response.data.siteId,
-                            name: response.data.name,
-                            isActive: response.data.isActive,
-                        };
-                    }),
+                const results = await Promise.allSettled(
+                    siteIds.map((siteId) => getSiteApi(siteId)),
                 );
+                const siteList = results
+                    .filter((result): result is PromiseFulfilledResult<Awaited<ReturnType<typeof getSiteApi>>> =>
+                        result.status === 'fulfilled',
+                    )
+                    .map((result) => ({
+                        siteId: result.value.data.siteId,
+                        name: result.value.data.name,
+                        isActive: result.value.data.isActive,
+                    }));
                 setSites(siteList);
             }
         } catch {
