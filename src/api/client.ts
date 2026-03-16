@@ -29,10 +29,12 @@ export const tokenStorage = {
     setTokens: (accessToken: string, refreshToken: string): void => {
         localStorage.setItem(TOKEN_KEY, accessToken);
         localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+        document.cookie = `${TOKEN_KEY}=${accessToken}; path=/; max-age=900; SameSite=Lax`;
     },
     clearTokens: (): void => {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(REFRESH_TOKEN_KEY);
+        document.cookie = `${TOKEN_KEY}=; path=/; max-age=0`;
     },
 };
 
