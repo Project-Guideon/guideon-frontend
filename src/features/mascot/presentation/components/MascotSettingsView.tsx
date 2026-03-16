@@ -1,14 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     HiOutlineSparkles,
     HiOutlinePlusCircle,
     HiOutlineExclamationTriangle,
     HiOutlineArrowPath,
+    HiOutlineChevronDown,
 } from 'react-icons/hi2';
-import { useAuthContext } from '@/features/auth/application/store/AuthContext';
+import { useAuth, useSiteContext } from '@/features/auth/application/hooks/useAuth';
 import { useMascot } from '@/features/mascot/application/hooks/useMascot';
 import { MascotInfoCard } from './MascotInfoCard';
 import { MascotPromptCard } from './MascotPromptCard';
@@ -27,7 +28,8 @@ type FormTab = 'basic' | 'prompt' | 'tts';
  * - PLATFORM_ADMIN 전용 (사이트 선택 필요)
  */
 export function MascotSettingsView() {
-    const { currentSiteId, sites } = useAuthContext();
+    const { isPlatformAdmin } = useAuth();
+    const { currentSiteId, currentSite, sites, setCurrentSite } = useSiteContext();
     const {
         mascot,
         generation,
@@ -49,7 +51,7 @@ export function MascotSettingsView() {
     const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
     const [formInitialTab, setFormInitialTab] = useState<FormTab>('basic');
 
-    const currentSiteName = sites.find((site) => site.siteId === currentSiteId)?.name ?? '';
+    const currentSiteName = currentSite?.name ?? '';
 
     // ───────────── 이벤트 핸들러 ─────────────
 
@@ -93,8 +95,12 @@ export function MascotSettingsView() {
     if (!currentSiteId) {
         return (
             <div className="flex flex-col gap-4">
-                <PageHeader />
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-16 flex flex-col items-center justify-center text-center">
+                <PageHeader 
+                    isPlatformAdmin={isPlatformAdmin} 
+                    sites={sites} 
+                    onSelectSite={setCurrentSite} 
+                />
+                <div className="glass-strong rounded-3xl p-16 flex flex-col items-center justify-center text-center mt-4">
                     <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-4">
                         <HiOutlineExclamationTriangle className="w-8 h-8 text-slate-300" />
                     </div>
@@ -111,8 +117,13 @@ export function MascotSettingsView() {
     if (isLoading) {
         return (
             <div className="flex flex-col gap-4">
-                <PageHeader siteName={currentSiteName} />
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-16 flex flex-col items-center justify-center">
+                <PageHeader 
+                    siteName={currentSiteName} 
+                    isPlatformAdmin={isPlatformAdmin} 
+                    sites={sites} 
+                    onSelectSite={setCurrentSite} 
+                />
+                <div className="glass-strong rounded-3xl p-16 flex flex-col items-center justify-center mt-4">
                     <div className="w-10 h-10 border-[3px] border-orange-500 border-t-transparent rounded-full animate-spin mb-4" />
                     <p className="text-sm font-medium text-slate-500">마스코트 정보를 불러오는 중...</p>
                 </div>
@@ -124,8 +135,13 @@ export function MascotSettingsView() {
     if (error && !mascot) {
         return (
             <div className="flex flex-col gap-4">
-                <PageHeader siteName={currentSiteName} />
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-16 flex flex-col items-center justify-center text-center">
+                <PageHeader 
+                    siteName={currentSiteName} 
+                    isPlatformAdmin={isPlatformAdmin} 
+                    sites={sites} 
+                    onSelectSite={setCurrentSite} 
+                />
+                <div className="glass-strong rounded-3xl p-16 flex flex-col items-center justify-center text-center mt-4">
                     <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mb-4">
                         <HiOutlineExclamationTriangle className="w-8 h-8 text-red-400" />
                     </div>
@@ -147,12 +163,17 @@ export function MascotSettingsView() {
     if (notFound || !mascot) {
         return (
             <div className="flex flex-col gap-4">
-                <PageHeader siteName={currentSiteName} />
+                <PageHeader 
+                    siteName={currentSiteName} 
+                    isPlatformAdmin={isPlatformAdmin} 
+                    sites={sites} 
+                    onSelectSite={setCurrentSite} 
+                />
                 <motion.div
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
-                    className="bg-white rounded-2xl border border-slate-100 shadow-sm p-16 flex flex-col items-center justify-center text-center"
+                    className="glass-strong rounded-3xl p-16 flex flex-col items-center justify-center text-center mt-4"
                 >
                     <div className="w-20 h-20 rounded-2xl bg-orange-50 flex items-center justify-center mb-5">
                         <HiOutlineSparkles className="w-10 h-10 text-orange-400" />
@@ -189,7 +210,13 @@ export function MascotSettingsView() {
     // ───────────── 마스코트 등록 완료 ─────────────
     return (
         <div className="flex flex-col gap-4">
-            <PageHeader siteName={currentSiteName} mascotName={mascot.name} />
+            <PageHeader 
+                siteName={currentSiteName} 
+                mascotName={mascot.name} 
+                isPlatformAdmin={isPlatformAdmin} 
+                sites={sites} 
+                onSelectSite={setCurrentSite} 
+            />
 
             {/* 에러 배너 */}
             {error && (
@@ -245,25 +272,85 @@ export function MascotSettingsView() {
 /**
  * 페이지 헤더
  */
-function PageHeader({ siteName, mascotName }: { siteName?: string; mascotName?: string }) {
+function PageHeader({ 
+    siteName, 
+    mascotName,
+    isPlatformAdmin,
+    sites,
+    onSelectSite
+}: { 
+    siteName?: string; 
+    mascotName?: string;
+    isPlatformAdmin?: boolean;
+    sites?: { siteId: number; name: string }[];
+    onSelectSite?: (id: number) => void;
+}) {
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
     return (
-        <div>
-            <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                <HiOutlineSparkles className="w-7 h-7 text-orange-500" />
-                마스코트 관리
-            </h2>
-            <p className="text-sm text-slate-500 mt-1 font-medium">
-                {siteName && (
-                    <>
-                        <span className="font-bold text-orange-600">{siteName}</span>의{' '}
-                    </>
-                )}
-                {mascotName ? (
-                    <>AI 마스코트 <span className="font-bold text-slate-700">{mascotName}</span> 설정</>
-                ) : (
-                    'AI 마스코트를 등록하고 관리합니다'
-                )}
-            </p>
+        <div className="flex items-start justify-between">
+            <div>
+                <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                    <HiOutlineSparkles className="w-7 h-7 text-orange-500" />
+                    마스코트 관리
+                </h2>
+                <p className="text-sm text-slate-500 mt-1.5 font-medium">
+                    {siteName && <><span className="font-bold text-orange-600">{siteName}</span>의{' '}</>}
+                    {mascotName ? (
+                        <>AI 마스코트 <span className="font-bold text-slate-700">{mascotName}</span> 설정</>
+                    ) : (
+                        'AI 마스코트를 등록하고 관리합니다'
+                    )}
+                </p>
+            </div>
+
+            {isPlatformAdmin && sites && onSelectSite && (
+                <div className="relative z-20">
+                    <button
+                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                        className="flex items-center gap-2 glass-strong hover:bg-white/90 px-4 py-2.5 rounded-2xl text-slate-800 font-bold transition-all shadow-sm group"
+                    >
+                        <span className="text-orange-600 font-black">{siteName ?? '관광지 선택'}</span>
+                        <HiOutlineChevronDown className={`w-4 h-4 text-slate-400 group-hover:text-orange-500 transition-all ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    <AnimatePresence>
+                        {isDropdownOpen && (
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                    transition={{ duration: 0.15, ease: 'easeOut' }}
+                                    className="absolute top-full right-0 mt-2 w-56 glass-strong rounded-2xl py-2 z-50 shadow-xl overflow-hidden border border-white/40"
+                                >
+                                    <div className="px-4 py-2 mb-1 border-b border-black/5">
+                                        <p className="text-xs font-bold text-slate-400">관광지 전환</p>
+                                    </div>
+                                    <div className="max-h-60 overflow-y-auto">
+                                        {sites.map((site) => (
+                                            <button
+                                                key={site.siteId}
+                                                onClick={() => {
+                                                    onSelectSite(site.siteId);
+                                                    setIsDropdownOpen(false);
+                                                }}
+                                                className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-all
+                                                    ${siteName === site.name
+                                                        ? 'bg-orange-50/50 text-orange-600'
+                                                        : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
+                                                    }`}
+                                            >
+                                                {site.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            </>
+                        )}
+                    </AnimatePresence>
+                </div>
+            )}
         </div>
     );
 }
