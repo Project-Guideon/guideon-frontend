@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { HiOutlineTrash, HiOutlineDocumentText, HiOutlineArrowDownTray, HiOutlineDocumentArrowUp, HiOutlineTableCells, HiOutlineDocumentMinus, HiOutlineDocument } from 'react-icons/hi2';
+import { HiOutlineTrash, HiOutlineDocumentText, HiOutlineArrowDownTray, HiOutlineTableCells } from 'react-icons/hi2';
 import { DocumentEntry } from '../../domain/entities/DocumentEntry';
 import { DocumentStatusBadge } from './DocumentStatusBadge';
 
@@ -51,7 +51,7 @@ export function DocumentTable({ documents, onDelete, onDownload }: DocumentTable
         );
     }
     return (
-        <div className="w-full overflow-y-hidden bg-white scrollbar-hide">
+        <div className="w-full overflow-y-hidden overflow-x-auto bg-white scrollbar-hide">
             <table className="w-full text-left border-separate border-spacing-0 bg-white min-w-[800px] table-fixed">
                 <thead>
                     <tr className="bg-slate-50/30">
@@ -74,12 +74,12 @@ export function DocumentTable({ documents, onDelete, onDownload }: DocumentTable
                                         transition: { duration: 0.2 }}}
                                         className="group hover:bg-slate-50/50 transition-colors">
                                     {/* 파일명, 아이콘 */}
-                                    <td className="px-8 py-4 border-b border-slate-50 bg-white">
-                                        <div className="flex items-center gap-4">
+                                    <td className="px-8 py-4 border-b border-slate-50 bg-white min-w-0">
+                                        <div className="flex items-center gap-4 overflow-hidden">
                                             <div className={`w-12 h-12 rounded-2xl ${theme.border} border flex items-center justify-center ${theme.color} shadow-sm group-hover:scale-105 transition-transform duration-300`}>
                                                 <Icon className="w-5 h-5" />
                                             </div>
-                                            <div className="flex flex-col min-w-0">
+                                            <div className="flex flex-col min-w-0 overflow-hidden">
                                                 <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900 truncate">
                                                     {doc.fileName}
                                                 </span>

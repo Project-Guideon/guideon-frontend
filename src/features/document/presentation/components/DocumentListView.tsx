@@ -1,14 +1,13 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { HiOutlineDocumentText, HiOutlineDocumentPlus,HiChevronRight, HiChevronLeft, HiOutlineMagnifyingGlass, HiOutlineFunnel, HiOutlineMapPin, HiChevronDown, HiCheck } from 'react-icons/hi2';
+import { HiOutlineDocumentText } from 'react-icons/hi2';
 import { DocumentTable } from './DocumentTable';
 import { DocumentPagination } from './DocumentPagination';
 import { DocumentFilter } from './DocumentFilter';
 import { DocumentUploadPanel } from './DocumentUploadPanel';
 import { useDocument } from '@/features/document/application/hooks/useDocument';
-import { DocumentEntry } from '../../domain/entities/DocumentEntry';
 
 export function DocumentListView() {
     const { documents,addDocument, page, setPage, totalPages, totalCount, searchQuery, setSearchQuery, selectedSite, setSelectedSite,deleteDocument } = useDocument();
@@ -31,22 +30,7 @@ export function DocumentListView() {
 
     const [isUploadOpen, setIsUploadOpen] = useState(false);
 
-    const filteredDocuments = useMemo(() => {
-        return documents.filter((doc: DocumentEntry) => {
-            const matchesSite = selectedSite === '전체 장소' || doc.site === selectedSite;
-            const matchesSearch = doc.fileName.toLowerCase().includes(searchQuery.toLowerCase());
-            return matchesSite && matchesSearch;
-        });
-    }, [documents, selectedSite, searchQuery]);
-
-    const handleDelete = (id: string) => {
-        console.log(`삭제 요청: ${id}`);
-    };
-
-    const handleDownload = (doc: DocumentEntry) => {
-        console.log(`다운로드 시작: ${doc.fileName}`);
-    };
-
+    
     const handleFileUpload = async (files: File[]) => {
         const validFiles: File[] = [];
         const errors: string[] = [];
