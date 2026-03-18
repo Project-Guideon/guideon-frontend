@@ -10,7 +10,7 @@ import { DocumentUploadPanel } from './DocumentUploadPanel';
 import { useDocument } from '@/features/document/application/hooks/useDocument';
 
 export function DocumentListView() {
-    const { documents, addDocument, page, setPage, totalPages, totalCount, searchQuery, setSearchQuery, selectedSite, setSelectedSite, deleteDocument } = useDocument();
+    const { documents, addDocument, page, setPage, totalPages, totalCount, searchQuery, setSearchQuery, selectedSite, setSelectedSite, selectedExtension, setSelectedExtension, deleteDocument } = useDocument();
 
     const ALLOWED_EXTENSIONS = ['pdf', 'xlsx'] as const;
     type AllowedExtension = (typeof ALLOWED_EXTENSIONS)[number];
@@ -26,7 +26,7 @@ export function DocumentListView() {
 
     useEffect(() => {
         setPage(0);
-    }, [searchQuery, selectedSite, setPage]);
+    }, [searchQuery, selectedSite, selectedExtension, setPage]);
 
     const [isUploadOpen, setIsUploadOpen] = useState(false);
 
@@ -89,6 +89,8 @@ export function DocumentListView() {
                 setSearchQuery={setSearchQuery}
                 selectedSite={selectedSite}
                 setSelectedSite={setSelectedSite}
+                selectedExtension={selectedExtension}
+                setSelectedExtension={setSelectedExtension}
                 totalCount={totalCount}
                 onUploadClick={() => setIsUploadOpen(true)}
             />
@@ -98,7 +100,7 @@ export function DocumentListView() {
                 <div className="flex-1 bg-white relative overflow-hidden scrollbar-hide">
                     <AnimatePresence mode="wait">
                         <motion.div
-                            key={`${page}-${selectedSite}-${searchQuery}`} // 페이지, 검색어, 장소 필터가 바뀔 때마다 부드럽게 전환
+                            key={`${page}-${selectedSite}-${selectedExtension}-${searchQuery}`} // 페이지, 검색어, 장소/확장자 필터가 바뀔 때마다 부드럽게 전환
                             initial={{ opacity: 0, y: 5 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -5 }}

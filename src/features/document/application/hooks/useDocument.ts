@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import type { DocumentEntry } from "../../domain/entities/DocumentEntry";
 
 export function useDocument() {
@@ -36,62 +36,61 @@ export function useDocument() {
     const [page, setPage] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedSite, setSelectedSite] = useState('전체 장소');
+    const [selectedExtension, setSelectedExtension] = useState('전체 파일');
     const itemsPerPage = 6;
 
     const filteredResults = useMemo(() => {
         const filtered = documents.filter(doc => {
             const matchesSite = selectedSite === '전체 장소' || doc.site === selectedSite;
+            const matchesExtension = selectedExtension === '전체 파일' || doc.extension.toLowerCase() === selectedExtension.toLowerCase();
             const matchesSearch = doc.fileName.toLowerCase().includes(searchQuery.toLowerCase());
-            return matchesSite && matchesSearch;
+            return matchesSite && matchesExtension && matchesSearch;
         });
-        return filtered.sort((a, b) =>  new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
-    }, [documents, searchQuery, selectedSite]);
+        return filtered.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+    }, [documents, searchQuery, selectedSite, selectedExtension]);
 
-    const totalCount = filteredResults.length; 
-    const totalPages = Math.ceil(totalCount / itemsPerPage) || 1; 
-    
-    useEffect(() => {
-        if (page >= totalPages && totalPages > 0) {
-            setPage(totalPages - 1);
-        }
-    }, [totalPages, page]);
+    const totalCount = filteredResults.length;
+    const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
+
+    const safePage = page >= totalPages ? Math.max(0, totalPages - 1) : page;
 
     const addDocument = useCallback((newDoc: Omit<DocumentEntry, 'id' | 'uploadedAt' | 'status'>) => {
         const now = new Date();
         const uploadedAt = new Intl.DateTimeFormat('sv-SE').format(now);
         const doc: DocumentEntry = {
             ...newDoc, id: Math.random().toString(36).substr(2, 9),
-            uploadedAt, 
+            uploadedAt,
             status: 'COMPLETED'
         };
-        setDocuments(prev => [doc, ...prev]); 
+        setDocuments(prev => [doc, ...prev]);
         setPage(0);
     }, []);
 
     const paginatedDocuments = useMemo(() => {
-        const startIndex = page * itemsPerPage;
+        const startIndex = safePage * itemsPerPage;
         return filteredResults.slice(startIndex, startIndex + itemsPerPage);
-    }, [filteredResults, page]);
+    }, [filteredResults, safePage]);
 
     const deleteDocument = useCallback((id: string) => {
         setDocuments(prev => {
             const newDocs = prev.filter(doc => doc.id !== id);
             const nextFilteredCount = newDocs.filter((doc: DocumentEntry) => {
                 const matchesSite = selectedSite === '전체 장소' || doc.site === selectedSite;
+                const matchesExtension = selectedExtension === '전체 파일' || doc.extension.toLowerCase() === selectedExtension.toLowerCase();
                 const matchesSearch = doc.fileName.toLowerCase().includes(searchQuery.toLowerCase());
-                return matchesSite && matchesSearch;
+                return matchesSite && matchesExtension && matchesSearch;
             }).length;
             const nextTotalPages = Math.ceil(nextFilteredCount / itemsPerPage) || 1;
-             if (page >= nextTotalPages && page > 0) {
+            if (page >= nextTotalPages && page > 0) {
                 setPage(nextTotalPages - 1);
             }
             return newDocs;
         });
-    }, [page, selectedSite, searchQuery]);
+    }, [page, selectedSite, selectedExtension, searchQuery]);
 
     return {
         documents: paginatedDocuments,
-        page,
+        page: safePage,
         setPage,
         totalPages,
         totalCount,
@@ -99,6 +98,8 @@ export function useDocument() {
         setSearchQuery,
         selectedSite,
         setSelectedSite,
+        selectedExtension,
+        setSelectedExtension,
         deleteDocument,
         addDocument
     };
