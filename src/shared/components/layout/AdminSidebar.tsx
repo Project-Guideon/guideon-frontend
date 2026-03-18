@@ -14,7 +14,8 @@ import {
     HiOutlineBars3,
     HiOutlineXMark,
     HiOutlineBuildingLibrary,
-    HiOutlineUserCircle
+    HiOutlineUserCircle,
+    HiOutlineEnvelope
 } from 'react-icons/hi2';
 
 /**
@@ -62,6 +63,7 @@ const MENU_ITEMS: MenuItem[] = [
     { id: 'zones', label: '구역·장소', href: '/admin/zones', icon: HiOutlineMapPin, requiredRole: 'ALL' },
     { id: 'devices', label: '디바이스', href: '/admin/devices', icon: HiOutlineDeviceTablet, requiredRole: 'ALL' },
     { id: 'documents', label: '문서 관리', href: '/admin/documents', icon: HiOutlineDocumentText, requiredRole: 'ALL' },
+    { id: 'invites', label: '초대 관리', href: '/admin/invites', icon: HiOutlineEnvelope, requiredRole: 'PLATFORM_ADMIN' },
 ];
 
 const BOTTOM_MENU: MenuItem[] = [
