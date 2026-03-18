@@ -84,6 +84,7 @@ export function AdminHeader() {
         if (path.startsWith('/admin/sites')) return '관광지 관리';
         if (path.startsWith('/admin/zones')) return '구역 관리';
         if (path.startsWith('/admin/places')) return '장소 관리';
+        if (path.startsWith('/admin/mascot')) return '마스코트 관리';
         if (path.startsWith('/admin/devices')) return '디바이스 관리';
         if (path.startsWith('/admin/documents')) return '문서 관리';
         return 'GUIDEON Admin';
