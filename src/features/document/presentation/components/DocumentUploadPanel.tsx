@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { HiOutlineXMark, HiOutlineDocumentText, HiOutlineCloudArrowUp, HiOutlineDocumentPlus } from 'react-icons/hi2';
 
@@ -97,7 +97,7 @@ export function DocumentUploadPanel({ onClose, onUpload }: DocumentUploadPanelPr
                                     <HiOutlineCloudArrowUp className="w-8 h-8" />
                                 </div>
                                 <p className="text-sm font-black text-slate-700">클릭하거나 파일을 드래그하세요</p>
-                                <p className="text-[10px] text-slate-400 mt-1 mb-4 font-bold uppercase tracking-tighter">PDF, DOCX, XLSX, TXT (Max 20MB)</p>
+                                <p className="text-[10px] text-slate-400 mt-1 mb-4 font-bold uppercase tracking-tighter">PDF, XLSX (Max 20MB)</p>
                             </>
                         ) : (
                             <div className="w-full px-4 space-y-2 mt-2 max-h-[300px] overflow-y-auto">

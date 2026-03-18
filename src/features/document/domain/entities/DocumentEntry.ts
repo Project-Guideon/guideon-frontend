@@ -1,7 +1,7 @@
 /**
  * 문서 업로드 유형 
  */
-export type DocumentStatus = 'COMPLETED' | 'PROCESSING' | 'FAILED' | 'PENDING';
+export type DocumentStatus = 'COMPLETED' | 'PROCESSING' | 'FAILED' ;
 
 /**
  * 문서 업로드 엔티티
@@ -12,7 +12,7 @@ export interface DocumentEntry {
     id: string;
     fileName: string;
     status: DocumentStatus;
-    extension: 'pdf' | 'docx' | 'xlsx' | 'txt' ;
+    extension: 'pdf' | 'xlsx' ;
     size: string;
     uploadedAt: string;
     site: string;

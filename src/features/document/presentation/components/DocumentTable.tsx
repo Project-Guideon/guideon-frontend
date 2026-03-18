@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { HiOutlineTrash, HiOutlineDocumentText, HiOutlineArrowDownTray, HiOutlineDocumentArrowUp, HiOutlineTableCells, HiOutlineDocumentMinus, HiOutlineDocument } from 'react-icons/hi2';
+import { HiOutlineTrash, HiOutlineDocumentText, HiOutlineArrowDownTray, HiOutlineTableCells } from 'react-icons/hi2';
 import { DocumentEntry } from '../../domain/entities/DocumentEntry';
 import { DocumentStatusBadge } from './DocumentStatusBadge';
 
@@ -18,24 +18,24 @@ const EXTENSION_THEMES = {
         border: 'border-red-100',
         label: 'PDF Document'
     },
-    docx: {
-        icon: HiOutlineDocument,
-        color: 'text-blue-500',
-        border: 'border-blue-100',
-        label: 'Word Document'
-    },
+    // docx: {
+    //     icon: HiOutlineDocument,
+    //     color: 'text-blue-500',
+    //     border: 'border-blue-100',
+    //     label: 'Word Document'
+    // },
     xlsx: {
         icon: HiOutlineTableCells,
         color: 'text-emerald-500',
         border: 'border-emerald-100',
         label: 'Excel Sheet'
     },
-    txt: {
-        icon: HiOutlineDocument,
-        color: 'text-slate-500',
-        border: 'border-slate-100',
-        label: 'Text File'
-    },
+    // txt: {
+    //     icon: HiOutlineDocument,
+    //     color: 'text-slate-500',
+    //     border: 'border-slate-100',
+    //     label: 'Text File'
+    // },
 }
 
 export function DocumentTable({ documents, onDelete, onDownload }: DocumentTableProps) {
@@ -51,7 +51,7 @@ export function DocumentTable({ documents, onDelete, onDownload }: DocumentTable
         );
     }
     return (
-        <div className="w-full overflow-y-hidden bg-white scrollbar-hide">
+        <div className="w-full h-[460px] overflow-y-hidden bg-white">
             <table className="w-full text-left border-separate border-spacing-0 bg-white min-w-[800px] table-fixed">
                 <thead>
                     <tr className="bg-slate-50/30">
@@ -63,23 +63,22 @@ export function DocumentTable({ documents, onDelete, onDownload }: DocumentTable
                     </tr>
                 </thead>
                 <tbody className="bg-white">
-                    <AnimatePresence mode="popLayout" initial={false}>
+                    <AnimatePresence initial={false} mode="popLayout">
                         {documents.map((doc) => {
-                            const theme = EXTENSION_THEMES[doc.extension] || EXTENSION_THEMES.txt;
+                            const theme = EXTENSION_THEMES[doc.extension] || EXTENSION_THEMES.pdf;
                             const Icon = theme.icon;
                             return (
-                                <motion.tr key={doc.id} layout initial={{ opacity: 0, scale: 0.98 }}
-                                        animate={{ opacity: 1, y: 1 }} 
-                                        exit={{ opacity: 0, scale: 0.98,
-                                        transition: { duration: 0.2 }}}
-                                        className="group hover:bg-slate-50/50 transition-colors">
+                                <motion.tr key={doc.id} layout initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0, transition: { duration: 0.15 } }}
+                                    exit={{ opacity: 0, x: -100, transition: { duration: 0.1, ease: "easeInOut" } }}
+                                    className="group hover:bg-slate-50/50 transition-colors">
                                     {/* 파일명, 아이콘 */}
-                                    <td className="px-8 py-4 border-b border-slate-50 bg-white">
-                                        <div className="flex items-center gap-4">
-                                            <div className={`w-12 h-12 rounded-2xl ${theme.border} border flex items-center justify-center ${theme.color} shadow-sm group-hover:scale-105 transition-transform duration-300`}>
+                                    <td className="px-8 py-4 border-b border-slate-50 bg-white min-w-0">
+                                        <div className="flex items-center gap-4 overflow-hidden">
+                                            <div className={`w-12 h-12 rounded-2xl ${theme.border} border flex items-center justify-center ${theme.color} shadow-sm group-hover:scale-105 transition-transform duration-300 shrink-0`}>
                                                 <Icon className="w-5 h-5" />
                                             </div>
-                                            <div className="flex flex-col min-w-0">
+                                            <div className="flex flex-col min-w-0 overflow-hidden">
                                                 <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900 truncate">
                                                     {doc.fileName}
                                                 </span>
@@ -99,29 +98,29 @@ export function DocumentTable({ documents, onDelete, onDownload }: DocumentTable
 
                                     {/*파일 크기 */}
                                     <td className="px-6 py-4 text-center border-b border-slate-50 bg-white">
-                                        <span className="text-xs text-slate-500 font-bold tabular-nums">
+                                        <span className="text-xs text-slate-500 font-bold tabular-nums block">
                                             {doc.size}
                                         </span>
                                     </td>
 
                                     {/* 업로드 일시 */}
                                     <td className="px-6 py-4 text-center border-b border-slate-50 bg-white">
-                                        <span className="text-xs text-slate-500 font-medium tabular-nums">
+                                        <span className="text-xs text-slate-500 font-medium tabular-nums block">
                                             {doc.uploadedAt}
                                         </span>
                                     </td>
 
                                     {/* 작업 */}
                                     <td className="px-8 py-4 border-b border-slate-50 bg-white">
-                                        <div className="flex items-center justify-end gap-1 opacity-0 opacity-100 transition-opacity">
-                                            <button 
+                                        <div className="flex items-center justify-end gap-1 transition-opacity">
+                                            <button
                                                 onClick={() => onDownload?.(doc)}
                                                 className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                                                 title="다운로드"
                                             >
                                                 <HiOutlineArrowDownTray className="w-5 h-5" />
                                             </button>
-                                            <button 
+                                            <button
                                                 onClick={() => onDelete(doc.id)}
                                                 className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                                                 title="삭제"
