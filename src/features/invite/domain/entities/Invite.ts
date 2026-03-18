@@ -17,7 +17,7 @@ export interface AcceptInviteResponse {
     admin_id: number;
     email: string;
     role: AdminRole;
-    site_ids: number[];
+    site_ids?: number[];
 }
 
 /**

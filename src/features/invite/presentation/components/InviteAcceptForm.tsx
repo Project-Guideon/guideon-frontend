@@ -255,14 +255,14 @@ export function InviteAcceptForm({
 
                     {/* Validation Error */}
                     {validationError && (
-                        <div className="invite-error-card">
+                        <div className="invite-error-card" role="alert" aria-live="polite">
                             {validationError}
                         </div>
                     )}
 
                     {/* API Error (recoverable) */}
                     {errorMessage && status === 'error' && errorType !== 'INVITE_EXPIRED' && errorType !== 'INVITE_ALREADY_USED' && errorType !== 'NOT_FOUND' && (
-                        <div className="invite-error-card">
+                        <div className="invite-error-card" role="alert" aria-live="polite">
                             {errorMessage}
                         </div>
                     )}

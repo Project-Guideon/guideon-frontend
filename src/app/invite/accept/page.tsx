@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, Suspense } from 'react';
 import { InviteAcceptForm } from '@/features/invite/presentation/components/InviteAcceptForm';
 import { useInviteAccept } from '@/features/invite/application/hooks/useInviteAccept';
 
@@ -15,12 +15,10 @@ function InviteAcceptContent() {
     const token = searchParams.get('token');
 
     const { status, errorType, errorMessage, acceptInvite, clearError } = useInviteAccept();
-    const [noToken, setNoToken] = useState(false);
 
     /** 토큰 없으면 로그인으로 리다이렉트 */
     useEffect(() => {
         if (!token) {
-            setNoToken(true);
             const timer = setTimeout(() => router.replace('/login'), 2000);
             return () => clearTimeout(timer);
         }
@@ -40,8 +38,8 @@ function InviteAcceptContent() {
         acceptInvite(token, password);
     };
 
-    /** 토큰 없음 → 로딩 화면 후 리다이렉트 */
-    if (noToken) {
+    /** 토큰 없음 → 동기적으로 즉시 리다이렉트 UI 표시 (깜빡임 방지) */
+    if (!token) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-50">
                 <div className="flex flex-col items-center gap-3">
