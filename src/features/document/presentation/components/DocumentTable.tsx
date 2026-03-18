@@ -51,7 +51,7 @@ export function DocumentTable({ documents, onDelete, onDownload }: DocumentTable
         );
     }
     return (
-        <div className="w-full h-[460px] overflow-hidden bg-white">
+        <div className="w-full h-[460px] overflow-x-auto overflow-y-hidden bg-white">
             <table className="w-full text-left border-separate border-spacing-0 bg-white min-w-[800px] table-fixed">
                 <thead>
                     <tr className="bg-slate-50/30">
