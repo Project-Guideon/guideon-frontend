@@ -10,7 +10,7 @@ import { DocumentUploadPanel } from './DocumentUploadPanel';
 import { useDocument } from '@/features/document/application/hooks/useDocument';
 
 export function DocumentListView() {
-    const { documents,addDocument, page, setPage, totalPages, totalCount, searchQuery, setSearchQuery, selectedSite, setSelectedSite,deleteDocument } = useDocument();
+    const { documents, addDocument, page, setPage, totalPages, totalCount, searchQuery, setSearchQuery, selectedSite, setSelectedSite, deleteDocument } = useDocument();
 
     const ALLOWED_EXTENSIONS = ['pdf', 'xlsx'] as const;
     type AllowedExtension = (typeof ALLOWED_EXTENSIONS)[number];
@@ -30,7 +30,7 @@ export function DocumentListView() {
 
     const [isUploadOpen, setIsUploadOpen] = useState(false);
 
-    
+
     const handleFileUpload = async (files: File[]) => {
         const validFiles: File[] = [];
         const errors: string[] = [];
@@ -84,7 +84,7 @@ export function DocumentListView() {
                 </div>
             </div>
 
-            <DocumentFilter 
+            <DocumentFilter
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
                 selectedSite={selectedSite}
@@ -94,34 +94,34 @@ export function DocumentListView() {
             />
 
             {/* 문서 목록 */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col transition-all min-h-[600px] overflow-hidden">
-                <div className="flex-1 bg-white relative">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col transition-all overflow-hidden">
+                <div className="flex-1 bg-white relative overflow-hidden scrollbar-hide">
                     <AnimatePresence mode="wait">
                         <motion.div
-                            key={page} // 페이지 번호가 바뀔 때마다 실행
+                            key={`${page}-${selectedSite}-${searchQuery}`} // 페이지, 검색어, 장소 필터가 바뀔 때마다 부드럽게 전환
                             initial={{ opacity: 0, y: 5 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -5 }}
-                            transition={{ duration: 0.2, ease: "easeInOut" }}
-                            className="w-full h-full overflow-hidden scrollbar-hide"
+                            transition={{ duration: 0.15, ease: "easeInOut" }}
+                            className="w-full h-full"
                         >
-                            <DocumentTable 
-                                documents={documents} 
-                                onDelete={deleteDocument} 
+                            <DocumentTable
+                                documents={documents}
+                                onDelete={deleteDocument}
                                 onDownload={(doc) => console.log(doc.fileName)}
                             />
                         </motion.div>
                     </AnimatePresence>
                 </div>
-                <DocumentPagination 
-                    currentPage={page} 
-                    totalPages={totalPages} 
-                    onPageChange={setPage} 
+                <DocumentPagination
+                    currentPage={page}
+                    totalPages={totalPages}
+                    onPageChange={setPage}
                 />
             </div>
             <AnimatePresence>
                 {isUploadOpen && (
-                    <DocumentUploadPanel onClose={() => setIsUploadOpen(false)} onUpload={handleFileUpload}/>
+                    <DocumentUploadPanel onClose={() => setIsUploadOpen(false)} onUpload={handleFileUpload} />
                 )}
             </AnimatePresence>
         </div>
