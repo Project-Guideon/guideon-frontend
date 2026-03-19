@@ -72,7 +72,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
             if (role === 'PLATFORM_ADMIN') {
                 const response = await getSitesApi({ size: 1000 });
-                const siteList = response.data.items.map((site) => ({
+                const siteList = response.data.map((site) => ({
                     siteId: site.siteId,
                     name: site.name,
                     isActive: site.isActive,

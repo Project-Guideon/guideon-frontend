@@ -2,11 +2,19 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HiOutlineBuildingLibrary, HiOutlinePlusCircle, HiOutlineMagnifyingGlass, HiChevronDown, HiChevronLeft, HiChevronRight } from 'react-icons/hi2';
+import {
+    HiOutlineBuildingLibrary,
+    HiOutlinePlusCircle,
+    HiOutlineMagnifyingGlass,
+    HiOutlineArrowPath,
+    HiOutlineExclamationTriangle,
+    HiChevronDown,
+    HiChevronLeft,
+    HiChevronRight,
+} from 'react-icons/hi2';
 import { useSites } from '@/features/site/application/hooks/useSites';
 import { SiteTable } from './SiteTable';
 import { SiteFormModal } from './SiteFormModal';
-import { SiteDeleteDialog } from './SiteDeleteDialog';
 import { SiteToggleDialog } from './SiteToggleDialog';
 import { SiteInviteModal } from './SiteInviteModal';
 import type { SiteWithInvites } from '@/features/site/domain/entities/Site';
@@ -25,12 +33,15 @@ const STATUS_OPTIONS: { value: ActiveStatusOption; label: string }[] = [
 /**
  * 관광지 관리 전체 뷰
  *
- * 헤더, 필터, 테이블, 페이지네이션, 모달을 조합하는 프레젠테이션 컴포넌트
+ * API 연동 - 삭제 기능 없음 (API 스펙에 DELETE 미존재)
+ * 활성/비활성 토글, 생성/수정, 운영자 초대 지원
  */
 export function SiteListView() {
     const {
         sitesWithInvites,
         totalSites,
+        isLoading,
+        error,
         filter,
         updateFilter,
         page,
@@ -39,7 +50,6 @@ export function SiteListView() {
         createSite,
         updateSite,
         toggleSiteActive,
-        deleteSite,
         inviteSiteAdmin,
     } = useSites();
 
@@ -47,10 +57,6 @@ export function SiteListView() {
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
     const [editTarget, setEditTarget] = useState<SiteWithInvites | null>(null);
-
-    // 삭제 다이얼로그 상태
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [deleteTarget, setDeleteTarget] = useState<SiteWithInvites | null>(null);
 
     // 토글 다이얼로그 상태
     const [isToggleDialogOpen, setIsToggleDialogOpen] = useState(false);
@@ -63,29 +69,20 @@ export function SiteListView() {
     // 상태 필터 드롭다운
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
 
-    // ───────────── 이벤트 핸들러 ─────────────
+    // 이벤트 핸들러
 
-    /** 관광지 추가 버튼 클릭 */
     const handleClickCreate = () => {
         setFormMode('create');
         setEditTarget(null);
         setIsFormModalOpen(true);
     };
 
-    /** 관광지 수정 버튼 클릭 */
     const handleClickEdit = (site: SiteWithInvites) => {
         setFormMode('edit');
         setEditTarget(site);
         setIsFormModalOpen(true);
     };
 
-    /** 관광지 삭제 버튼 클릭 */
-    const handleClickDelete = (site: SiteWithInvites) => {
-        setDeleteTarget(site);
-        setIsDeleteDialogOpen(true);
-    };
-
-    /** 관광지 활성/비활성 토글 버튼 클릭 */
     const handleClickToggle = (siteId: number) => {
         const target = sitesWithInvites.find((site) => site.siteId === siteId) ?? null;
         if (!target) return;
@@ -93,39 +90,28 @@ export function SiteListView() {
         setIsToggleDialogOpen(true);
     };
 
-    /** 운영자 초대 버튼 클릭 */
     const handleClickInvite = (site: SiteWithInvites) => {
         setInviteTarget(site);
         setIsInviteModalOpen(true);
     };
 
-    /** 초대 폼 제출 */
     const handleSubmitInvite = (email: string) => {
         if (inviteTarget) {
             inviteSiteAdmin(inviteTarget.siteId, email);
         }
     };
 
-    /** 토글 확인 */
     const handleConfirmToggle = () => {
         if (toggleTarget) {
             toggleSiteActive(toggleTarget.siteId);
         }
     };
 
-    /** 모달 폼 제출 */
     const handleSubmitForm = (name: string) => {
         if (formMode === 'create') {
             createSite({ name });
         } else if (editTarget) {
             updateSite(editTarget.siteId, { name });
-        }
-    };
-
-    /** 삭제 확인 */
-    const handleConfirmDelete = () => {
-        if (deleteTarget) {
-            deleteSite(deleteTarget.siteId);
         }
     };
 
@@ -139,7 +125,10 @@ export function SiteListView() {
                         관광지 관리
                     </h2>
                     <p className="text-sm text-slate-500 mt-1 font-medium">
-                        등록된 관광지를 관리합니다. 총 <span className="font-bold text-orange-600">{totalSites}</span>개
+                        등록된 관광지를 관리합니다.{' '}
+                        {!isLoading && (
+                            <>총 <span className="font-bold text-orange-600">{totalSites}</span>개</>
+                        )}
                     </p>
                 </div>
                 <button
@@ -151,6 +140,18 @@ export function SiteListView() {
                     관광지 추가
                 </button>
             </div>
+
+            {/* 에러 배너 */}
+            {error && (
+                <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-50 border border-red-100 rounded-2xl px-5 py-3 flex items-center gap-3"
+                >
+                    <HiOutlineExclamationTriangle className="w-5 h-5 text-red-400 shrink-0" />
+                    <p className="text-sm font-medium text-red-600 flex-1">{error}</p>
+                </motion.div>
+            )}
 
             {/* 필터 영역 */}
             <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
@@ -199,39 +200,43 @@ export function SiteListView() {
                                 />
                             </button>
 
-                            {/* 드롭다운 메뉴 */}
-                            <div
-                                id="status-filter-menu"
-                                role="listbox"
-                                aria-label="상태 필터"
-                                className={`absolute right-0 mt-2 w-32 bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden transition-all duration-200 origin-top-right
-                                ${isStatusDropdownOpen
-                                        ? 'opacity-100 scale-100 translate-y-0 visible'
-                                        : 'opacity-0 scale-95 -translate-y-2 invisible pointer-events-none'
-                                    }
-                            `}>
-                                <div className="p-1">
-                                    {STATUS_OPTIONS.map((option) => (
-                                        <button
-                                            key={option.value}
-                                            role="option"
-                                            aria-selected={filter.activeStatus === option.value}
-                                            onClick={() => {
-                                                updateFilter({ activeStatus: option.value });
-                                                setIsStatusDropdownOpen(false);
-                                            }}
-                                            className={`w-full flex items-center px-3 py-2 rounded-lg text-sm transition-colors
-                                                ${filter.activeStatus === option.value
-                                                    ? 'bg-orange-50 text-orange-700 font-bold'
-                                                    : 'text-slate-600 hover:bg-slate-50 hover:text-orange-600 font-medium'
-                                                }
-                                            `}
+                            <AnimatePresence>
+                                {isStatusDropdownOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setIsStatusDropdownOpen(false)} />
+                                        <motion.div
+                                            id="status-filter-menu"
+                                            role="listbox"
+                                            aria-label="상태 필터"
+                                            initial={{ opacity: 0, y: -8 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -8 }}
+                                            transition={{ duration: 0.15 }}
+                                            className="absolute right-0 mt-2 w-32 bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden p-1"
                                         >
-                                            {option.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+                                            {STATUS_OPTIONS.map((option) => (
+                                                <button
+                                                    key={option.value}
+                                                    role="option"
+                                                    aria-selected={filter.activeStatus === option.value}
+                                                    onClick={() => {
+                                                        updateFilter({ activeStatus: option.value });
+                                                        setIsStatusDropdownOpen(false);
+                                                    }}
+                                                    className={`w-full flex items-center px-3 py-2 rounded-lg text-sm transition-colors
+                                                        ${filter.activeStatus === option.value
+                                                            ? 'bg-orange-50 text-orange-700 font-bold'
+                                                            : 'text-slate-600 hover:bg-slate-50 hover:text-orange-600 font-medium'
+                                                        }
+                                                    `}
+                                                >
+                                                    {option.label}
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    </>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </div>
                 </div>
@@ -239,26 +244,47 @@ export function SiteListView() {
 
             {/* 테이블 + 페이지네이션 */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col">
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={page}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                        <SiteTable
-                            sites={sitesWithInvites}
-                            onEditSite={handleClickEdit}
-                            onDeleteSite={handleClickDelete}
-                            onToggleActive={handleClickToggle}
-                            onInviteOperator={handleClickInvite}
-                        />
-                    </motion.div>
-                </AnimatePresence>
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center py-20">
+                        <div className="w-10 h-10 border-[3px] border-orange-500 border-t-transparent rounded-full animate-spin mb-4" />
+                        <p className="text-sm font-medium text-slate-400">관광지 목록을 불러오는 중...</p>
+                    </div>
+                ) : error && sitesWithInvites.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mb-4">
+                            <HiOutlineExclamationTriangle className="w-7 h-7 text-red-400" />
+                        </div>
+                        <p className="text-sm font-bold text-slate-600 mb-1">데이터를 불러올 수 없습니다</p>
+                        <p className="text-xs text-slate-400 mb-5">네트워크 연결을 확인하고 다시 시도해주세요</p>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-xl font-bold text-xs hover:bg-orange-600 transition-all active:scale-[0.98]"
+                        >
+                            <HiOutlineArrowPath className="w-4 h-4" />
+                            새로고침
+                        </button>
+                    </div>
+                ) : (
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={page}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <SiteTable
+                                sites={sitesWithInvites}
+                                onEditSite={handleClickEdit}
+                                onToggleActive={handleClickToggle}
+                                onInviteOperator={handleClickInvite}
+                            />
+                        </motion.div>
+                    </AnimatePresence>
+                )}
 
                 {/* 페이지네이션 */}
-                {totalPages > 1 && (
+                {!isLoading && totalPages > 1 && (
                     <div className="flex items-center justify-center gap-2 p-4 border-t border-slate-50">
                         <button
                             onClick={() => setPage(page - 1)}
@@ -306,14 +332,6 @@ export function SiteListView() {
                 initialName={editTarget?.name ?? ''}
                 onClose={() => setIsFormModalOpen(false)}
                 onSubmit={handleSubmitForm}
-            />
-
-            {/* 삭제 확인 다이얼로그 */}
-            <SiteDeleteDialog
-                isOpen={isDeleteDialogOpen}
-                siteName={deleteTarget?.name ?? ''}
-                onClose={() => setIsDeleteDialogOpen(false)}
-                onConfirm={handleConfirmDelete}
             />
 
             {/* 활성/비활성 토글 확인 다이얼로그 */}
