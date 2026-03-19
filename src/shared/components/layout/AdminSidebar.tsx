@@ -67,7 +67,7 @@ const MENU_ITEMS: MenuItem[] = [
 ];
 
 const BOTTOM_MENU: MenuItem[] = [
-    { id: 'logs', label: '감사 로그', href: '/admin/audit-logs', icon: HiOutlineClipboardDocumentList, requiredRole: 'ALL' },
+    { id: 'logs', label: '플랫폼 통합 로그', href: '/admin/audit-logs', icon: HiOutlineClipboardDocumentList, requiredRole: 'ALL' },
 ];
 
 /**
