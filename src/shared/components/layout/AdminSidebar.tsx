@@ -15,6 +15,7 @@ import {
     HiOutlineXMark,
     HiOutlineBuildingLibrary,
     HiOutlineUserCircle,
+    HiOutlineEnvelope
     HiOutlineSparkles,
 } from 'react-icons/hi2';
 
@@ -64,10 +65,11 @@ const MENU_ITEMS: MenuItem[] = [
     { id: 'mascot', label: '마스코트', href: '/admin/mascot', icon: HiOutlineSparkles, requiredRole: 'PLATFORM_ADMIN' },
     { id: 'devices', label: '디바이스', href: '/admin/devices', icon: HiOutlineDeviceTablet, requiredRole: 'ALL' },
     { id: 'documents', label: '문서 관리', href: '/admin/documents', icon: HiOutlineDocumentText, requiredRole: 'ALL' },
+    { id: 'invites', label: '초대 관리', href: '/admin/invites', icon: HiOutlineEnvelope, requiredRole: 'ALL' },
 ];
 
 const BOTTOM_MENU: MenuItem[] = [
-    { id: 'logs', label: '감사 로그', href: '/admin/audit-logs', icon: HiOutlineClipboardDocumentList, requiredRole: 'ALL' },
+    { id: 'logs', label: '플랫폼 통합 로그', href: '/admin/audit-logs', icon: HiOutlineClipboardDocumentList, requiredRole: 'ALL' },
 ];
 
 /**
