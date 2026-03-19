@@ -15,8 +15,8 @@ import {
     HiOutlineXMark,
     HiOutlineBuildingLibrary,
     HiOutlineUserCircle,
-    HiOutlineEnvelope
-    HiOutlineSparkles,
+    HiOutlineEnvelope,
+    HiOutlineSparkles
 } from 'react-icons/hi2';
 
 /**
@@ -187,7 +187,7 @@ export function AdminSidebar({ user, currentSite, isPlatformAdmin, onLogout }: A
                         </p>
                     </div>
                     <button
-                        onClick={(e)=> {
+                        onClick={(e) => {
                             e.preventDefault();
                             onLogout();
                         }}
