@@ -41,14 +41,22 @@ export function useInvites() {
     };
 
     const resendInvite = (id: number) => {
-        setInvites(prev => prev.map(inv => 
-            inv.id === id ? { 
-                ...inv, 
-                status: 'PENDING', 
-                createdAt: new Date().toISOString(),
-                errorMsg: undefined 
-            } : inv
-        ));
+    const now = new Date();
+    const formattedToday = now.toISOString().split('T')[0];
+
+    const expiryDate = new Date();
+    expiryDate.setDate(now.getDate() + 7);
+    const formattedExpiry = expiryDate.toISOString().split('T')[0];
+
+    setInvites(prev => prev.map(inv => 
+        inv.id === id ? { 
+            ...inv, 
+            status: 'PENDING' as const,
+            createdAt: formattedToday,   
+            expiresAt: formattedExpiry,  // 현재 기준에서 7일 후로
+            errorMsg: undefined  
+        } : inv
+    ));
     };
 
     return { invites, isLoading, cancelInvite, resendInvite };

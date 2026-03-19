@@ -63,12 +63,17 @@ export function InviteTable({ invites, onCancel, onResend }: InviteTableProps) {
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end gap-1">
                                         {invite.status === 'PENDING' && (
-                                            <button onClick={() => onCancel(invite.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="초대 취소">
+                                            <button 
+                                                onClick={() => onCancel(invite.id)} 
+                                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" 
+                                                title="초대 취소"
+                                                aria-label={`${invite.email} 초대 취소`}
+                                                >
                                                 <HiOutlineXCircle className="w-5 h-5" />
                                             </button>
                                         )}
                                         {(invite.status === 'EXPIRED' || invite.status === 'REVOKED') && (
-                                            <button onClick={() => onResend(invite.id)} className="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all" title="재전송">
+                                            <button onClick={() => onResend(invite.id)} className="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all" title="재전송" aria-label={`${invite.email} 초대 재전송`}>
                                                 <HiOutlineArrowPath className="w-5 h-5" />
                                             </button>
                                         )}
