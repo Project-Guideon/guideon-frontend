@@ -2,10 +2,12 @@
 
 import { memo, useMemo } from 'react';
 import { Map, Polygon, Polyline, CustomOverlayMap, MapMarker, useKakaoLoader } from 'react-kakao-maps-sdk';
+import { HiOutlineDevicePhoneMobile } from 'react-icons/hi2';
 import type { Zone } from '@/features/zone/domain/entities/Zone';
 import type { Place } from '@/features/place/domain/entities/Place';
 import { PLACE_CATEGORY_META } from '@/features/place/domain/entities/Place';
 import { PlaceCategoryIcon } from '@/features/place/presentation/components/PlaceCategoryIcon';
+import type { Device } from '@/features/device/domain/entities/Device';
 
 const ZONE_COLORS = ['#3b82f6', '#10b981', '#a855f7', '#f59e0b', '#ef4444', '#06b6d4'];
 
@@ -14,10 +16,13 @@ export type MapInteractionMode = 'idle' | 'placing' | 'drawing';
 interface ZonePlaceMapProps {
     zones: Zone[];
     places: Place[];
+    devices: Device[];
     selectedZoneId: number | null;
     selectedPlaceId: number | null;
+    selectedDeviceId: string | null;
     onSelectZone: (zoneId: number | null) => void;
     onSelectPlace: (placeId: number | null) => void;
+    onSelectDevice: (deviceId: string | null) => void;
     mapCenter: { lat: number; lng: number };
     mapLevel: number;
     /** 현재 인터랙션 모드 */
@@ -37,10 +42,13 @@ function getZoneColor(index: number): string {
 function ZonePlaceMapInner({
     zones,
     places,
+    devices,
     selectedZoneId,
     selectedPlaceId,
+    selectedDeviceId,
     onSelectZone,
     onSelectPlace,
+    onSelectDevice,
     mapCenter,
     mapLevel,
     mode,
@@ -101,10 +109,11 @@ function ZonePlaceMapInner({
                     } else {
                         onSelectZone(null);
                         onSelectPlace(null);
+                        onSelectDevice(null);
                     }
                 }}
             >
-                {/* 기존 Zone 폴리곤 */}
+                {/* Zone 폴리곤 */}
                 {zones.map((zone, index) => {
                     const isSelected = selectedZoneId === zone.zoneId;
                     const color = getZoneColor(index);
@@ -135,7 +144,7 @@ function ZonePlaceMapInner({
                     );
                 })}
 
-                {/* 기존 Place 마커 */}
+                {/* Place 마커 */}
                 {places.map((place) => {
                     const isSelected = selectedPlaceId === place.placeId;
                     const meta = PLACE_CATEGORY_META[place.category];
@@ -194,7 +203,63 @@ function ZonePlaceMapInner({
                     );
                 })}
 
-                {/* ───── Drawing 모드: 폴리곤 그리기 ───── */}
+                {/* Device 마커 */}
+                {devices.map((device) => {
+                    const isSelected = selectedDeviceId === device.deviceId;
+
+                    return (
+                        <div key={`device-${device.deviceId}`}>
+                            <CustomOverlayMap
+                                position={{ lat: device.latitude, lng: device.longitude }}
+                                zIndex={isSelected ? 20 : 2}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        if (mode === 'idle') onSelectDevice(isSelected ? null : device.deviceId);
+                                    }}
+                                    className={`flex items-center justify-center w-9 h-9 rounded-full border-2 border-white shadow-lg cursor-pointer transition-all duration-200 hover:scale-110 bg-violet-500 text-white
+                                        ${isSelected ? 'scale-125 ring-4 ring-white/50' : ''}
+                                        ${!device.isActive ? 'opacity-50 grayscale' : ''}`}
+                                    aria-label={`디바이스 ${device.locationName}`}
+                                >
+                                    <HiOutlineDevicePhoneMobile className="w-4 h-4" />
+                                </button>
+                            </CustomOverlayMap>
+
+                            {isSelected && mode === 'idle' && (
+                                <CustomOverlayMap
+                                    position={{ lat: device.latitude, lng: device.longitude }}
+                                    yAnchor={1.6}
+                                    zIndex={30}
+                                >
+                                    <div className="bg-white rounded-xl shadow-xl border border-slate-200 p-3 min-w-[200px] max-w-[240px]">
+                                        <div className="flex items-center gap-2 mb-1.5">
+                                            <div className="bg-violet-100 text-violet-600 p-1.5 rounded-lg shrink-0">
+                                                <HiOutlineDevicePhoneMobile className="w-5 h-5" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-slate-800 truncate">{device.locationName}</p>
+                                                <p className="text-[10px] text-slate-400 font-mono font-medium truncate">{device.deviceId}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between text-[10px] mt-2 border-t border-slate-100 pt-2">
+                                            <span className={`px-1.5 py-0.5 rounded font-bold ${device.isActive ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                                {device.isActive ? '활성' : '비활성'}
+                                            </span>
+                                            <span className="text-slate-400">
+                                                {device.zoneSource === 'AUTO' ? '자동 배정' : '수동 배정'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </CustomOverlayMap>
+                            )}
+                        </div>
+                    );
+                })}
+
+                {/* Drawing 모드: 폴리곤 그리기 */}
                 {mode === 'drawing' && drawingPoints.length > 0 && (
                     <>
                         {/* 완성 중인 폴리곤 (3점 이상) */}
@@ -228,7 +293,7 @@ function ZonePlaceMapInner({
                     </>
                 )}
 
-                {/* ───── Placing 모드: 장소 위치 마커 ───── */}
+                {/* Placing 모드: 장소/디바이스 위치 마커 */}
                 {mode === 'placing' && placingPosition && (
                     <MapMarker
                         position={placingPosition}

@@ -1,27 +1,34 @@
 'use client';
 
 import { memo } from 'react';
-import { HiOutlineMapPin, HiOutlineMap, HiOutlinePencilSquare, HiOutlineTrash } from 'react-icons/hi2';
+import { HiOutlineMapPin, HiOutlineMap, HiOutlinePencilSquare, HiOutlineTrash, HiOutlineDevicePhoneMobile, HiOutlineKey } from 'react-icons/hi2';
 import type { Zone } from '@/features/zone/domain/entities/Zone';
 import type { Place } from '@/features/place/domain/entities/Place';
 import { PLACE_CATEGORY_META } from '@/features/place/domain/entities/Place';
 import { PlaceCategoryIcon } from '@/features/place/presentation/components/PlaceCategoryIcon';
+import type { Device } from '@/features/device/domain/entities/Device';
 
-type TabType = 'zones' | 'places';
+export type TabType = 'zones' | 'places' | 'devices';
 
 interface ZonePlaceSidePanelProps {
     activeTab: TabType;
     onChangeTab: (tab: TabType) => void;
     zones: Zone[];
     places: Place[];
+    devices: Device[];
     selectedZoneId: number | null;
     selectedPlaceId: number | null;
+    selectedDeviceId: string | null;
     onSelectZone: (zoneId: number | null) => void;
     onSelectPlace: (placeId: number | null) => void;
+    onSelectDevice: (deviceId: string | null) => void;
     onEditZone: (zone: Zone) => void;
     onDeleteZone: (zone: Zone) => void;
     onEditPlace: (place: Place) => void;
     onDeletePlace: (place: Place) => void;
+    onEditDevice: (device: Device) => void;
+    onDeleteDevice: (device: Device) => void;
+    onRotateToken: (device: Device) => void;
 }
 
 function ZoneTreeItem({
@@ -214,19 +221,106 @@ function PlaceListItem({
     );
 }
 
+function DeviceListItem({
+    device,
+    zoneName,
+    isSelected,
+    onSelect,
+    onEdit,
+    onDelete,
+    onRotateToken,
+}: {
+    device: Device;
+    zoneName: string;
+    isSelected: boolean;
+    onSelect: () => void;
+    onEdit: () => void;
+    onDelete: () => void;
+    onRotateToken: () => void;
+}) {
+    return (
+        <div
+            role="button"
+            tabIndex={0}
+            onClick={onSelect}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelect();
+                }
+            }}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200 group cursor-pointer
+                ${isSelected
+                    ? 'bg-violet-50 border border-violet-200'
+                    : 'hover:bg-slate-50 border border-transparent'
+                }`}
+        >
+            <div className={`flex items-center justify-center w-10 h-10 rounded-xl shrink-0 ${device.isActive ? 'bg-violet-100 text-violet-600' : 'bg-slate-100 text-slate-400 opacity-50'}`}>
+                <HiOutlineDevicePhoneMobile className="w-5 h-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                    <p className={`text-sm font-bold truncate ${!device.isActive ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
+                        {device.locationName}
+                    </p>
+                    {!device.isActive && (
+                        <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-red-100 text-red-500 shrink-0">OFF</span>
+                    )}
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 truncate">{device.deviceId}</span>
+                    <span className="text-[10px] text-slate-400 shrink-0">{zoneName}</span>
+                </div>
+            </div>
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0">
+                <button
+                    type="button"
+                    onClick={(event) => { event.stopPropagation(); onEdit(); }}
+                    className="p-1 rounded-lg hover:bg-violet-100 text-slate-400 hover:text-violet-600 transition-colors"
+                    aria-label={`${device.locationName} 수정`}
+                >
+                    <HiOutlinePencilSquare className="w-3.5 h-3.5" />
+                </button>
+                <button
+                    type="button"
+                    onClick={(event) => { event.stopPropagation(); onRotateToken(); }}
+                    className="p-1 rounded-lg hover:bg-amber-100 text-slate-400 hover:text-amber-600 transition-colors"
+                    aria-label={`${device.locationName} 토큰 재발급`}
+                >
+                    <HiOutlineKey className="w-3.5 h-3.5" />
+                </button>
+                <button
+                    type="button"
+                    onClick={(event) => { event.stopPropagation(); onDelete(); }}
+                    className="p-1 rounded-lg hover:bg-red-100 text-slate-400 hover:text-red-600 transition-colors"
+                    aria-label={`${device.locationName} 삭제`}
+                >
+                    <HiOutlineTrash className="w-3.5 h-3.5" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
 function ZonePlaceSidePanelInner({
     activeTab,
     onChangeTab,
     zones,
     places,
+    devices,
     selectedZoneId,
     selectedPlaceId,
+    selectedDeviceId,
     onSelectZone,
     onSelectPlace,
+    onSelectDevice,
     onEditZone,
     onDeleteZone,
     onEditPlace,
     onDeletePlace,
+    onEditDevice,
+    onDeleteDevice,
+    onRotateToken,
 }: ZonePlaceSidePanelProps) {
     const innerZones = zones.filter((zone) => zone.zoneType === 'INNER');
     const getSubZones = (parentId: number) => zones.filter((zone) => zone.parentZoneId === parentId);
@@ -261,6 +355,18 @@ function ZonePlaceSidePanelInner({
                 >
                     <HiOutlineMapPin className="w-4 h-4" />
                     장소 ({places.length})
+                </button>
+                <button
+                    type="button"
+                    onClick={() => onChangeTab('devices')}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold transition-all duration-200
+                        ${activeTab === 'devices'
+                            ? 'text-violet-600 border-b-2 border-violet-500 bg-violet-50/50'
+                            : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                        }`}
+                >
+                    <HiOutlineDevicePhoneMobile className="w-4 h-4" />
+                    디바이스 ({devices.length})
                 </button>
             </div>
 
@@ -306,6 +412,29 @@ function ZonePlaceSidePanelInner({
                                 onSelect={() => onSelectPlace(selectedPlaceId === place.placeId ? null : place.placeId)}
                                 onEdit={() => onEditPlace(place)}
                                 onDelete={() => onDeletePlace(place)}
+                            />
+                        ))}
+                    </>
+                )}
+
+                {activeTab === 'devices' && (
+                    <>
+                        {devices.length === 0 && (
+                            <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                                <HiOutlineDevicePhoneMobile className="w-10 h-10 mb-2" />
+                                <p className="text-sm font-medium">등록된 디바이스가 없습니다</p>
+                            </div>
+                        )}
+                        {devices.map((device) => (
+                            <DeviceListItem
+                                key={device.deviceId}
+                                device={device}
+                                zoneName={getZoneName(device.zoneId)}
+                                isSelected={selectedDeviceId === device.deviceId}
+                                onSelect={() => onSelectDevice(selectedDeviceId === device.deviceId ? null : device.deviceId)}
+                                onEdit={() => onEditDevice(device)}
+                                onDelete={() => onDeleteDevice(device)}
+                                onRotateToken={() => onRotateToken(device)}
                             />
                         ))}
                     </>

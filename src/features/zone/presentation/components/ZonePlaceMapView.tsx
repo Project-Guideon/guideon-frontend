@@ -13,16 +13,22 @@ import {
     HiOutlineChevronRight,
     HiOutlineChevronLeft,
     HiOutlineChevronDown,
+    HiOutlineDevicePhoneMobile,
 } from 'react-icons/hi2';
 import { useZones } from '@/features/zone/application/hooks/useZones';
 import { usePlaces } from '@/features/place/application/hooks/usePlaces';
+import { useDevices } from '@/features/device/application/hooks/useDevices';
 import { ZonePlaceSidePanel } from './ZonePlaceSidePanel';
 import { ZoneFormModal } from './ZoneFormModal';
 import { ZoneDeleteDialog } from './ZoneDeleteDialog';
 import { PlaceFormModal } from '@/features/place/presentation/components/PlaceFormModal';
 import { PlaceDeleteDialog } from '@/features/place/presentation/components/PlaceDeleteDialog';
+import { DeviceFormModal } from '@/features/device/presentation/components/DeviceFormModal';
+import { DeviceDeleteDialog } from '@/features/device/presentation/components/DeviceDeleteDialog';
+import { DeviceTokenDialog } from '@/features/device/presentation/components/DeviceTokenDialog';
 import type { Zone, CreateZoneRequest, UpdateZoneRequest } from '@/features/zone/domain/entities/Zone';
 import type { Place, CreatePlaceRequest, UpdatePlaceRequest } from '@/features/place/domain/entities/Place';
+import type { Device, CreateDeviceRequest, UpdateDeviceRequest } from '@/features/device/domain/entities/Device';
 import type { MapInteractionMode } from './ZonePlaceMap';
 import { useAuth, useSiteContext } from '@/features/auth/application/hooks/useAuth';
 
@@ -39,7 +45,7 @@ const ZonePlaceMap = dynamic(
     },
 );
 
-type SidePanelTab = 'zones' | 'places';
+type SidePanelTab = 'zones' | 'places' | 'devices';
 
 const DEFAULT_MAP_CENTER = { lat: 37.5796, lng: 126.9770 };
 const DEFAULT_MAP_LEVEL = 4;
@@ -70,6 +76,16 @@ export function ZonePlaceMapView() {
         clearZoneReferences,
     } = usePlaces();
 
+    const {
+        filteredDevices,
+        selectedDeviceId,
+        setSelectedDeviceId,
+        createDevice,
+        updateDevice,
+        deleteDevice,
+        rotateToken,
+    } = useDevices();
+
     const { isPlatformAdmin } = useAuth();
     const { currentSite, sites, setCurrentSite } = useSiteContext();
 
@@ -81,6 +97,7 @@ export function ZonePlaceMapView() {
     const [interactionMode, setInteractionMode] = useState<MapInteractionMode>('idle');
     const [drawingPoints, setDrawingPoints] = useState<{ lat: number; lng: number }[]>([]);
     const [placingPosition, setPlacingPosition] = useState<{ lat: number; lng: number } | null>(null);
+    const [placingType, setPlacingType] = useState<'place' | 'device'>('place');
 
     // ───────── Zone 모달 상태 ─────────
     const [isZoneFormOpen, setIsZoneFormOpen] = useState(false);
@@ -98,20 +115,33 @@ export function ZonePlaceMapView() {
     const [placeDeleteTarget, setPlaceDeleteTarget] = useState<Place | null>(null);
     const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number }>({ lat: 37.5796, lng: 126.9770 });
 
+    // ───────── Device 모달 상태 ─────────
+    const [isDeviceFormOpen, setIsDeviceFormOpen] = useState(false);
+    const [deviceFormMode, setDeviceFormMode] = useState<'create' | 'edit'>('create');
+    const [deviceEditTarget, setDeviceEditTarget] = useState<Device | null>(null);
+    const [isDeviceDeleteOpen, setIsDeviceDeleteOpen] = useState(false);
+    const [deviceDeleteTarget, setDeviceDeleteTarget] = useState<Device | null>(null);
+    const [isDeviceTokenOpen, setIsDeviceTokenOpen] = useState(false);
+    const [deviceTokenTarget, setDeviceTokenTarget] = useState<Device | null>(null);
+    const [deviceIssuedToken, setDeviceIssuedToken] = useState<string | null>(null);
+
     // ───────── 모드 전환 ─────────
     const startDrawingMode = useCallback(() => {
         setInteractionMode('drawing');
         setDrawingPoints([]);
         setSelectedZoneId(null);
         setSelectedPlaceId(null);
-    }, [setSelectedZoneId, setSelectedPlaceId]);
+        setSelectedDeviceId(null);
+    }, [setSelectedZoneId, setSelectedPlaceId, setSelectedDeviceId]);
 
-    const startPlacingMode = useCallback(() => {
+    const startPlacingMode = useCallback((type: 'place' | 'device') => {
         setInteractionMode('placing');
+        setPlacingType(type);
         setPlacingPosition(null);
         setSelectedZoneId(null);
         setSelectedPlaceId(null);
-    }, [setSelectedZoneId, setSelectedPlaceId]);
+        setSelectedDeviceId(null);
+    }, [setSelectedZoneId, setSelectedPlaceId, setSelectedDeviceId]);
 
     const cancelMode = useCallback(() => {
         setInteractionMode('idle');
@@ -129,12 +159,19 @@ export function ZonePlaceMapView() {
         } else if (interactionMode === 'placing') {
             setPlacingPosition({ lat, lng });
             setSelectedCoords({ lat, lng });
-            setPlaceFormMode('create');
-            setPlaceEditTarget(null);
-            setIsPlaceFormOpen(true);
+            if (placingType === 'place') {
+                setPlaceFormMode('create');
+                setPlaceEditTarget(null);
+                setIsPlaceFormOpen(true);
+            } else {
+                setDeviceFormMode('create');
+                setDeviceEditTarget(null);
+                setDeviceIssuedToken(null);
+                setIsDeviceFormOpen(true);
+            }
             setInteractionMode('idle');
         }
-    }, [interactionMode]);
+    }, [interactionMode, placingType]);
 
     const finishDrawing = useCallback(() => {
         if (drawingPoints.length < 3) return;
@@ -170,6 +207,25 @@ export function ZonePlaceMapView() {
         setIsPlaceDeleteOpen(true);
     }, []);
 
+    const handleEditDevice = useCallback((device: Device) => {
+        setDeviceFormMode('edit');
+        setDeviceEditTarget(device);
+        setSelectedCoords({ lat: device.latitude, lng: device.longitude });
+        setDeviceIssuedToken(null);
+        setIsDeviceFormOpen(true);
+    }, []);
+
+    const handleDeleteDevice = useCallback((device: Device) => {
+        setDeviceDeleteTarget(device);
+        setIsDeviceDeleteOpen(true);
+    }, []);
+
+    const handleRotateToken = useCallback((device: Device) => {
+        setDeviceTokenTarget(device);
+        setDeviceIssuedToken(null);
+        setIsDeviceTokenOpen(true);
+    }, []);
+
     const handleConfirmDeleteZone = useCallback(() => {
         if (zoneDeleteTarget) {
             deleteZone(zoneDeleteTarget.zoneId, (deletedIds) => {
@@ -187,6 +243,21 @@ export function ZonePlaceMapView() {
             setPlaceDeleteTarget(null);
         }
     }, [placeDeleteTarget, deletePlace]);
+
+    const handleConfirmDeleteDevice = useCallback(() => {
+        if (deviceDeleteTarget) {
+            deleteDevice(deviceDeleteTarget.deviceId);
+            setIsDeviceDeleteOpen(false);
+            setDeviceDeleteTarget(null);
+        }
+    }, [deviceDeleteTarget, deleteDevice]);
+
+    const handleConfirmRotateToken = useCallback(() => {
+        if (deviceTokenTarget) {
+            const newToken = rotateToken(deviceTokenTarget.deviceId);
+            setDeviceIssuedToken(newToken);
+        }
+    }, [deviceTokenTarget, rotateToken]);
 
     const handleSubmitZoneForm = useCallback((request: CreateZoneRequest | UpdateZoneRequest) => {
         if (zoneFormMode === 'create') {
@@ -208,6 +279,17 @@ export function ZonePlaceMapView() {
         setIsPlaceFormOpen(false);
     }, [placeFormMode, placeEditTarget, createPlace, updatePlace]);
 
+    const handleSubmitDeviceForm = useCallback((request: CreateDeviceRequest | UpdateDeviceRequest) => {
+        if (deviceFormMode === 'create') {
+            const { plainToken } = createDevice(request as CreateDeviceRequest);
+            setDeviceIssuedToken(plainToken);
+        } else if (deviceEditTarget) {
+            updateDevice(deviceEditTarget.deviceId, request as UpdateDeviceRequest);
+            setPlacingPosition(null);
+            setIsDeviceFormOpen(false);
+        }
+    }, [deviceFormMode, deviceEditTarget, createDevice, updateDevice]);
+
     const hasSubZones = useMemo(
         () => zoneDeleteTarget ? zones.some((zone) => zone.parentZoneId === zoneDeleteTarget.zoneId) : false,
         [zones, zoneDeleteTarget],
@@ -222,10 +304,13 @@ export function ZonePlaceMapView() {
                 <ZonePlaceMap
                     zones={zones}
                     places={filteredPlaces}
+                    devices={filteredDevices}
                     selectedZoneId={selectedZoneId}
                     selectedPlaceId={selectedPlaceId}
+                    selectedDeviceId={selectedDeviceId}
                     onSelectZone={setSelectedZoneId}
                     onSelectPlace={setSelectedPlaceId}
+                    onSelectDevice={setSelectedDeviceId}
                     mapCenter={DEFAULT_MAP_CENTER}
                     mapLevel={DEFAULT_MAP_LEVEL}
                     mode={interactionMode}
@@ -290,7 +375,7 @@ export function ZonePlaceMapView() {
                         )}
                     </div>
                     <p className="text-xs text-slate-500 font-medium">
-                        구역 <span className="font-bold text-orange-600">{zones.length}</span> · 장소 <span className="font-bold text-orange-600">{filteredPlaces.length}</span>
+                        구역 <span className="font-bold text-orange-600">{zones.length}</span> · 장소 <span className="font-bold text-orange-600">{filteredPlaces.length}</span> · 디바이스 <span className="font-bold text-violet-600">{filteredDevices.length}</span>
                     </p>
                 </div>
             </div>
@@ -333,10 +418,16 @@ export function ZonePlaceMapView() {
                                     </button>
                                 </>
                             )}
-                            {interactionMode === 'placing' && (
+                            {interactionMode === 'placing' && placingType === 'place' && (
                                 <div className="flex items-center gap-2 text-sm font-bold text-blue-600">
                                     <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                                     지도를 클릭하여 장소 위치를 선택하세요
+                                </div>
+                            )}
+                            {interactionMode === 'placing' && placingType === 'device' && (
+                                <div className="flex items-center gap-2 text-sm font-bold text-violet-600">
+                                    <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
+                                    지도를 클릭하여 디바이스 위치를 선택하세요
                                 </div>
                             )}
                             <button
@@ -371,7 +462,7 @@ export function ZonePlaceMapView() {
                             <span className="text-sm font-bold">구역 추가</span>
                         </button>
                         <button
-                            onClick={startPlacingMode}
+                            onClick={() => startPlacingMode('place')}
                             className="group flex items-center gap-2.5 pl-4 pr-5 py-3 bg-white/95 backdrop-blur-md border border-white/50 text-slate-700 rounded-2xl shadow-lg
                                 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-700 hover:shadow-xl transition-all duration-200 active:scale-[0.97]"
                         >
@@ -379,6 +470,16 @@ export function ZonePlaceMapView() {
                                 <HiOutlinePlusCircle className="w-4 h-4 text-white" />
                             </div>
                             <span className="text-sm font-bold">장소 추가</span>
+                        </button>
+                        <button
+                            onClick={() => startPlacingMode('device')}
+                            className="group flex items-center gap-2.5 pl-4 pr-5 py-3 bg-white/95 backdrop-blur-md border border-white/50 text-slate-700 rounded-2xl shadow-lg
+                                hover:bg-violet-50 hover:border-violet-200 hover:text-violet-700 hover:shadow-xl transition-all duration-200 active:scale-[0.97]"
+                        >
+                            <div className="w-8 h-8 rounded-xl bg-violet-500 group-hover:bg-violet-600 flex items-center justify-center transition-colors">
+                                <HiOutlineDevicePhoneMobile className="w-4 h-4 text-white" />
+                            </div>
+                            <span className="text-sm font-bold">디바이스 추가</span>
                         </button>
                     </motion.div>
                 )}
@@ -414,14 +515,20 @@ export function ZonePlaceMapView() {
                                     onChangeTab={setActiveTab}
                                     zones={zones}
                                     places={filteredPlaces}
+                                    devices={filteredDevices}
                                     selectedZoneId={selectedZoneId}
                                     selectedPlaceId={selectedPlaceId}
+                                    selectedDeviceId={selectedDeviceId}
                                     onSelectZone={setSelectedZoneId}
                                     onSelectPlace={setSelectedPlaceId}
+                                    onSelectDevice={setSelectedDeviceId}
                                     onEditZone={handleEditZone}
                                     onDeleteZone={handleDeleteZone}
                                     onEditPlace={handleEditPlace}
                                     onDeletePlace={handleDeletePlace}
+                                    onEditDevice={handleEditDevice}
+                                    onDeleteDevice={handleDeleteDevice}
+                                    onRotateToken={handleRotateToken}
                                 />
                             </div>
                         </motion.div>
@@ -462,6 +569,31 @@ export function ZonePlaceMapView() {
                 placeName={placeDeleteTarget?.name ?? ''}
                 onClose={() => setIsPlaceDeleteOpen(false)}
                 onConfirm={handleConfirmDeletePlace}
+            />
+            <DeviceFormModal
+                key={`device-${deviceFormMode}-${deviceEditTarget?.deviceId ?? 'new'}-${isDeviceFormOpen}`}
+                isOpen={isDeviceFormOpen}
+                mode={deviceFormMode}
+                editTarget={deviceEditTarget}
+                zones={zones}
+                selectedCoords={selectedCoords}
+                issuedToken={deviceIssuedToken}
+                onClose={() => { setIsDeviceFormOpen(false); setPlacingPosition(null); setDeviceIssuedToken(null); }}
+                onSubmit={handleSubmitDeviceForm}
+            />
+            <DeviceDeleteDialog
+                isOpen={isDeviceDeleteOpen}
+                deviceId={deviceDeleteTarget?.deviceId ?? ''}
+                onClose={() => setIsDeviceDeleteOpen(false)}
+                onConfirm={handleConfirmDeleteDevice}
+            />
+            <DeviceTokenDialog
+                key={`device-token-${deviceTokenTarget?.deviceId}-${isDeviceTokenOpen}`}
+                isOpen={isDeviceTokenOpen}
+                deviceId={deviceTokenTarget?.deviceId ?? ''}
+                newToken={deviceIssuedToken}
+                onClose={() => { setIsDeviceTokenOpen(false); setDeviceIssuedToken(null); }}
+                onConfirmRotate={handleConfirmRotateToken}
             />
         </div>
     );
