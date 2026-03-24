@@ -93,6 +93,11 @@ export function ZonePlaceMapView() {
     const [isPanelOpen, setIsPanelOpen] = useState(true);
     const [isSiteDropdownOpen, setIsSiteDropdownOpen] = useState(false);
 
+    // ───────── 지도 마커 필터 상태 ─────────
+    const [showZones, setShowZones] = useState(true);
+    const [showPlaces, setShowPlaces] = useState(true);
+    const [showDevices, setShowDevices] = useState(true);
+
     // ───────── 지도 인터랙션 모드 ─────────
     const [interactionMode, setInteractionMode] = useState<MapInteractionMode>('idle');
     const [drawingPoints, setDrawingPoints] = useState<{ lat: number; lng: number }[]>([]);
@@ -305,6 +310,9 @@ export function ZonePlaceMapView() {
                     zones={zones}
                     places={filteredPlaces}
                     devices={filteredDevices}
+                    showZones={showZones}
+                    showPlaces={showPlaces}
+                    showDevices={showDevices}
                     selectedZoneId={selectedZoneId}
                     selectedPlaceId={selectedPlaceId}
                     selectedDeviceId={selectedDeviceId}
@@ -374,9 +382,44 @@ export function ZonePlaceMapView() {
                             <h2 className="text-base font-black text-slate-800">{currentSite?.name ?? '알 수 없는 관광지'}</h2>
                         )}
                     </div>
-                    <p className="text-xs text-slate-500 font-medium">
-                        구역 <span className="font-bold text-orange-600">{zones.length}</span> · 장소 <span className="font-bold text-orange-600">{filteredPlaces.length}</span> · 디바이스 <span className="font-bold text-teal-600">{filteredDevices.length}</span>
-                    </p>
+                </div>
+            </div>
+
+            {/* ═══════ 하단 중앙: 스마트 필터 바 (Glassmorphism) ═══════ */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                <div className="flex items-center gap-1 p-1.5 bg-white/85 backdrop-blur-2xl border border-white/60 shadow-2xl rounded-full pointer-events-auto">
+                    <button
+                        onClick={() => setShowZones(!showZones)}
+                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-bold transition-all duration-300
+                            ${showZones ? 'bg-blue-500 text-white shadow-md scale-100' : 'bg-transparent text-slate-500 hover:bg-slate-100/80 scale-95 hover:scale-100'}`}
+                    >
+                        구역
+                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full transition-colors ${showZones ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                            {zones.length}
+                        </span>
+                    </button>
+                    <div className="w-px h-4 bg-slate-200/60" />
+                    <button
+                        onClick={() => setShowPlaces(!showPlaces)}
+                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-bold transition-all duration-300
+                            ${showPlaces ? 'bg-orange-500 text-white shadow-md scale-100' : 'bg-transparent text-slate-500 hover:bg-slate-100/80 scale-95 hover:scale-100'}`}
+                    >
+                        장소
+                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full transition-colors ${showPlaces ? 'bg-orange-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                            {filteredPlaces.length}
+                        </span>
+                    </button>
+                    <div className="w-px h-4 bg-slate-200/60" />
+                    <button
+                        onClick={() => setShowDevices(!showDevices)}
+                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-bold transition-all duration-300
+                            ${showDevices ? 'bg-teal-500 text-white shadow-md scale-100' : 'bg-transparent text-slate-500 hover:bg-slate-100/80 scale-95 hover:scale-100'}`}
+                    >
+                        디바이스
+                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full transition-colors ${showDevices ? 'bg-teal-700 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                            {filteredDevices.length}
+                        </span>
+                    </button>
                 </div>
             </div>
 

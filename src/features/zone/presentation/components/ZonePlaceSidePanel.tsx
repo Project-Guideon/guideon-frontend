@@ -1,6 +1,7 @@
 'use client';
 
 import { memo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineMapPin, HiOutlineMap, HiOutlinePencilSquare, HiOutlineTrash, HiOutlineDevicePhoneMobile, HiOutlineKey } from 'react-icons/hi2';
 import type { Zone } from '@/features/zone/domain/entities/Zone';
 import type { Place } from '@/features/place/domain/entities/Place';
@@ -330,49 +331,57 @@ function ZonePlaceSidePanelInner({
     };
 
     return (
-        <div className="h-full flex flex-col overflow-hidden">
-            <div className="flex border-b border-slate-100 shrink-0">
+        <div className="h-full flex flex-col overflow-hidden bg-white/50 backdrop-blur-sm">
+            <div className="flex border-b border-slate-100 shrink-0 px-2 pt-2 bg-white">
                 <button
                     type="button"
                     onClick={() => onChangeTab('zones')}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold transition-all duration-200
+                    className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-t-xl text-xs font-bold transition-all duration-200
                         ${activeTab === 'zones'
-                            ? 'text-orange-600 border-b-2 border-orange-500 bg-orange-50/50'
+                            ? 'text-orange-600 bg-orange-50/80 shadow-[inset_0_-2px_0_0_#ea580c]'
                             : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
                         }`}
                 >
-                    <HiOutlineMap className="w-4 h-4" />
-                    구역 ({zones.length})
+                    <HiOutlineMap className="w-5 h-5" />
+                    <span>구역 ({zones.length})</span>
                 </button>
                 <button
                     type="button"
                     onClick={() => onChangeTab('places')}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold transition-all duration-200
+                    className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-t-xl text-xs font-bold transition-all duration-200
                         ${activeTab === 'places'
-                            ? 'text-orange-600 border-b-2 border-orange-500 bg-orange-50/50'
+                            ? 'text-orange-600 bg-orange-50/80 shadow-[inset_0_-2px_0_0_#ea580c]'
                             : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
                         }`}
                 >
-                    <HiOutlineMapPin className="w-4 h-4" />
-                    장소 ({places.length})
+                    <HiOutlineMapPin className="w-5 h-5" />
+                    <span>장소 ({places.length})</span>
                 </button>
                 <button
                     type="button"
                     onClick={() => onChangeTab('devices')}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold transition-all duration-200
+                    className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-t-xl text-xs font-bold transition-all duration-200
                         ${activeTab === 'devices'
-                            ? 'text-teal-600 border-b-2 border-teal-500 bg-teal-50/50'
+                            ? 'text-teal-600 bg-teal-50/80 shadow-[inset_0_-2px_0_0_#0d9488]'
                             : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
                         }`}
                 >
-                    <HiOutlineDevicePhoneMobile className="w-4 h-4" />
-                    디바이스 ({devices.length})
+                    <HiOutlineDevicePhoneMobile className="w-5 h-5" />
+                    <span>디바이스 ({devices.length})</span>
                 </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-3 space-y-1">
-                {activeTab === 'zones' && (
-                    <>
+            <div className="flex-1 overflow-y-auto p-3">
+                <AnimatePresence mode="wait">
+                    {activeTab === 'zones' && (
+                        <motion.div
+                            key="tab-zones"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 10 }}
+                            transition={{ duration: 0.2 }}
+                            className="space-y-1"
+                        >
                         {innerZones.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-12 text-slate-400">
                                 <HiOutlineMap className="w-10 h-10 mb-2" />
@@ -392,11 +401,18 @@ function ZonePlaceSidePanelInner({
                                 onDeleteSubZone={(sub) => onDeleteZone(sub)}
                             />
                         ))}
-                    </>
-                )}
+                        </motion.div>
+                    )}
 
-                {activeTab === 'places' && (
-                    <>
+                    {activeTab === 'places' && (
+                        <motion.div
+                            key="tab-places"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 10 }}
+                            transition={{ duration: 0.2 }}
+                            className="space-y-1"
+                        >
                         {places.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-12 text-slate-400">
                                 <HiOutlineMapPin className="w-10 h-10 mb-2" />
@@ -414,11 +430,18 @@ function ZonePlaceSidePanelInner({
                                 onDelete={() => onDeletePlace(place)}
                             />
                         ))}
-                    </>
-                )}
+                        </motion.div>
+                    )}
 
-                {activeTab === 'devices' && (
-                    <>
+                    {activeTab === 'devices' && (
+                        <motion.div
+                            key="tab-devices"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 10 }}
+                            transition={{ duration: 0.2 }}
+                            className="space-y-1"
+                        >
                         {devices.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-12 text-slate-400">
                                 <HiOutlineDevicePhoneMobile className="w-10 h-10 mb-2" />
@@ -437,8 +460,9 @@ function ZonePlaceSidePanelInner({
                                 onRotateToken={() => onRotateToken(device)}
                             />
                         ))}
-                    </>
-                )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );
