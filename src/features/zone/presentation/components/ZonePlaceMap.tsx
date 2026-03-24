@@ -219,12 +219,17 @@ function ZonePlaceMapInner({
                                         event.stopPropagation();
                                         if (mode === 'idle') onSelectDevice(isSelected ? null : device.deviceId);
                                     }}
-                                    className={`flex items-center justify-center w-9 h-9 rounded-full border-2 border-white shadow-lg cursor-pointer transition-all duration-200 hover:scale-110 bg-violet-500 text-white
-                                        ${isSelected ? 'scale-125 ring-4 ring-white/50' : ''}
-                                        ${!device.isActive ? 'opacity-50 grayscale' : ''}`}
+                                    className={`relative flex items-center justify-center w-10 h-10 rounded-xl border-2 border-white shadow-xl cursor-pointer transition-all duration-200 hover:-translate-y-1
+                                        ${isSelected ? 'ring-4 ring-teal-500/30 -translate-y-1 bg-teal-600' : 'bg-teal-500'}
+                                        ${!device.isActive ? 'opacity-60 bg-slate-400 border-slate-300' : ''}`}
                                     aria-label={`디바이스 ${device.locationName}`}
                                 >
-                                    <HiOutlineDevicePhoneMobile className="w-4 h-4" />
+                                    <HiOutlineDevicePhoneMobile className="w-5 h-5 text-white" />
+                                    {/* 마커 꼬리 (말풍선 효과) */}
+                                    <div className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 border-r-2 border-b-2 border-white
+                                        ${isSelected ? 'bg-teal-600' : 'bg-teal-500'}
+                                        ${!device.isActive ? 'bg-slate-400 border-slate-300' : ''}`} 
+                                    />
                                 </button>
                             </CustomOverlayMap>
 
@@ -236,7 +241,7 @@ function ZonePlaceMapInner({
                                 >
                                     <div className="bg-white rounded-xl shadow-xl border border-slate-200 p-3 min-w-[200px] max-w-[240px]">
                                         <div className="flex items-center gap-2 mb-1.5">
-                                            <div className="bg-violet-100 text-violet-600 p-1.5 rounded-lg shrink-0">
+                                            <div className="bg-teal-100 text-teal-600 p-1.5 rounded-lg shadow-sm shrink-0">
                                                 <HiOutlineDevicePhoneMobile className="w-5 h-5" />
                                             </div>
                                             <div className="flex-1 min-w-0">

@@ -251,11 +251,11 @@ function DeviceListItem({
             }}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200 group cursor-pointer
                 ${isSelected
-                    ? 'bg-violet-50 border border-violet-200'
+                    ? 'bg-teal-50 border border-teal-200'
                     : 'hover:bg-slate-50 border border-transparent'
                 }`}
         >
-            <div className={`flex items-center justify-center w-10 h-10 rounded-xl shrink-0 ${device.isActive ? 'bg-violet-100 text-violet-600' : 'bg-slate-100 text-slate-400 opacity-50'}`}>
+            <div className={`flex items-center justify-center w-10 h-10 rounded-xl shrink-0 ${device.isActive ? 'bg-teal-100 text-teal-600' : 'bg-slate-100 text-slate-400 opacity-50'}`}>
                 <HiOutlineDevicePhoneMobile className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
@@ -276,7 +276,7 @@ function DeviceListItem({
                 <button
                     type="button"
                     onClick={(event) => { event.stopPropagation(); onEdit(); }}
-                    className="p-1 rounded-lg hover:bg-violet-100 text-slate-400 hover:text-violet-600 transition-colors"
+                    className="p-1 rounded-lg hover:bg-teal-100 text-slate-400 hover:text-teal-600 transition-colors"
                     aria-label={`${device.locationName} 수정`}
                 >
                     <HiOutlinePencilSquare className="w-3.5 h-3.5" />
@@ -361,7 +361,7 @@ function ZonePlaceSidePanelInner({
                     onClick={() => onChangeTab('devices')}
                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold transition-all duration-200
                         ${activeTab === 'devices'
-                            ? 'text-violet-600 border-b-2 border-violet-500 bg-violet-50/50'
+                            ? 'text-teal-600 border-b-2 border-teal-500 bg-teal-50/50'
                             : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
                         }`}
                 >

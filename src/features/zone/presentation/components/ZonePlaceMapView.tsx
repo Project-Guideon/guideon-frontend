@@ -375,7 +375,7 @@ export function ZonePlaceMapView() {
                         )}
                     </div>
                     <p className="text-xs text-slate-500 font-medium">
-                        구역 <span className="font-bold text-orange-600">{zones.length}</span> · 장소 <span className="font-bold text-orange-600">{filteredPlaces.length}</span> · 디바이스 <span className="font-bold text-violet-600">{filteredDevices.length}</span>
+                        구역 <span className="font-bold text-orange-600">{zones.length}</span> · 장소 <span className="font-bold text-orange-600">{filteredPlaces.length}</span> · 디바이스 <span className="font-bold text-teal-600">{filteredDevices.length}</span>
                     </p>
                 </div>
             </div>
@@ -425,8 +425,8 @@ export function ZonePlaceMapView() {
                                 </div>
                             )}
                             {interactionMode === 'placing' && placingType === 'device' && (
-                                <div className="flex items-center gap-2 text-sm font-bold text-violet-600">
-                                    <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
+                                <div className="flex items-center gap-2 text-sm font-bold text-teal-600">
+                                    <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
                                     지도를 클릭하여 디바이스 위치를 선택하세요
                                 </div>
                             )}
@@ -474,9 +474,9 @@ export function ZonePlaceMapView() {
                         <button
                             onClick={() => startPlacingMode('device')}
                             className="group flex items-center gap-2.5 pl-4 pr-5 py-3 bg-white/95 backdrop-blur-md border border-white/50 text-slate-700 rounded-2xl shadow-lg
-                                hover:bg-violet-50 hover:border-violet-200 hover:text-violet-700 hover:shadow-xl transition-all duration-200 active:scale-[0.97]"
+                                hover:bg-teal-50 hover:border-teal-300 hover:text-teal-900 hover:shadow-xl transition-all duration-200 active:scale-[0.97]"
                         >
-                            <div className="w-8 h-8 rounded-xl bg-violet-500 group-hover:bg-violet-600 flex items-center justify-center transition-colors">
+                            <div className="w-8 h-8 rounded-xl bg-teal-500 group-hover:bg-teal-600 flex items-center justify-center transition-colors shadow-inner">
                                 <HiOutlineDevicePhoneMobile className="w-4 h-4 text-white" />
                             </div>
                             <span className="text-sm font-bold">디바이스 추가</span>
