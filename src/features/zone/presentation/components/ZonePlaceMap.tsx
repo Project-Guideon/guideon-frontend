@@ -2,10 +2,13 @@
 
 import { memo, useMemo } from 'react';
 import { Map, Polygon, Polyline, CustomOverlayMap, MapMarker, useKakaoLoader } from 'react-kakao-maps-sdk';
+import { motion, AnimatePresence } from 'framer-motion';
+import { HiOutlineDevicePhoneMobile } from 'react-icons/hi2';
 import type { Zone } from '@/features/zone/domain/entities/Zone';
 import type { Place } from '@/features/place/domain/entities/Place';
 import { PLACE_CATEGORY_META } from '@/features/place/domain/entities/Place';
 import { PlaceCategoryIcon } from '@/features/place/presentation/components/PlaceCategoryIcon';
+import type { Device } from '@/features/device/domain/entities/Device';
 
 const ZONE_COLORS = ['#3b82f6', '#10b981', '#a855f7', '#f59e0b', '#ef4444', '#06b6d4'];
 
@@ -14,10 +17,16 @@ export type MapInteractionMode = 'idle' | 'placing' | 'drawing';
 interface ZonePlaceMapProps {
     zones: Zone[];
     places: Place[];
+    devices: Device[];
     selectedZoneId: number | null;
     selectedPlaceId: number | null;
+    selectedDeviceId: string | null;
+    showZones?: boolean;
+    showPlaces?: boolean;
+    showDevices?: boolean;
     onSelectZone: (zoneId: number | null) => void;
     onSelectPlace: (placeId: number | null) => void;
+    onSelectDevice: (deviceId: string | null) => void;
     mapCenter: { lat: number; lng: number };
     mapLevel: number;
     /** 현재 인터랙션 모드 */
@@ -37,10 +46,16 @@ function getZoneColor(index: number): string {
 function ZonePlaceMapInner({
     zones,
     places,
+    devices,
     selectedZoneId,
     selectedPlaceId,
+    selectedDeviceId,
+    showZones = true,
+    showPlaces = true,
+    showDevices = true,
     onSelectZone,
     onSelectPlace,
+    onSelectDevice,
     mapCenter,
     mapLevel,
     mode,
@@ -101,11 +116,12 @@ function ZonePlaceMapInner({
                     } else {
                         onSelectZone(null);
                         onSelectPlace(null);
+                        onSelectDevice(null);
                     }
                 }}
             >
-                {/* 기존 Zone 폴리곤 */}
-                {zones.map((zone, index) => {
+                {/* Zone 폴리곤 */}
+                {showZones && zones.map((zone, index) => {
                     const isSelected = selectedZoneId === zone.zoneId;
                     const color = getZoneColor(index);
                     const pathData = zonePaths[index];
@@ -135,7 +151,7 @@ function ZonePlaceMapInner({
                     );
                 })}
 
-                {/* 기존 Place 마커 */}
+                {/* Place 마커 */}
                 {places.map((place) => {
                     const isSelected = selectedPlaceId === place.placeId;
                     const meta = PLACE_CATEGORY_META[place.category];
@@ -146,29 +162,44 @@ function ZonePlaceMapInner({
                                 position={{ lat: place.latitude, lng: place.longitude }}
                                 zIndex={isSelected ? 20 : 2}
                             >
-                                <button
-                                    type="button"
-                                    onClick={(event) => {
-                                        event.stopPropagation();
-                                        if (mode === 'idle') onSelectPlace(isSelected ? null : place.placeId);
-                                    }}
-                                    className={`flex items-center justify-center w-9 h-9 rounded-full border-2 border-white shadow-lg cursor-pointer transition-all duration-200 hover:scale-110
-                                        ${isSelected ? 'scale-125 ring-4 ring-white/50' : ''}
-                                        ${!place.isActive ? 'opacity-50 grayscale' : ''}`}
-                                    style={{ backgroundColor: meta.color }}
-                                    aria-label={`${place.name} (${meta.label})`}
-                                >
-                                    <PlaceCategoryIcon category={place.category} size="sm" withBackground={false} className="text-white" />
-                                </button>
+                                <AnimatePresence>
+                                    {showPlaces && (
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.5, y: 10 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.5, y: 10 }}
+                                            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                                        >
+                                            <button
+                                                type="button"
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    if (mode === 'idle') onSelectPlace(isSelected ? null : place.placeId);
+                                                }}
+                                                className={`flex items-center justify-center w-9 h-9 rounded-full border-2 border-white shadow-lg cursor-pointer transition-all duration-200 hover:scale-110
+                                                    ${isSelected ? 'scale-125 ring-4 ring-white/50' : ''}
+                                                    ${!place.isActive ? 'opacity-50 grayscale' : ''}`}
+                                                style={{ backgroundColor: meta.color }}
+                                                aria-label={`${place.name} (${meta.label})`}
+                                            >
+                                                <PlaceCategoryIcon category={place.category} size="sm" withBackground={false} className="text-white" />
+                                            </button>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </CustomOverlayMap>
 
-                            {isSelected && mode === 'idle' && (
+                            {isSelected && showPlaces && mode === 'idle' && (
                                 <CustomOverlayMap
                                     position={{ lat: place.latitude, lng: place.longitude }}
                                     yAnchor={1.6}
                                     zIndex={30}
                                 >
-                                    <div className="bg-white rounded-xl shadow-xl border border-slate-200 p-3 min-w-[180px] max-w-[220px]">
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="bg-white rounded-xl shadow-xl border border-slate-200 p-3 min-w-[180px] max-w-[220px]"
+                                    >
                                         <div className="flex items-center gap-2 mb-1.5">
                                             <PlaceCategoryIcon category={place.category} size="md" color={meta.color} />
                                             <div className="flex-1 min-w-0">
@@ -187,14 +218,90 @@ function ZonePlaceMapInner({
                                                 {place.zoneSource === 'AUTO' ? '자동 배정' : '수동 배정'}
                                             </span>
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 </CustomOverlayMap>
                             )}
                         </div>
                     );
                 })}
 
-                {/* ───── Drawing 모드: 폴리곤 그리기 ───── */}
+                {/* Device 마커 */}
+                {devices.map((device) => {
+                    const isSelected = selectedDeviceId === device.deviceId;
+
+                    return (
+                        <div key={`device-${device.deviceId}`}>
+                            <CustomOverlayMap
+                                position={{ lat: device.latitude, lng: device.longitude }}
+                                zIndex={isSelected ? 20 : 2}
+                            >
+                                <AnimatePresence>
+                                    {showDevices && (
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.5, y: 10 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.5, y: 10 }}
+                                            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                                        >
+                                            <button
+                                                type="button"
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    if (mode === 'idle') onSelectDevice(isSelected ? null : device.deviceId);
+                                                }}
+                                                className={`relative flex items-center justify-center w-10 h-10 rounded-xl border-2 border-white shadow-xl cursor-pointer transition-all duration-200 hover:-translate-y-1
+                                                    ${isSelected ? 'ring-4 ring-teal-500/30 -translate-y-1 bg-teal-600' : 'bg-teal-500'}
+                                                    ${!device.isActive ? 'opacity-60 bg-slate-400 border-slate-300' : ''}`}
+                                                aria-label={`디바이스 ${device.locationName}`}
+                                            >
+                                                <HiOutlineDevicePhoneMobile className="w-5 h-5 text-white" />
+                                                {/* 마커 꼬리 (말풍선 효과) */}
+                                                <div className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 border-r-2 border-b-2 border-white
+                                                    ${isSelected ? 'bg-teal-600' : 'bg-teal-500'}
+                                                    ${!device.isActive ? 'bg-slate-400 border-slate-300' : ''}`} 
+                                                />
+                                            </button>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </CustomOverlayMap>
+
+                            {isSelected && showDevices && mode === 'idle' && (
+                                <CustomOverlayMap
+                                    position={{ lat: device.latitude, lng: device.longitude }}
+                                    yAnchor={1.6}
+                                    zIndex={30}
+                                >
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="bg-white rounded-xl shadow-xl border border-slate-200 p-3 min-w-[200px] max-w-[240px]"
+                                    >
+                                        <div className="flex items-center gap-2 mb-1.5">
+                                            <div className="bg-teal-100 text-teal-600 p-1.5 rounded-lg shadow-sm shrink-0">
+                                                <HiOutlineDevicePhoneMobile className="w-5 h-5" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-slate-800 truncate">{device.locationName}</p>
+                                                <p className="text-[10px] text-slate-400 font-mono font-medium truncate">{device.deviceId}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between text-[10px] mt-2 border-t border-slate-100 pt-2">
+                                            <span className={`px-1.5 py-0.5 rounded font-bold ${device.isActive ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                                {device.isActive ? '활성' : '비활성'}
+                                            </span>
+                                            <span className="text-slate-400">
+                                                {device.zoneSource === 'AUTO' ? '자동 배정' : '수동 배정'}
+                                            </span>
+                                        </div>
+                                    </motion.div>
+                                </CustomOverlayMap>
+                            )}
+                        </div>
+                    );
+                })}
+
+                {/* Drawing 모드: 폴리곤 그리기 */}
                 {mode === 'drawing' && drawingPoints.length > 0 && (
                     <>
                         {/* 완성 중인 폴리곤 (3점 이상) */}
@@ -228,7 +335,7 @@ function ZonePlaceMapInner({
                     </>
                 )}
 
-                {/* ───── Placing 모드: 장소 위치 마커 ───── */}
+                {/* Placing 모드: 장소/디바이스 위치 마커 */}
                 {mode === 'placing' && placingPosition && (
                     <MapMarker
                         position={placingPosition}
