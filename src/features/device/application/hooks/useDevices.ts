@@ -1,158 +1,181 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
-import type { Device, CreateDeviceRequest, UpdateDeviceRequest } from '@/features/device/domain/entities/Device';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import type { Device, CreateDeviceRequest, UpdateDeviceRequest, DeviceTokenResponse } from '@/features/device/domain/entities/Device';
 import { useSiteContext } from '@/features/auth/application/hooks/useAuth';
+import { getDevicesApi, createDeviceApi, updateDeviceApi, deleteDeviceApi, rotateDeviceTokenApi } from '@/api/endpoints/device';
+import type { ApiError } from '@/shared/types/api';
 
-/**
- * Mock UUID 생성 (토큰 시뮬레이션용)
- */
-function generateMockToken(): string {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
-        const random = (Math.random() * 16) | 0;
-        const value = character === 'x' ? random : (random & 0x3) | 0x8;
-        return value.toString(16);
-    });
+interface UseDevicesReturn {
+    devices: Device[];
+    filteredDevices: Device[];
+    selectedDevice: Device | null;
+    selectedDeviceId: string | null;
+    setSelectedDeviceId: (id: string | null) => void;
+    createDevice: (request: CreateDeviceRequest) => Promise<DeviceTokenResponse>;
+    updateDevice: (deviceId: string, request: UpdateDeviceRequest) => Promise<Device>;
+    deleteDevice: (deviceId: string) => Promise<void>;
+    rotateToken: (deviceId: string) => Promise<string>;
+    refetchDevices: () => Promise<void>;
+    isLoading: boolean;
+    isMutating: boolean;
+    error: ApiError | null;
 }
 
-/** 최소한의 Mock Device 데이터 (API 연결 전 UI 확인용) */
-const INITIAL_DEVICES: Device[] = [
-    {
-        deviceId: 'KIOSK-MAIN-01',
-        siteId: 2,
-        zoneId: 1,
-        zoneSource: 'AUTO',
-        locationName: '정문 안내소',
-        latitude: 37.5783,
-        longitude: 126.9768,
-        isActive: true,
-        lastPing: '2026-03-24T10:30:00',
-        lastAuthAt: '2026-03-24T08:00:00',
-        createdAt: '2026-03-01T10:00:00',
-        updatedAt: '2026-03-24T10:30:00',
-    },
-    {
-        deviceId: 'KIOSK-EAST-01',
-        siteId: 2,
-        zoneId: 3,
-        zoneSource: 'MANUAL',
-        locationName: '근정전 동쪽 입구',
-        latitude: 37.5790,
-        longitude: 126.9775,
-        isActive: true,
-        lastPing: null,
-        lastAuthAt: null,
-        createdAt: '2026-03-10T14:00:00',
-        updatedAt: '2026-03-10T14:00:00',
-    },
-];
-
 /**
- * Device CRUD 상태 관리 Mock 훅
+ * Device CRUD + 토큰 재발급 훅 (API 연동)
  *
- * usePlaces와 동일한 패턴. API 연결 시 내부 구현만 교체하면 됨.
+ * - 현재 선택된 siteId 기준으로 Device 목록을 가져옵니다.
+ * - 생성/수정/삭제/토큰재발급 후 자동으로 목록을 갱신합니다.
+ * - plainToken은 등록/재발급 시 1회만 노출됩니다.
  */
-export function useDevices() {
-    const [devices, setDevices] = useState<Device[]>(INITIAL_DEVICES);
+export function useDevices(): UseDevicesReturn {
+    const [devices, setDevices] = useState<Device[]>([]);
     const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isMutating, setIsMutating] = useState(false);
+    const [error, setError] = useState<ApiError | null>(null);
 
     const { currentSiteId } = useSiteContext();
 
-    /** currentSiteId 기준 필터링 */
-    const filteredDevices = useMemo(() => {
-        if (currentSiteId === null) return [];
-        return devices.filter((device) => device.siteId === currentSiteId);
-    }, [devices, currentSiteId]);
+    /** Device 목록 전체 조회 */
+    const fetchDevices = useCallback(async () => {
+        if (currentSiteId === null) {
+            setDevices([]);
+            return;
+        }
 
-    const selectedDevice = filteredDevices.find((device) => device.deviceId === selectedDeviceId) ?? null;
+        setIsLoading(true);
+        setError(null);
 
-    /**
-     * 디바이스 등록
-     * @returns plainToken(1회성) + 생성된 Device
-     */
-    const createDevice = useCallback((request: CreateDeviceRequest): { plainToken: string; device: Device } => {
-        if (currentSiteId == null) {
+        try {
+            const response = await getDevicesApi(currentSiteId, { size: 200 });
+            if (response.success) {
+                setDevices(response.data.items);
+            }
+        } catch (err) {
+            const apiError = extractApiError(err);
+            setError(apiError);
+            console.error('Device 목록 조회 실패:', apiError);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [currentSiteId]);
+
+    /** siteId 변경 시 자동 조회 */
+    useEffect(() => {
+        fetchDevices();
+    }, [fetchDevices]);
+
+    /** 활성 디바이스만 필터링 */
+    const filteredDevices = useMemo(
+        () => devices.filter((device) => device.isActive),
+        [devices],
+    );
+
+    const selectedDevice = useMemo(
+        () => devices.find((device) => device.deviceId === selectedDeviceId) ?? null,
+        [devices, selectedDeviceId],
+    );
+
+    /** 디바이스 등록 (plainToken 1회 노출) */
+    const createDevice = useCallback(async (request: CreateDeviceRequest): Promise<DeviceTokenResponse> => {
+        if (currentSiteId === null) {
             throw new Error('현재 사이트가 선택되지 않았습니다.');
         }
 
-        const now = new Date().toISOString();
-        const newDevice: Device = {
-            deviceId: request.deviceId,
-            siteId: currentSiteId,
-            zoneId: request.zoneId ?? null,
-            zoneSource: request.zoneSource ?? 'AUTO',
-            locationName: request.locationName,
-            latitude: request.latitude,
-            longitude: request.longitude,
-            isActive: request.isActive ?? true,
-            lastPing: null,
-            lastAuthAt: null,
-            createdAt: now,
-            updatedAt: now,
-        };
-        setDevices((previous) => [...previous, newDevice]);
+        setIsMutating(true);
+        setError(null);
 
-        return { plainToken: generateMockToken(), device: newDevice };
-    }, [currentSiteId]);
+        try {
+            const response = await createDeviceApi(currentSiteId, request);
+            if (response.success) {
+                await fetchDevices();
+                return response.data;
+            }
+            throw new Error('디바이스 등록에 실패했습니다.');
+        } catch (err) {
+            const apiError = extractApiError(err);
+            setError(apiError);
+            throw err;
+        } finally {
+            setIsMutating(false);
+        }
+    }, [currentSiteId, fetchDevices]);
 
-    /**
-     * 디바이스 수정 (PATCH 시멘틱 — undefined 필드 무시)
-     */
-    const updateDevice = useCallback((deviceId: string, request: UpdateDeviceRequest) => {
-        const sanitizedRequest = Object.fromEntries(
-            Object.entries(request).filter(([, value]) => value !== undefined),
-        );
+    /** 디바이스 수정 */
+    const updateDevice = useCallback(async (deviceId: string, request: UpdateDeviceRequest): Promise<Device> => {
+        if (currentSiteId === null) {
+            throw new Error('현재 사이트가 선택되지 않았습니다.');
+        }
 
-        setDevices((previous) =>
-            previous.map((device) =>
-                device.deviceId === deviceId
-                    ? { ...device, ...sanitizedRequest, updatedAt: new Date().toISOString() }
-                    : device,
-            ),
-        );
-    }, []);
+        setIsMutating(true);
+        setError(null);
 
-    /**
-     * 디바이스 삭제 (soft delete — isActive=false)
-     */
-    const deleteDevice = useCallback((deviceId: string) => {
-        setDevices((previous) =>
-            previous.map((device) =>
-                device.deviceId === deviceId
-                    ? { ...device, isActive: false, updatedAt: new Date().toISOString() }
-                    : device,
-            ),
-        );
-        setSelectedDeviceId((current) => (current === deviceId ? null : current));
-    }, []);
+        try {
+            const response = await updateDeviceApi(currentSiteId, deviceId, request);
+            if (response.success) {
+                await fetchDevices();
+                return response.data;
+            }
+            throw new Error('디바이스 수정에 실패했습니다.');
+        } catch (err) {
+            const apiError = extractApiError(err);
+            setError(apiError);
+            throw err;
+        } finally {
+            setIsMutating(false);
+        }
+    }, [currentSiteId, fetchDevices]);
 
-    /**
-     * 토큰 재발급 (기존 토큰 즉시 무효화, 새 토큰 반환)
-     * @returns 새 plainToken
-     */
-    const rotateToken = useCallback((deviceId: string): string => {
-        setDevices((previous) =>
-            previous.map((device) =>
-                device.deviceId === deviceId
-                    ? { ...device, updatedAt: new Date().toISOString() }
-                    : device,
-            ),
-        );
-        return generateMockToken();
-    }, []);
+    /** 디바이스 삭제 (soft delete) */
+    const deleteDevice = useCallback(async (deviceId: string): Promise<void> => {
+        if (currentSiteId === null) {
+            throw new Error('현재 사이트가 선택되지 않았습니다.');
+        }
 
-    /**
-     * Zone 삭제 시 해당 zone을 참조하는 디바이스의 zoneId를 null로 초기화
-     */
-    const clearZoneReferences = useCallback((deletedZoneIds: number[]) => {
-        setDevices((previous) =>
-            previous.map((device) =>
-                device.zoneId !== null && deletedZoneIds.includes(device.zoneId)
-                    ? { ...device, zoneId: null, zoneSource: 'AUTO' as const, updatedAt: new Date().toISOString() }
-                    : device,
-            ),
-        );
-    }, []);
+        setIsMutating(true);
+        setError(null);
+
+        try {
+            const response = await deleteDeviceApi(currentSiteId, deviceId);
+            if (response.success) {
+                setSelectedDeviceId((current) => (current === deviceId ? null : current));
+                await fetchDevices();
+            }
+        } catch (err) {
+            const apiError = extractApiError(err);
+            setError(apiError);
+            throw err;
+        } finally {
+            setIsMutating(false);
+        }
+    }, [currentSiteId, fetchDevices]);
+
+    /** 토큰 재발급 (기존 토큰 즉시 무효화, plainToken 1회 노출) */
+    const rotateToken = useCallback(async (deviceId: string): Promise<string> => {
+        if (currentSiteId === null) {
+            throw new Error('현재 사이트가 선택되지 않았습니다.');
+        }
+
+        setIsMutating(true);
+        setError(null);
+
+        try {
+            const response = await rotateDeviceTokenApi(currentSiteId, deviceId);
+            if (response.success) {
+                await fetchDevices();
+                return response.data.plainToken;
+            }
+            throw new Error('토큰 재발급에 실패했습니다.');
+        } catch (err) {
+            const apiError = extractApiError(err);
+            setError(apiError);
+            throw err;
+        } finally {
+            setIsMutating(false);
+        }
+    }, [currentSiteId, fetchDevices]);
 
     return {
         devices,
@@ -164,6 +187,24 @@ export function useDevices() {
         updateDevice,
         deleteDevice,
         rotateToken,
-        clearZoneReferences,
+        refetchDevices: fetchDevices,
+        isLoading,
+        isMutating,
+        error,
+    };
+}
+
+/** Axios 에러에서 ApiError 추출 헬퍼 */
+function extractApiError(err: unknown): ApiError {
+    if (err && typeof err === 'object' && 'response' in err) {
+        const axiosError = err as { response?: { data?: { error?: ApiError } } };
+        if (axiosError.response?.data?.error) {
+            return axiosError.response.data.error;
+        }
+    }
+
+    return {
+        code: 'INTERNAL_ERROR',
+        message: err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.',
     };
 }
