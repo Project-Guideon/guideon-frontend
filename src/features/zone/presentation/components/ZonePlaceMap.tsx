@@ -68,19 +68,21 @@ function ZonePlaceMapInner({
     });
 
     const zonePaths = useMemo(
-        () => zones.map((zone) => {
-            const rawCoords = zone.areaGeojson.coordinates[0];
-            const isClosed = rawCoords.length > 2 && rawCoords[0][0] === rawCoords[rawCoords.length - 1][0] && rawCoords[0][1] === rawCoords[rawCoords.length - 1][1];
-            const coordsForCenter = isClosed ? rawCoords.slice(0, -1) : rawCoords;
-            return {
-                zoneId: zone.zoneId,
-                path: rawCoords.map(([lng, lat]) => ({ lat, lng })),
-                center: {
-                    lat: coordsForCenter.reduce((s, c) => s + c[1], 0) / coordsForCenter.length,
-                    lng: coordsForCenter.reduce((s, c) => s + c[0], 0) / coordsForCenter.length,
-                },
-            };
-        }),
+        () => zones
+            .filter((zone) => zone.areaGeojson?.coordinates?.[0]?.length > 0)
+            .map((zone) => {
+                const rawCoords = zone.areaGeojson.coordinates[0];
+                const isClosed = rawCoords.length > 2 && rawCoords[0][0] === rawCoords[rawCoords.length - 1][0] && rawCoords[0][1] === rawCoords[rawCoords.length - 1][1];
+                const coordsForCenter = isClosed ? rawCoords.slice(0, -1) : rawCoords;
+                return {
+                    zoneId: zone.zoneId,
+                    path: rawCoords.map(([lng, lat]) => ({ lat, lng })),
+                    center: {
+                        lat: coordsForCenter.reduce((sum, coord) => sum + coord[1], 0) / coordsForCenter.length,
+                        lng: coordsForCenter.reduce((sum, coord) => sum + coord[0], 0) / coordsForCenter.length,
+                    },
+                };
+            }),
         [zones],
     );
 
@@ -121,10 +123,11 @@ function ZonePlaceMapInner({
                 }}
             >
                 {/* Zone 폴리곤 */}
-                {showZones && zones.map((zone, index) => {
+                {showZones && zonePaths.map((pathData, index) => {
+                    const zone = zones.find((z) => z.zoneId === pathData.zoneId);
+                    if (!zone) return null;
                     const isSelected = selectedZoneId === zone.zoneId;
                     const color = getZoneColor(index);
-                    const pathData = zonePaths[index];
 
                     return (
                         <div key={`zone-${zone.zoneId}`}>

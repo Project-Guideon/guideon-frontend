@@ -399,26 +399,27 @@ function ZonePlaceSidePanelInner({
                             transition={{ duration: 0.2 }}
                             className="space-y-1"
                         >
-                        {innerZones.length === 0 && (
-                            <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                                <HiOutlineMap className="w-10 h-10 mb-2 opacity-50" />
-                                <p className="text-sm font-semibold">등록된 구역이 없습니다</p>
-                                <p className="text-xs mt-1 text-slate-300">좌측 하단의 구역 추가 버튼을 눌러보세요</p>
-                            </div>
-                        )}
-                        {innerZones.map((zone) => (
-                            <ZoneTreeItem
-                                key={zone.zoneId}
-                                zone={zone}
-                                subZones={getSubZones(zone.zoneId)}
-                                selectedZoneId={selectedZoneId}
-                                onSelect={(clickedZoneId) => onSelectZone(selectedZoneId === clickedZoneId ? null : clickedZoneId)}
-                                onEdit={() => onEditZone(zone)}
-                                onDelete={() => onDeleteZone(zone)}
-                                onEditSubZone={(sub) => onEditZone(sub)}
-                                onDeleteSubZone={(sub) => onDeleteZone(sub)}
-                            />
-                        ))}
+                            {innerZones.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                                    <HiOutlineMap className="w-10 h-10 mb-2 opacity-50" />
+                                    <p className="text-sm font-semibold">등록된 구역이 없습니다</p>
+                                    <p className="text-xs mt-1 text-slate-300">좌측 하단의 구역 추가 버튼을 눌러보세요</p>
+                                </div>
+                            ) : (
+                                innerZones.map((zone) => (
+                                    <ZoneTreeItem
+                                        key={zone.zoneId}
+                                        zone={zone}
+                                        subZones={getSubZones(zone.zoneId)}
+                                        selectedZoneId={selectedZoneId}
+                                        onSelect={(clickedZoneId) => onSelectZone(selectedZoneId === clickedZoneId ? null : clickedZoneId)}
+                                        onEdit={() => onEditZone(zone)}
+                                        onDelete={() => onDeleteZone(zone)}
+                                        onEditSubZone={(sub) => onEditZone(sub)}
+                                        onDeleteSubZone={(sub) => onDeleteZone(sub)}
+                                    />
+                                ))
+                            )}
                         </motion.div>
                     )}
 
@@ -431,24 +432,25 @@ function ZonePlaceSidePanelInner({
                             transition={{ duration: 0.2 }}
                             className="space-y-1"
                         >
-                        {places.length === 0 && (
-                            <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                                <HiOutlineMapPin className="w-10 h-10 mb-2 opacity-50" />
-                                <p className="text-sm font-semibold">등록된 장소가 없습니다</p>
-                                <p className="text-xs mt-1 text-slate-300">좌측 하단의 장소 추가 버튼을 눌러보세요</p>
-                            </div>
-                        )}
-                        {places.map((place) => (
-                            <PlaceListItem
-                                key={place.placeId}
-                                place={place}
-                                zoneName={getZoneName(place.zoneId)}
-                                isSelected={selectedPlaceId === place.placeId}
-                                onSelect={() => onSelectPlace(selectedPlaceId === place.placeId ? null : place.placeId)}
-                                onEdit={() => onEditPlace(place)}
-                                onDelete={() => onDeletePlace(place)}
-                            />
-                        ))}
+                            {places.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                                    <HiOutlineMapPin className="w-10 h-10 mb-2 opacity-50" />
+                                    <p className="text-sm font-semibold">등록된 장소가 없습니다</p>
+                                    <p className="text-xs mt-1 text-slate-300">좌측 하단의 장소 추가 버튼을 눌러보세요</p>
+                                </div>
+                            ) : (
+                                places.map((place) => (
+                                    <PlaceListItem
+                                        key={place.placeId}
+                                        place={place}
+                                        zoneName={getZoneName(place.zoneId)}
+                                        isSelected={selectedPlaceId === place.placeId}
+                                        onSelect={() => onSelectPlace(selectedPlaceId === place.placeId ? null : place.placeId)}
+                                        onEdit={() => onEditPlace(place)}
+                                        onDelete={() => onDeletePlace(place)}
+                                    />
+                                ))
+                            )}
                         </motion.div>
                     )}
 
@@ -461,25 +463,26 @@ function ZonePlaceSidePanelInner({
                             transition={{ duration: 0.2 }}
                             className="space-y-1"
                         >
-                        {devices.length === 0 && (
-                            <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                                <HiOutlineDevicePhoneMobile className="w-10 h-10 mb-2 opacity-50" />
-                                <p className="text-sm font-semibold">등록된 디바이스가 없습니다</p>
-                                <p className="text-xs mt-1 text-slate-300">좌측 하단의 디바이스 추가 버튼을 눌러보세요</p>
-                            </div>
-                        )}
-                        {devices.map((device) => (
-                            <DeviceListItem
-                                key={device.deviceId}
-                                device={device}
-                                zoneName={getZoneName(device.zoneId)}
-                                isSelected={selectedDeviceId === device.deviceId}
-                                onSelect={() => onSelectDevice(selectedDeviceId === device.deviceId ? null : device.deviceId)}
-                                onEdit={() => onEditDevice(device)}
-                                onDelete={() => onDeleteDevice(device)}
-                                onRotateToken={() => onRotateToken(device)}
-                            />
-                        ))}
+                            {devices.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                                    <HiOutlineDevicePhoneMobile className="w-10 h-10 mb-2 opacity-50" />
+                                    <p className="text-sm font-semibold">등록된 디바이스가 없습니다</p>
+                                    <p className="text-xs mt-1 text-slate-300">좌측 하단의 디바이스 추가 버튼을 눌러보세요</p>
+                                </div>
+                            ) : (
+                                devices.map((device) => (
+                                    <DeviceListItem
+                                        key={device.deviceId}
+                                        device={device}
+                                        zoneName={getZoneName(device.zoneId)}
+                                        isSelected={selectedDeviceId === device.deviceId}
+                                        onSelect={() => onSelectDevice(selectedDeviceId === device.deviceId ? null : device.deviceId)}
+                                        onEdit={() => onEditDevice(device)}
+                                        onDelete={() => onDeleteDevice(device)}
+                                        onRotateToken={() => onRotateToken(device)}
+                                    />
+                                ))
+                            )}
                         </motion.div>
                     )}
                 </AnimatePresence>
