@@ -14,6 +14,8 @@ import {
     HiOutlineChevronLeft,
     HiOutlineChevronDown,
     HiOutlineDevicePhoneMobile,
+    HiOutlineArrowPath,
+    HiOutlineExclamationTriangle,
 } from 'react-icons/hi2';
 import { useZones } from '@/features/zone/application/hooks/useZones';
 import { usePlaces } from '@/features/place/application/hooks/usePlaces';
@@ -37,9 +39,12 @@ const ZonePlaceMap = dynamic(
     {
         ssr: false,
         loading: () => (
-            <div className="h-full w-full flex flex-col items-center justify-center bg-slate-50 text-slate-400 gap-2">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
-                <p className="text-sm font-medium">지도를 불러오는 중입니다...</p>
+            <div className="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 text-slate-400 gap-3">
+                <div className="relative">
+                    <div className="w-12 h-12 rounded-full border-[3px] border-slate-200" />
+                    <div className="absolute inset-0 w-12 h-12 rounded-full border-[3px] border-orange-500 border-t-transparent animate-spin" />
+                </div>
+                <p className="text-sm font-semibold tracking-wide">지도를 불러오는 중...</p>
             </div>
         ),
     },
@@ -50,10 +55,18 @@ type SidePanelTab = 'zones' | 'places' | 'devices';
 const DEFAULT_MAP_CENTER = { lat: 37.5796, lng: 126.9770 };
 const DEFAULT_MAP_LEVEL = 4;
 
+/** 토스트 알림 타입 */
+interface Toast {
+    id: number;
+    type: 'success' | 'error' | 'info';
+    message: string;
+}
+
 /**
- * 구역·장소 통합 관리 뷰
+ * 구역·장소·디바이스 통합 관리 뷰
  *
  * 전체 너비 지도 + 플로팅 사이드패널 + FAB 버튼 레이아웃
+ * API 연동으로 실시간 데이터 동기화
  */
 export function ZonePlaceMapView() {
     const {
@@ -64,6 +77,11 @@ export function ZonePlaceMapView() {
         createZone,
         updateZone,
         deleteZone,
+        recalcZones,
+        refetchZones,
+        isLoading: isZonesLoading,
+        isMutating: isZoneMutating,
+        error: zoneError,
     } = useZones();
 
     const {
@@ -73,7 +91,9 @@ export function ZonePlaceMapView() {
         createPlace,
         updatePlace,
         deletePlace,
-        clearZoneReferences,
+        refetchPlaces,
+        isLoading: isPlacesLoading,
+        isMutating: isPlaceMutating,
     } = usePlaces();
 
     const {
@@ -84,6 +104,9 @@ export function ZonePlaceMapView() {
         updateDevice,
         deleteDevice,
         rotateToken,
+        refetchDevices,
+        isLoading: isDevicesLoading,
+        isMutating: isDeviceMutating,
     } = useDevices();
 
     const { isPlatformAdmin } = useAuth();
@@ -92,6 +115,17 @@ export function ZonePlaceMapView() {
     const [activeTab, setActiveTab] = useState<SidePanelTab>('zones');
     const [isPanelOpen, setIsPanelOpen] = useState(true);
     const [isSiteDropdownOpen, setIsSiteDropdownOpen] = useState(false);
+
+    // ───────── 토스트 알림 ─────────
+    const [toasts, setToasts] = useState<Toast[]>([]);
+
+    const addToast = useCallback((type: Toast['type'], message: string) => {
+        const id = Date.now();
+        setToasts((previous) => [...previous, { id, type, message }]);
+        setTimeout(() => {
+            setToasts((previous) => previous.filter((toast) => toast.id !== id));
+        }, 4000);
+    }, []);
 
     // ───────── 지도 마커 필터 상태 ─────────
     const [showZones, setShowZones] = useState(true);
@@ -129,6 +163,9 @@ export function ZonePlaceMapView() {
     const [isDeviceTokenOpen, setIsDeviceTokenOpen] = useState(false);
     const [deviceTokenTarget, setDeviceTokenTarget] = useState<Device | null>(null);
     const [deviceIssuedToken, setDeviceIssuedToken] = useState<string | null>(null);
+
+    const isGlobalLoading = isZonesLoading || isPlacesLoading || isDevicesLoading;
+    const isMutating = isZoneMutating || isPlaceMutating || isDeviceMutating;
 
     // ───────── 모드 전환 ─────────
     const startDrawingMode = useCallback(() => {
@@ -188,7 +225,7 @@ export function ZonePlaceMapView() {
         setDrawingPoints([]);
     }, [drawingPoints]);
 
-    // ───────── CRUD ─────────
+    // ───────── CRUD 핸들러 (비동기) ─────────
     const handleEditZone = useCallback((zone: Zone) => {
         setZoneFormMode('edit');
         setZoneEditTarget(zone);
@@ -231,69 +268,116 @@ export function ZonePlaceMapView() {
         setIsDeviceTokenOpen(true);
     }, []);
 
-    const handleConfirmDeleteZone = useCallback(() => {
-        if (zoneDeleteTarget) {
-            deleteZone(zoneDeleteTarget.zoneId, (deletedIds) => {
-                clearZoneReferences(deletedIds);
-            });
-            setIsZoneDeleteOpen(false);
-            setZoneDeleteTarget(null);
+    const handleConfirmDeleteZone = useCallback(async () => {
+        if (!zoneDeleteTarget) return;
+        try {
+            await deleteZone(zoneDeleteTarget.zoneId);
+            await Promise.all([refetchPlaces(), refetchDevices()]);
+            addToast('success', `'${zoneDeleteTarget.name}' 구역이 삭제되었습니다.`);
+        } catch {
+            addToast('error', '구역 삭제에 실패했습니다.');
         }
-    }, [zoneDeleteTarget, deleteZone, clearZoneReferences]);
+        setIsZoneDeleteOpen(false);
+        setZoneDeleteTarget(null);
+    }, [zoneDeleteTarget, deleteZone, refetchPlaces, refetchDevices, addToast]);
 
-    const handleConfirmDeletePlace = useCallback(() => {
-        if (placeDeleteTarget) {
-            deletePlace(placeDeleteTarget.placeId);
-            setIsPlaceDeleteOpen(false);
-            setPlaceDeleteTarget(null);
+    const handleConfirmDeletePlace = useCallback(async () => {
+        if (!placeDeleteTarget) return;
+        try {
+            await deletePlace(placeDeleteTarget.placeId);
+            addToast('success', `'${placeDeleteTarget.name}' 장소가 삭제되었습니다.`);
+        } catch {
+            addToast('error', '장소 삭제에 실패했습니다.');
         }
-    }, [placeDeleteTarget, deletePlace]);
+        setIsPlaceDeleteOpen(false);
+        setPlaceDeleteTarget(null);
+    }, [placeDeleteTarget, deletePlace, addToast]);
 
-    const handleConfirmDeleteDevice = useCallback(() => {
-        if (deviceDeleteTarget) {
-            deleteDevice(deviceDeleteTarget.deviceId);
-            setIsDeviceDeleteOpen(false);
-            setDeviceDeleteTarget(null);
+    const handleConfirmDeleteDevice = useCallback(async () => {
+        if (!deviceDeleteTarget) return;
+        try {
+            await deleteDevice(deviceDeleteTarget.deviceId);
+            addToast('success', `'${deviceDeleteTarget.deviceId}' 디바이스가 비활성화되었습니다.`);
+        } catch {
+            addToast('error', '디바이스 삭제에 실패했습니다.');
         }
-    }, [deviceDeleteTarget, deleteDevice]);
+        setIsDeviceDeleteOpen(false);
+        setDeviceDeleteTarget(null);
+    }, [deviceDeleteTarget, deleteDevice, addToast]);
 
-    const handleConfirmRotateToken = useCallback(() => {
-        if (deviceTokenTarget) {
-            const newToken = rotateToken(deviceTokenTarget.deviceId);
+    const handleConfirmRotateToken = useCallback(async () => {
+        if (!deviceTokenTarget) return;
+        try {
+            const newToken = await rotateToken(deviceTokenTarget.deviceId);
             setDeviceIssuedToken(newToken);
+            addToast('success', '토큰이 재발급되었습니다. 새 토큰을 안전하게 저장하세요.');
+        } catch {
+            addToast('error', '토큰 재발급에 실패했습니다.');
         }
-    }, [deviceTokenTarget, rotateToken]);
+    }, [deviceTokenTarget, rotateToken, addToast]);
 
-    const handleSubmitZoneForm = useCallback((request: CreateZoneRequest | UpdateZoneRequest) => {
-        if (zoneFormMode === 'create') {
-            createZone(request as CreateZoneRequest);
-        } else if (zoneEditTarget) {
-            updateZone(zoneEditTarget.zoneId, request as UpdateZoneRequest);
+    const handleSubmitZoneForm = useCallback(async (request: CreateZoneRequest | UpdateZoneRequest) => {
+        try {
+            if (zoneFormMode === 'create') {
+                await createZone(request as CreateZoneRequest);
+                addToast('success', '새 구역이 생성되었습니다.');
+            } else if (zoneEditTarget) {
+                await updateZone(zoneEditTarget.zoneId, request as UpdateZoneRequest);
+                addToast('success', '구역이 수정되었습니다.');
+            }
+            await Promise.all([refetchPlaces(), refetchDevices()]);
+        } catch {
+            addToast('error', zoneFormMode === 'create' ? '구역 생성에 실패했습니다.' : '구역 수정에 실패했습니다.');
         }
         setDrawnPolygon([]);
         setIsZoneFormOpen(false);
-    }, [zoneFormMode, zoneEditTarget, createZone, updateZone]);
+    }, [zoneFormMode, zoneEditTarget, createZone, updateZone, refetchPlaces, refetchDevices, addToast]);
 
-    const handleSubmitPlaceForm = useCallback((request: CreatePlaceRequest | UpdatePlaceRequest) => {
-        if (placeFormMode === 'create') {
-            createPlace(request as CreatePlaceRequest);
-        } else if (placeEditTarget) {
-            updatePlace(placeEditTarget.placeId, request as UpdatePlaceRequest);
+    const handleSubmitPlaceForm = useCallback(async (request: CreatePlaceRequest | UpdatePlaceRequest) => {
+        try {
+            if (placeFormMode === 'create') {
+                await createPlace(request as CreatePlaceRequest);
+                addToast('success', '새 장소가 등록되었습니다.');
+            } else if (placeEditTarget) {
+                await updatePlace(placeEditTarget.placeId, request as UpdatePlaceRequest);
+                addToast('success', '장소가 수정되었습니다.');
+            }
+        } catch {
+            addToast('error', placeFormMode === 'create' ? '장소 등록에 실패했습니다.' : '장소 수정에 실패했습니다.');
         }
         setPlacingPosition(null);
         setIsPlaceFormOpen(false);
-    }, [placeFormMode, placeEditTarget, createPlace, updatePlace]);
+    }, [placeFormMode, placeEditTarget, createPlace, updatePlace, addToast]);
 
-    const handleSubmitDeviceForm = useCallback((request: CreateDeviceRequest | UpdateDeviceRequest) => {
-        if (deviceFormMode === 'create') {
-            const { plainToken } = createDevice(request as CreateDeviceRequest);
-            setDeviceIssuedToken(plainToken);
-        } else if (deviceEditTarget) {
-            updateDevice(deviceEditTarget.deviceId, request as UpdateDeviceRequest);
-            setPlacingPosition(null);
-            setIsDeviceFormOpen(false);
+    const handleSubmitDeviceForm = useCallback(async (request: CreateDeviceRequest | UpdateDeviceRequest) => {
+        try {
+            if (deviceFormMode === 'create') {
+                const result = await createDevice(request as CreateDeviceRequest);
+                setDeviceIssuedToken(result.plainToken);
+                addToast('success', '디바이스가 등록되었습니다. 토큰을 안전하게 저장하세요.');
+            } else if (deviceEditTarget) {
+                await updateDevice(deviceEditTarget.deviceId, request as UpdateDeviceRequest);
+                addToast('success', '디바이스가 수정되었습니다.');
+                setPlacingPosition(null);
+                setIsDeviceFormOpen(false);
+            }
+        } catch {
+            addToast('error', deviceFormMode === 'create' ? '디바이스 등록에 실패했습니다.' : '디바이스 수정에 실패했습니다.');
         }
-    }, [deviceFormMode, deviceEditTarget, createDevice, updateDevice]);
+    }, [deviceFormMode, deviceEditTarget, createDevice, updateDevice, addToast]);
+
+    /** 구역 재계산 */
+    const handleRecalc = useCallback(async () => {
+        try {
+            const result = await recalcZones();
+            await Promise.all([refetchPlaces(), refetchDevices()]);
+            addToast('info',
+                `재계산 완료 — 장소 ${result.updatedPlaces}/${result.totalPlaces}건, 디바이스 ${result.updatedDevices}/${result.totalDevices}건 변경`,
+            );
+        } catch {
+            addToast('error', '구역 재계산에 실패했습니다.');
+        }
+    }, [recalcZones, refetchPlaces, refetchDevices, addToast]);
 
     const hasSubZones = useMemo(
         () => zoneDeleteTarget ? zones.some((zone) => zone.parentZoneId === zoneDeleteTarget.zoneId) : false,
@@ -305,7 +389,7 @@ export function ZonePlaceMapView() {
     return (
         <div className="relative h-[calc(100vh-90px)] w-full">
             {/* ═══════ 전체 너비 지도 ═══════ */}
-            <div className="absolute inset-0 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+            <div className="absolute inset-0 rounded-2xl overflow-hidden border border-slate-200/60 shadow-sm">
                 <ZonePlaceMap
                     zones={zones}
                     places={filteredPlaces}
@@ -327,6 +411,51 @@ export function ZonePlaceMapView() {
                     onMapClick={handleMapClick}
                 />
             </div>
+
+            {/* ═══════ 글로벌 로딩 인디케이터 ═══════ */}
+            <AnimatePresence>
+                {(isGlobalLoading || isMutating) && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute top-4 left-1/2 -translate-x-1/2 z-30"
+                    >
+                        <div className="flex items-center gap-2.5 px-4 py-2.5 bg-white/95 backdrop-blur-xl rounded-full shadow-lg border border-white/60">
+                            <div className="relative w-4 h-4">
+                                <div className="absolute inset-0 rounded-full border-2 border-slate-200" />
+                                <div className="absolute inset-0 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+                            </div>
+                            <span className="text-xs font-bold text-slate-600">
+                                {isMutating ? '저장 중...' : '데이터 로딩 중...'}
+                            </span>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ═══════ 에러 배너 ═══════ */}
+            <AnimatePresence>
+                {zoneError && !isMutating && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="absolute top-4 left-1/2 -translate-x-1/2 z-30"
+                    >
+                        <div className="flex items-center gap-2 px-4 py-2.5 bg-red-50/95 backdrop-blur-xl rounded-2xl shadow-lg border border-red-200/60">
+                            <HiOutlineExclamationTriangle className="w-4 h-4 text-red-500 shrink-0" />
+                            <span className="text-xs font-bold text-red-700">{zoneError.message}</span>
+                            <button
+                                onClick={() => { refetchZones(); refetchPlaces(); refetchDevices(); }}
+                                className="ml-2 text-xs font-bold text-red-500 hover:text-red-700 underline underline-offset-2"
+                            >
+                                다시 시도
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* ═══════ 좌상단: 페이지 타이틀 배지 & 사이트 선택 ═══════ */}
             <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
@@ -385,7 +514,7 @@ export function ZonePlaceMapView() {
                 </div>
             </div>
 
-            {/* ═══════ 하단 중앙: 스마트 필터 바 (Glassmorphism) ═══════ */}
+            {/* ═══════ 하단 중앙: 스마트 필터 바 ═══════ */}
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
                 <div className="flex items-center gap-1 p-1.5 bg-white/85 backdrop-blur-2xl border border-white/60 shadow-2xl rounded-full pointer-events-auto">
                     <button
@@ -423,7 +552,7 @@ export function ZonePlaceMapView() {
                 </div>
             </div>
 
-            {/* ═══════ Drawing/Placing 모드 툴바 (상단 중앙) ═══════ */}
+            {/* ═══════ Drawing/Placing 모드 툴바 ═══════ */}
             <AnimatePresence>
                 {isInteracting && (
                     <motion.div
@@ -524,13 +653,25 @@ export function ZonePlaceMapView() {
                             </div>
                             <span className="text-sm font-bold">디바이스 추가</span>
                         </button>
+                        {/* 구역 재계산 버튼 */}
+                        <button
+                            onClick={handleRecalc}
+                            disabled={isMutating}
+                            className="group flex items-center gap-2.5 pl-4 pr-5 py-3 bg-white/95 backdrop-blur-md border border-white/50 text-slate-700 rounded-2xl shadow-lg
+                                hover:bg-violet-50 hover:border-violet-200 hover:text-violet-700 hover:shadow-xl transition-all duration-200 active:scale-[0.97]
+                                disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <div className="w-8 h-8 rounded-xl bg-violet-500 group-hover:bg-violet-600 flex items-center justify-center transition-colors">
+                                <HiOutlineArrowPath className={`w-4 h-4 text-white ${isMutating ? 'animate-spin' : ''}`} />
+                            </div>
+                            <span className="text-sm font-bold">재계산</span>
+                        </button>
                     </motion.div>
                 )}
             </AnimatePresence>
 
             {/* ═══════ 우측: 플로팅 사이드패널 ═══════ */}
             <div className="absolute top-4 right-4 bottom-4 z-10 flex items-stretch gap-2">
-                {/* 패널 토글 버튼 */}
                 <button
                     onClick={() => setIsPanelOpen(!isPanelOpen)}
                     className="self-center bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-white/50 p-2 hover:bg-slate-50 transition-all"
@@ -542,7 +683,6 @@ export function ZonePlaceMapView() {
                     }
                 </button>
 
-                {/* 사이드패널 */}
                 <AnimatePresence>
                     {isPanelOpen && (
                         <motion.div
@@ -572,10 +712,32 @@ export function ZonePlaceMapView() {
                                     onEditDevice={handleEditDevice}
                                     onDeleteDevice={handleDeleteDevice}
                                     onRotateToken={handleRotateToken}
+                                    isLoading={isGlobalLoading}
                                 />
                             </div>
                         </motion.div>
                     )}
+                </AnimatePresence>
+            </div>
+
+            {/* ═══════ 토스트 알림 ═══════ */}
+            <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none">
+                <AnimatePresence>
+                    {toasts.map((toast) => (
+                        <motion.div
+                            key={toast.id}
+                            initial={{ opacity: 0, x: 60, scale: 0.9 }}
+                            animate={{ opacity: 1, x: 0, scale: 1 }}
+                            exit={{ opacity: 0, x: 60, scale: 0.9 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className={`pointer-events-auto px-4 py-3 rounded-2xl shadow-xl border backdrop-blur-xl text-sm font-bold max-w-sm
+                                ${toast.type === 'success' ? 'bg-emerald-50/95 border-emerald-200/60 text-emerald-800' : ''}
+                                ${toast.type === 'error' ? 'bg-red-50/95 border-red-200/60 text-red-800' : ''}
+                                ${toast.type === 'info' ? 'bg-blue-50/95 border-blue-200/60 text-blue-800' : ''}`}
+                        >
+                            {toast.message}
+                        </motion.div>
+                    ))}
                 </AnimatePresence>
             </div>
 

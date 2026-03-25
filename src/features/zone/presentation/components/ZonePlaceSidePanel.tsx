@@ -30,6 +30,7 @@ interface ZonePlaceSidePanelProps {
     onEditDevice: (device: Device) => void;
     onDeleteDevice: (device: Device) => void;
     onRotateToken: (device: Device) => void;
+    isLoading?: boolean;
 }
 
 function ZoneTreeItem({
@@ -322,6 +323,7 @@ function ZonePlaceSidePanelInner({
     onEditDevice,
     onDeleteDevice,
     onRotateToken,
+    isLoading,
 }: ZonePlaceSidePanelProps) {
     const innerZones = zones.filter((zone) => zone.zoneType === 'INNER');
     const getSubZones = (parentId: number) => zones.filter((zone) => zone.parentZoneId === parentId);
@@ -372,8 +374,23 @@ function ZonePlaceSidePanelInner({
             </div>
 
             <div className="flex-1 overflow-y-auto p-3">
+                {/* 로딩 스켈레톤 */}
+                {isLoading && (
+                    <div className="space-y-2 animate-pulse">
+                        {Array.from({ length: 4 }).map((_, index) => (
+                            <div key={index} className="flex items-center gap-3 px-3 py-3 rounded-xl">
+                                <div className="w-2 h-2 rounded-full bg-slate-200 shrink-0" />
+                                <div className="flex-1 space-y-1.5">
+                                    <div className="h-3.5 bg-slate-200 rounded-md w-3/4" />
+                                    <div className="h-2.5 bg-slate-100 rounded-md w-1/2" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 <AnimatePresence mode="wait">
-                    {activeTab === 'zones' && (
+                    {!isLoading && activeTab === 'zones' && (
                         <motion.div
                             key="tab-zones"
                             initial={{ opacity: 0, x: -10 }}
@@ -384,8 +401,9 @@ function ZonePlaceSidePanelInner({
                         >
                         {innerZones.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                                <HiOutlineMap className="w-10 h-10 mb-2" />
-                                <p className="text-sm font-medium">등록된 구역이 없습니다</p>
+                                <HiOutlineMap className="w-10 h-10 mb-2 opacity-50" />
+                                <p className="text-sm font-semibold">등록된 구역이 없습니다</p>
+                                <p className="text-xs mt-1 text-slate-300">좌측 하단의 구역 추가 버튼을 눌러보세요</p>
                             </div>
                         )}
                         {innerZones.map((zone) => (
@@ -404,7 +422,7 @@ function ZonePlaceSidePanelInner({
                         </motion.div>
                     )}
 
-                    {activeTab === 'places' && (
+                    {!isLoading && activeTab === 'places' && (
                         <motion.div
                             key="tab-places"
                             initial={{ opacity: 0, x: -10 }}
@@ -415,8 +433,9 @@ function ZonePlaceSidePanelInner({
                         >
                         {places.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                                <HiOutlineMapPin className="w-10 h-10 mb-2" />
-                                <p className="text-sm font-medium">등록된 장소가 없습니다</p>
+                                <HiOutlineMapPin className="w-10 h-10 mb-2 opacity-50" />
+                                <p className="text-sm font-semibold">등록된 장소가 없습니다</p>
+                                <p className="text-xs mt-1 text-slate-300">좌측 하단의 장소 추가 버튼을 눌러보세요</p>
                             </div>
                         )}
                         {places.map((place) => (
@@ -433,7 +452,7 @@ function ZonePlaceSidePanelInner({
                         </motion.div>
                     )}
 
-                    {activeTab === 'devices' && (
+                    {!isLoading && activeTab === 'devices' && (
                         <motion.div
                             key="tab-devices"
                             initial={{ opacity: 0, x: -10 }}
@@ -444,8 +463,9 @@ function ZonePlaceSidePanelInner({
                         >
                         {devices.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                                <HiOutlineDevicePhoneMobile className="w-10 h-10 mb-2" />
-                                <p className="text-sm font-medium">등록된 디바이스가 없습니다</p>
+                                <HiOutlineDevicePhoneMobile className="w-10 h-10 mb-2 opacity-50" />
+                                <p className="text-sm font-semibold">등록된 디바이스가 없습니다</p>
+                                <p className="text-xs mt-1 text-slate-300">좌측 하단의 디바이스 추가 버튼을 눌러보세요</p>
                             </div>
                         )}
                         {devices.map((device) => (
