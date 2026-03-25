@@ -16,7 +16,7 @@ interface DeviceTokenDialogProps {
     /** null이면 재발급 확인 단계, 값이 있으면 토큰 표시 단계 */
     newToken: string | null;
     onClose: () => void;
-    onConfirmRotate: () => void;
+    onConfirmRotate: () => void | Promise<void>;
 }
 
 /**
@@ -27,6 +27,16 @@ interface DeviceTokenDialogProps {
  */
 export function DeviceTokenDialog({ isOpen, deviceId, newToken, onClose, onConfirmRotate }: DeviceTokenDialogProps) {
     const [isTokenCopied, setIsTokenCopied] = useState(false);
+    const [isRotating, setIsRotating] = useState(false);
+
+    const handleConfirmRotate = async () => {
+        setIsRotating(true);
+        try {
+            await onConfirmRotate();
+        } finally {
+            setIsRotating(false);
+        }
+    };
 
     const handleCopyToken = async () => {
         if (!newToken) return;
@@ -91,16 +101,21 @@ export function DeviceTokenDialog({ isOpen, deviceId, newToken, onClose, onConfi
                                             <button
                                                 type="button"
                                                 onClick={onClose}
-                                                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-500 hover:bg-slate-50 transition-all"
+                                                disabled={isRotating}
+                                                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-500 hover:bg-slate-50 transition-all disabled:opacity-50"
                                             >
                                                 취소
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={onConfirmRotate}
-                                                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-bold hover:bg-red-600 shadow-lg shadow-red-200 transition-all active:scale-[0.98]"
+                                                onClick={handleConfirmRotate}
+                                                disabled={isRotating}
+                                                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500 text-white text-sm font-bold hover:bg-red-600 shadow-lg shadow-red-200 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                재발급
+                                                {isRotating && (
+                                                    <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                                                )}
+                                                {isRotating ? '재발급 중...' : '재발급'}
                                             </button>
                                         </div>
                                     </>

@@ -13,7 +13,7 @@ interface ZoneFormModalProps {
     /** 지도에서 그린 폴리곤 좌표 (create 모드에서 사용) */
     drawnPolygon: { lat: number; lng: number }[];
     onClose: () => void;
-    onSubmit: (request: CreateZoneRequest | UpdateZoneRequest) => void;
+    onSubmit: (request: CreateZoneRequest | UpdateZoneRequest) => void | Promise<void>;
 }
 
 function generateZoneCode(name: string, zoneType: 'INNER' | 'SUB'): string {
@@ -39,6 +39,7 @@ export function ZoneFormModal({ isOpen, mode, editTarget, parentZones, drawnPoly
     );
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [highlightedIndex, setHighlightedIndex] = useState(0);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (!isDropdownOpen) {
@@ -69,30 +70,34 @@ export function ZoneFormModal({ isOpen, mode, editTarget, parentZones, drawnPoly
 
     const derivedZoneType = parentZoneId !== null ? 'SUB' : 'INNER';
 
-    const handleSubmit = (event: React.FormEvent) => {
+    const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
-        if (mode === 'create') {
-            const code = generateZoneCode(name, derivedZoneType);
-            // drawnPolygon → GeoJSON 변환 (닫힘 보장)
-            const coords = drawnPolygon.map((p) => [p.lng, p.lat]);
-            if (coords.length > 0 && (coords[0][0] !== coords[coords.length - 1][0] || coords[0][1] !== coords[coords.length - 1][1])) {
-                coords.push([...coords[0]]);
+        setIsSubmitting(true);
+        try {
+            if (mode === 'create') {
+                const code = generateZoneCode(name, derivedZoneType);
+                const coords = drawnPolygon.map((p) => [p.lng, p.lat]);
+                if (coords.length > 0 && (coords[0][0] !== coords[coords.length - 1][0] || coords[0][1] !== coords[coords.length - 1][1])) {
+                    coords.push([...coords[0]]);
+                }
+                const areaGeojson: GeoJsonPolygon = {
+                    type: 'Polygon',
+                    coordinates: [coords],
+                };
+                const request: CreateZoneRequest = {
+                    name,
+                    code,
+                    zoneType: derivedZoneType,
+                    parentZoneId: derivedZoneType === 'SUB' ? parentZoneId : null,
+                    areaGeojson,
+                };
+                await onSubmit(request);
+            } else {
+                const request: UpdateZoneRequest = { name };
+                await onSubmit(request);
             }
-            const areaGeojson: GeoJsonPolygon = {
-                type: 'Polygon',
-                coordinates: [coords],
-            };
-            const request: CreateZoneRequest = {
-                name,
-                code,
-                zoneType: derivedZoneType,
-                parentZoneId: derivedZoneType === 'SUB' ? parentZoneId : null,
-                areaGeojson,
-            };
-            onSubmit(request);
-        } else {
-            const request: UpdateZoneRequest = { name };
-            onSubmit(request);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -243,10 +248,13 @@ export function ZoneFormModal({ isOpen, mode, editTarget, parentZones, drawnPoly
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={!isFormValid}
-                                        className="flex-1 py-2.5 rounded-xl bg-blue-500 text-white text-sm font-bold hover:bg-blue-600 shadow-lg shadow-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+                                        disabled={!isFormValid || isSubmitting}
+                                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-500 text-white text-sm font-bold hover:bg-blue-600 shadow-lg shadow-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
                                     >
-                                        {mode === 'create' ? '추가' : '저장'}
+                                        {isSubmitting && (
+                                            <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                                        )}
+                                        {isSubmitting ? '저장 중...' : mode === 'create' ? '추가' : '저장'}
                                     </button>
                                 </div>
                             </form>

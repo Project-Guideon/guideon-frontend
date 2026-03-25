@@ -19,7 +19,7 @@ interface PlaceFormModalProps {
     /** 메인 지도에서 클릭한 좌표 (create 모드) */
     selectedCoords: { lat: number; lng: number };
     onClose: () => void;
-    onSubmit: (request: CreatePlaceRequest | UpdatePlaceRequest) => void;
+    onSubmit: (request: CreatePlaceRequest | UpdatePlaceRequest) => void | Promise<void>;
 }
 
 /**
@@ -37,38 +37,44 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, selectedCoords
     const [zoneId, setZoneId] = useState<number | null>(mode === 'edit' && editTarget ? editTarget.zoneId : null);
     const [isActive, setIsActive] = useState(mode === 'edit' && editTarget ? editTarget.isActive : true);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const latitude = mode === 'edit' && editTarget ? editTarget.latitude : selectedCoords.lat;
     const longitude = mode === 'edit' && editTarget ? editTarget.longitude : selectedCoords.lng;
 
-    const handleSubmit = (event: FormEvent) => {
+    const handleSubmit = async (event: FormEvent) => {
         event.preventDefault();
-        const nameJson = nameEn ? { en: nameEn } : undefined;
+        setIsSubmitting(true);
+        try {
+            const nameJson = nameEn ? { en: nameEn } : undefined;
 
-        if (mode === 'create') {
-            const request: CreatePlaceRequest = {
-                name,
-                category,
-                latitude,
-                longitude,
-                description: description || undefined,
-                nameJson,
-                zoneSource: zoneId != null ? 'MANUAL' : 'AUTO',
-                zoneId: zoneId ?? undefined,
-                isActive,
-            };
-            onSubmit(request);
-        } else {
-            const request: UpdatePlaceRequest = {
-                name,
-                category,
-                description: description || undefined,
-                nameJson,
-                isActive,
-                zoneSource: zoneId != null ? 'MANUAL' : 'AUTO',
-                zoneId: zoneId ?? undefined,
-            };
-            onSubmit(request);
+            if (mode === 'create') {
+                const request: CreatePlaceRequest = {
+                    name,
+                    category,
+                    latitude,
+                    longitude,
+                    description: description || undefined,
+                    nameJson,
+                    zoneSource: zoneId != null ? 'MANUAL' : 'AUTO',
+                    zoneId: zoneId ?? undefined,
+                    isActive,
+                };
+                await onSubmit(request);
+            } else {
+                const request: UpdatePlaceRequest = {
+                    name,
+                    category,
+                    description: description || undefined,
+                    nameJson,
+                    isActive,
+                    zoneSource: zoneId != null ? 'MANUAL' : 'AUTO',
+                    zoneId: zoneId ?? undefined,
+                };
+                await onSubmit(request);
+            }
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -285,10 +291,13 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, selectedCoords
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={!isFormValid}
-                                        className="flex-1 py-2.5 rounded-xl bg-orange-500 text-white text-sm font-bold hover:bg-orange-600 shadow-lg shadow-orange-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+                                        disabled={!isFormValid || isSubmitting}
+                                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-orange-500 text-white text-sm font-bold hover:bg-orange-600 shadow-lg shadow-orange-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
                                     >
-                                        {mode === 'create' ? '추가' : '저장'}
+                                        {isSubmitting && (
+                                            <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                                        )}
+                                        {isSubmitting ? '저장 중...' : mode === 'create' ? '추가' : '저장'}
                                     </button>
                                 </div>
                             </form>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineExclamationTriangle } from 'react-icons/hi2';
 
@@ -9,7 +10,7 @@ interface DeleteConfirmDialogProps {
     targetName: string;
     warningMessage?: React.ReactNode;
     onClose: () => void;
-    onConfirm: () => void;
+    onConfirm: () => void | Promise<void>;
 }
 
 export function DeleteConfirmDialog({
@@ -20,6 +21,17 @@ export function DeleteConfirmDialog({
     onClose,
     onConfirm,
 }: DeleteConfirmDialogProps) {
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleConfirm = async () => {
+        setIsDeleting(true);
+        try {
+            await onConfirm();
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -34,7 +46,7 @@ export function DeleteConfirmDialog({
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         className="absolute inset-0 bg-black/40"
-                        onClick={onClose}
+                        onClick={isDeleting ? undefined : onClose}
                     />
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
@@ -61,16 +73,21 @@ export function DeleteConfirmDialog({
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-500 hover:bg-slate-50 transition-all font-sans"
+                                disabled={isDeleting}
+                                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-500 hover:bg-slate-50 transition-all font-sans disabled:opacity-50"
                             >
                                 취소
                             </button>
                             <button
                                 type="button"
-                                onClick={() => { onConfirm(); onClose(); }}
-                                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-bold hover:bg-red-600 shadow-lg shadow-red-200 transition-all active:scale-[0.98] font-sans"
+                                onClick={handleConfirm}
+                                disabled={isDeleting}
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500 text-white text-sm font-bold hover:bg-red-600 shadow-lg shadow-red-200 transition-all active:scale-[0.98] font-sans disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                삭제
+                                {isDeleting && (
+                                    <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                                )}
+                                {isDeleting ? '삭제 중...' : '삭제'}
                             </button>
                         </div>
                     </motion.div>
