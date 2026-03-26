@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import type { FormEvent } from 'react';
+import { useState, useRef } from 'react';
+import type { FormEvent, ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HiOutlineXMark, HiOutlineMapPin, HiOutlineChevronDown } from 'react-icons/hi2';
+import { HiOutlineXMark, HiOutlineMapPin, HiOutlineChevronDown, HiOutlinePhoto, HiOutlineArrowUpTray } from 'react-icons/hi2';
 import type { Place, PlaceCategory, CreatePlaceRequest, UpdatePlaceRequest } from '@/features/place/domain/entities/Place';
 import { PLACE_CATEGORY_META } from '@/features/place/domain/entities/Place';
 import { PlaceCategoryIcon } from '@/features/place/presentation/components/PlaceCategoryIcon';
@@ -20,6 +20,7 @@ interface PlaceFormModalProps {
     selectedCoords: { lat: number; lng: number };
     onClose: () => void;
     onSubmit: (request: CreatePlaceRequest | UpdatePlaceRequest) => void | Promise<void>;
+    onImageUpload?: (file: File) => Promise<string>;
 }
 
 /**
@@ -29,17 +30,36 @@ interface PlaceFormModalProps {
  * - Material Design 아이콘 기반 카테고리 그리드
  * - key prop 기반 remount
  */
-export function PlaceFormModal({ isOpen, mode, editTarget, zones, selectedCoords, onClose, onSubmit }: PlaceFormModalProps) {
+export function PlaceFormModal({ isOpen, mode, editTarget, zones, selectedCoords, onClose, onSubmit, onImageUpload }: PlaceFormModalProps) {
     const [name, setName] = useState(mode === 'edit' && editTarget ? editTarget.name : '');
     const [category, setCategory] = useState<PlaceCategory>(mode === 'edit' && editTarget ? editTarget.category : 'ATTRACTION');
     const [description, setDescription] = useState(mode === 'edit' && editTarget ? (editTarget.description ?? '') : '');
     const [nameEn, setNameEn] = useState(mode === 'edit' && editTarget ? (editTarget.nameJson?.en ?? '') : '');
+    const [imageUrl, setImageUrl] = useState(mode === 'edit' && editTarget ? (editTarget.imageUrl ?? '') : '');
     const [zoneId, setZoneId] = useState<number | null>(mode === 'edit' && editTarget ? editTarget.zoneId : null);
     const [isActive, setIsActive] = useState(mode === 'edit' && editTarget ? editTarget.isActive : true);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const latitude = mode === 'edit' && editTarget ? editTarget.latitude : selectedCoords.lat;
+
+    const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !onImageUpload) return;
+
+        setIsUploadingImage(true);
+        try {
+            const uploadedUrl = await onImageUpload(file);
+            setImageUrl(uploadedUrl);
+        } catch (error) {
+            console.error('이미지 업로드 실패:', error);
+        } finally {
+            setIsUploadingImage(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
     const longitude = mode === 'edit' && editTarget ? editTarget.longitude : selectedCoords.lng;
 
     const handleSubmit = async (event: FormEvent) => {
@@ -55,6 +75,7 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, selectedCoords
                     latitude,
                     longitude,
                     description: description || undefined,
+                    imageUrl: imageUrl || undefined,
                     nameJson,
                     zoneSource: zoneId != null ? 'MANUAL' : 'AUTO',
                     zoneId: zoneId ?? undefined,
@@ -66,6 +87,7 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, selectedCoords
                     name,
                     category,
                     description: description || undefined,
+                    imageUrl: imageUrl || undefined,
                     nameJson,
                     isActive,
                     zoneSource: zoneId != null ? 'MANUAL' : 'AUTO',
@@ -263,6 +285,67 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, selectedCoords
                                         rows={2}
                                         className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50 resize-none"
                                     />
+                                </div>
+
+                                {/* 이미지 업로드 */}
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-1.5">장소 이미지 (선택)</label>
+                                    <div className="flex items-center gap-4">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            ref={fileInputRef}
+                                            onChange={handleImageChange}
+                                            className="hidden"
+                                        />
+                                        {imageUrl ? (
+                                            <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-200 shrink-0 group">
+                                                <img src={imageUrl} alt="장소 미리보기" className="w-full h-full object-cover" />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setImageUrl('')}
+                                                        className="text-white hover:text-red-400"
+                                                        title="이미지 삭제"
+                                                    >
+                                                        <HiOutlineXMark className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={isUploadingImage || !onImageUpload}
+                                                className="w-20 h-20 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-1.5 text-slate-400 hover:border-orange-300 hover:text-orange-500 hover:bg-orange-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                                            >
+                                                {isUploadingImage ? (
+                                                    <div className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-orange-500 animate-spin" />
+                                                ) : (
+                                                    <HiOutlinePhoto className="w-6 h-6" />
+                                                )}
+                                            </button>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                            {imageUrl ? (
+                                                <p className="text-sm font-bold text-slate-700 truncate">{imageUrl.split('/').pop()}</p>
+                                            ) : (
+                                                <p className="text-sm font-medium text-slate-500">
+                                                    {isUploadingImage ? '업로드 중입니다...' : '이미지를 선택해 주세요.'}
+                                                </p>
+                                            )}
+                                            <p className="text-xs text-slate-400 mt-0.5">권장 크기: 800x600px 이상</p>
+                                            {imageUrl && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    className="text-xs font-bold text-orange-500 hover:text-orange-600 mt-1 flex items-center gap-1"
+                                                >
+                                                    <HiOutlineArrowUpTray className="w-3 h-3" /> 변경하기
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {/* 활성 상태 */}

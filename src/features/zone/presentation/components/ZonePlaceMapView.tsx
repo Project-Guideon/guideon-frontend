@@ -20,6 +20,7 @@ import {
 import { useZones } from '@/features/zone/application/hooks/useZones';
 import { usePlaces } from '@/features/place/application/hooks/usePlaces';
 import { useDevices } from '@/features/device/application/hooks/useDevices';
+import { uploadPlaceImageApi } from '@/api/endpoints/place';
 import { ZonePlaceSidePanel } from './ZonePlaceSidePanel';
 import { ZoneFormModal } from './ZoneFormModal';
 import { ZoneDeleteDialog } from './ZoneDeleteDialog';
@@ -39,7 +40,7 @@ const ZonePlaceMap = dynamic(
     {
         ssr: false,
         loading: () => (
-            <div className="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 text-slate-400 gap-3">
+            <div className="h-full w-full flex flex-col items-center justify-center bg-linear-to-br from-slate-50 to-slate-100 text-slate-400 gap-3">
                 <div className="relative">
                     <div className="w-12 h-12 rounded-full border-[3px] border-slate-200" />
                     <div className="absolute inset-0 w-12 h-12 rounded-full border-[3px] border-orange-500 border-t-transparent animate-spin" />
@@ -332,6 +333,12 @@ export function ZonePlaceMapView() {
         setDrawnPolygon([]);
         setIsZoneFormOpen(false);
     }, [zoneFormMode, zoneEditTarget, createZone, updateZone, refetchPlaces, refetchDevices, addToast]);
+
+    const handleImageUpload = useCallback(async (file: File) => {
+        if (!currentSite?.siteId) throw new Error('현재 선택된 관광지가 없습니다.');
+        const response = await uploadPlaceImageApi(currentSite.siteId, file);
+        return response.data.imageUrl;
+    }, [currentSite?.siteId]);
 
     const handleSubmitPlaceForm = useCallback(async (request: CreatePlaceRequest | UpdatePlaceRequest) => {
         try {
@@ -721,7 +728,7 @@ export function ZonePlaceMapView() {
             </div>
 
             {/* ═══════ 토스트 알림 ═══════ */}
-            <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none">
+            <div className="fixed bottom-6 right-6 z-100 flex flex-col gap-2 pointer-events-none">
                 <AnimatePresence>
                     {toasts.map((toast) => (
                         <motion.div
@@ -768,6 +775,7 @@ export function ZonePlaceMapView() {
                 selectedCoords={selectedCoords}
                 onClose={() => { setIsPlaceFormOpen(false); setPlacingPosition(null); }}
                 onSubmit={handleSubmitPlaceForm}
+                onImageUpload={handleImageUpload}
             />
             <PlaceDeleteDialog
                 isOpen={isPlaceDeleteOpen}

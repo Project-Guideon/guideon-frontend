@@ -181,12 +181,16 @@ function PlaceListItem({
                     : 'hover:bg-slate-50 border border-transparent'
                 }`}
         >
-            <PlaceCategoryIcon
-                category={place.category}
-                size="lg"
-                color={meta.color}
-                className={!place.isActive ? 'opacity-50 grayscale' : ''}
-            />
+            {place.imageUrl ? (
+                <img src={place.imageUrl} alt={place.name} className={`w-10 h-10 object-cover rounded-xl shrink-0 ${!place.isActive ? 'opacity-50 grayscale' : ''}`} />
+            ) : (
+                <PlaceCategoryIcon
+                    category={place.category}
+                    size="lg"
+                    color={meta.color}
+                    className={!place.isActive ? 'opacity-50 grayscale' : ''}
+                />
+            )}
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                     <p className={`text-sm font-bold truncate ${!place.isActive ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
