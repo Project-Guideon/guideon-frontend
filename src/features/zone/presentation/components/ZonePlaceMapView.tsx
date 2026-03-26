@@ -338,7 +338,7 @@ export function ZonePlaceMapView() {
         if (!currentSite?.siteId) throw new Error('현재 선택된 관광지가 없습니다.');
         const response = await uploadPlaceImageApi(currentSite.siteId, file);
         return response.data.imageUrl;
-    }, [currentSite?.siteId]);
+    }, [currentSite]);
 
     const handleSubmitPlaceForm = useCallback(async (request: CreatePlaceRequest | UpdatePlaceRequest) => {
         try {
@@ -464,242 +464,259 @@ export function ZonePlaceMapView() {
                 )}
             </AnimatePresence>
 
-            {/* ═══════ 좌상단: 페이지 타이틀 배지 & 사이트 선택 ═══════ */}
-            <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-                <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 px-5 py-3">
-                    <div className="flex items-center gap-2 mb-1.5">
-                        <HiOutlineMapPin className="w-5 h-5 text-orange-500 shrink-0" />
-                        {isPlatformAdmin ? (
-                            <div className="relative">
-                                <button
-                                    onClick={() => setIsSiteDropdownOpen(!isSiteDropdownOpen)}
-                                    className="flex items-center gap-1.5 bg-transparent text-base font-black text-slate-800 outline-none hover:text-orange-600 transition-colors"
-                                >
-                                    {currentSite?.name ?? '관광지 선택'}
-                                    <HiOutlineChevronDown className={`w-4 h-4 transition-transform duration-200 ${isSiteDropdownOpen ? 'rotate-180' : ''}`} />
-                                </button>
-
-                                <AnimatePresence>
-                                    {isSiteDropdownOpen && (
-                                        <>
-                                            <div
-                                                className="fixed inset-0 z-40"
-                                                onClick={() => setIsSiteDropdownOpen(false)}
-                                            />
-                                            <motion.div
-                                                initial={{ opacity: 0, y: -10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0, y: -10 }}
-                                                transition={{ duration: 0.15 }}
-                                                className="absolute top-full left-0 mt-2 w-40 bg-white/95 backdrop-blur-xl rounded-xl shadow-xl border border-white/50 py-1.5 z-50 overflow-hidden"
-                                            >
-                                                {sites.map((site) => (
-                                                    <button
-                                                        key={site.siteId}
-                                                        onClick={() => {
-                                                            setCurrentSite(site.siteId);
-                                                            setIsSiteDropdownOpen(false);
-                                                        }}
-                                                        className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-all
-                                                            ${currentSite?.siteId === site.siteId
-                                                                ? 'bg-orange-50/50 text-orange-600'
-                                                                : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-                                                            }`}
-                                                    >
-                                                        {site.name}
-                                                    </button>
-                                                ))}
-                                            </motion.div>
-                                        </>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        ) : (
-                            <h2 className="text-base font-black text-slate-800">{currentSite?.name ?? '알 수 없는 관광지'}</h2>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* ═══════ 하단 중앙: 스마트 필터 바 ═══════ */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-                <div className="flex items-center gap-1 p-1.5 bg-white/85 backdrop-blur-2xl border border-white/60 shadow-2xl rounded-full pointer-events-auto">
-                    <button
-                        onClick={() => setShowZones(!showZones)}
-                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-bold transition-all duration-300
-                            ${showZones ? 'bg-blue-500 text-white shadow-md scale-100' : 'bg-transparent text-slate-500 hover:bg-slate-100/80 scale-95 hover:scale-100'}`}
-                    >
-                        구역
-                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full transition-colors ${showZones ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
-                            {zones.length}
-                        </span>
-                    </button>
-                    <div className="w-px h-4 bg-slate-200/60" />
-                    <button
-                        onClick={() => setShowPlaces(!showPlaces)}
-                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-bold transition-all duration-300
-                            ${showPlaces ? 'bg-orange-500 text-white shadow-md scale-100' : 'bg-transparent text-slate-500 hover:bg-slate-100/80 scale-95 hover:scale-100'}`}
-                    >
-                        장소
-                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full transition-colors ${showPlaces ? 'bg-orange-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
-                            {filteredPlaces.length}
-                        </span>
-                    </button>
-                    <div className="w-px h-4 bg-slate-200/60" />
-                    <button
-                        onClick={() => setShowDevices(!showDevices)}
-                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-bold transition-all duration-300
-                            ${showDevices ? 'bg-teal-500 text-white shadow-md scale-100' : 'bg-transparent text-slate-500 hover:bg-slate-100/80 scale-95 hover:scale-100'}`}
-                    >
-                        디바이스
-                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full transition-colors ${showDevices ? 'bg-teal-700 text-white' : 'bg-slate-200 text-slate-500'}`}>
-                            {filteredDevices.length}
-                        </span>
-                    </button>
-                </div>
-            </div>
-
-            {/* ═══════ Drawing/Placing 모드 툴바 ═══════ */}
-            <AnimatePresence>
-                {isInteracting && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="absolute top-4 left-1/2 -translate-x-1/2 z-20"
-                    >
-                        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 px-4 py-2.5 flex items-center gap-3">
+            {/* ═══════ 다이내믹 아일랜드: 인터랙션 모드 (Top Center) ═══════ */}
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+                <AnimatePresence mode="wait">
+                    {isInteracting && (
+                        <motion.div
+                            key="dynamic-island"
+                            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                            className="pointer-events-auto bg-white/90 backdrop-blur-2xl rounded-full shadow-[0_8px_32px_-8px_rgba(0,0,0,0.15)] border border-slate-200/80 px-2 py-1.5 flex items-center gap-2 overflow-hidden"
+                        >
                             {interactionMode === 'drawing' && (
-                                <>
-                                    <div className="flex items-center gap-2 text-sm font-bold text-orange-600">
-                                        <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                                        폴리곤 그리기
-                                        <span className="text-slate-400 font-medium">
-                                            ({drawingPoints.length}점{drawingPoints.length < 3 ? ' · 최소 3점' : ''})
-                                        </span>
+                                <div className="flex items-center gap-1 pl-3 pr-2 border-r border-slate-200/80">
+                                    <div className="relative flex h-3 w-3 mr-1.5">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500" />
                                     </div>
-                                    <div className="w-px h-5 bg-slate-200" />
-                                    <button
-                                        onClick={undoLastPoint}
-                                        disabled={drawingPoints.length === 0}
-                                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition-all disabled:opacity-30"
-                                    >
-                                        <HiOutlineArrowUturnLeft className="w-3.5 h-3.5" />
-                                        되돌리기
-                                    </button>
-                                    <button
-                                        onClick={finishDrawing}
-                                        disabled={drawingPoints.length < 3}
-                                        className="flex items-center gap-1 px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-lg hover:bg-green-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                                    >
-                                        <HiOutlineCheckCircle className="w-3.5 h-3.5" />
-                                        완료
-                                    </button>
-                                </>
-                            )}
-                            {interactionMode === 'placing' && placingType === 'place' && (
-                                <div className="flex items-center gap-2 text-sm font-bold text-blue-600">
-                                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                                    지도를 클릭하여 장소 위치를 선택하세요
+                                    <span className="text-sm font-extrabold text-slate-700">폴리곤 그리기</span>
+                                    <span className="text-xs font-bold text-slate-400 ml-1">
+                                        ({drawingPoints.length}점{drawingPoints.length < 3 ? ' · 최소 3점' : ''})
+                                    </span>
                                 </div>
                             )}
-                            {interactionMode === 'placing' && placingType === 'device' && (
-                                <div className="flex items-center gap-2 text-sm font-bold text-teal-600">
-                                    <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
-                                    지도를 클릭하여 디바이스 위치를 선택하세요
+                            {interactionMode === 'placing' && (
+                                <div className="flex items-center gap-1 pl-3 pr-2 border-r border-slate-200/80">
+                                    <div className="relative flex h-3 w-3 mr-1.5">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500" />
+                                    </div>
+                                    <span className="text-sm font-extrabold text-slate-700">
+                                        {placingType === 'place' ? '장소 위치 지정' : '디바이스 위치 지정'}
+                                    </span>
                                 </div>
                             )}
-                            <button
-                                onClick={cancelMode}
-                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                            >
-                                <HiOutlineXMark className="w-3.5 h-3.5" />
-                                취소
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
-            {/* ═══════ 좌하단: FAB 액션 버튼 ═══════ */}
-            <AnimatePresence>
-                {!isInteracting && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 20 }}
-                        className="absolute bottom-6 left-6 z-10 flex flex-col gap-2"
-                    >
-                        <button
-                            onClick={startDrawingMode}
-                            className="group flex items-center gap-2.5 pl-4 pr-5 py-3 bg-white/95 backdrop-blur-md border border-white/50 text-slate-700 rounded-2xl shadow-lg
-                                hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 hover:shadow-xl transition-all duration-200 active:scale-[0.97]"
-                        >
-                            <div className="w-8 h-8 rounded-xl bg-blue-500 group-hover:bg-blue-600 flex items-center justify-center transition-colors">
-                                <HiOutlineMap className="w-4 h-4 text-white" />
+                            <div className="flex items-center gap-1">
+                                {interactionMode === 'drawing' && (
+                                    <>
+                                        <button
+                                            onClick={undoLastPoint}
+                                            disabled={drawingPoints.length === 0}
+                                            className="px-3 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 transition-all flex items-center gap-1"
+                                        >
+                                            <HiOutlineArrowUturnLeft className="w-3.5 h-3.5" /> 되돌리기
+                                        </button>
+                                        <button
+                                            onClick={finishDrawing}
+                                            disabled={drawingPoints.length < 3}
+                                            className="px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-xs font-bold shadow-sm disabled:opacity-30 transition-all flex items-center gap-1"
+                                        >
+                                            <HiOutlineCheckCircle className="w-3.5 h-3.5" /> 완료
+                                        </button>
+                                    </>
+                                )}
+                                <button
+                                    onClick={cancelMode}
+                                    className="px-3 py-1.5 rounded-full text-xs font-bold text-red-500 hover:bg-red-50 hover:text-red-700 transition-all flex items-center gap-1"
+                                >
+                                    <HiOutlineXMark className="w-3.5 h-3.5" /> 취소
+                                </button>
                             </div>
-                            <span className="text-sm font-bold">구역 추가</span>
-                        </button>
-                        <button
-                            onClick={() => startPlacingMode('place')}
-                            className="group flex items-center gap-2.5 pl-4 pr-5 py-3 bg-white/95 backdrop-blur-md border border-white/50 text-slate-700 rounded-2xl shadow-lg
-                                hover:bg-orange-50 hover:border-orange-200 hover:text-orange-700 hover:shadow-xl transition-all duration-200 active:scale-[0.97]"
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+
+            {/* ═══════ 통합 다이내믹 독 (Bottom Center Header/HUD) ═══════ */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none w-full max-w-4xl px-4 flex justify-center">
+                <AnimatePresence>
+                    {!isInteracting && (
+                        <motion.div
+                            initial={{ y: 40, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 40, opacity: 0 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="pointer-events-auto flex items-center gap-2 sm:gap-4 p-2 sm:p-2.5 bg-white/75 backdrop-blur-3xl border border-white/80 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.15)] rounded-full w-max max-w-full"
                         >
-                            <div className="w-8 h-8 rounded-xl bg-orange-500 group-hover:bg-orange-600 flex items-center justify-center transition-colors">
-                                <HiOutlinePlusCircle className="w-4 h-4 text-white" />
+                            {/* 1. 사이트 선택 (Platform Admin) */}
+                            <div className="relative pl-1 shrink-0">
+                                {isPlatformAdmin ? (
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setIsSiteDropdownOpen(!isSiteDropdownOpen)}
+                                            className="group flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-white/60 hover:bg-white rounded-full shadow-sm border border-slate-200/50 transition-all active:scale-[0.98]"
+                                        >
+                                            <div className="w-6 h-6 rounded-full bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-inner">
+                                                <HiOutlineMapPin className="w-3.5 h-3.5 text-white" />
+                                            </div>
+                                            <span className="font-extrabold text-slate-800 text-xs sm:text-sm whitespace-nowrap">
+                                                {currentSite?.name ?? '관광지 선택'}
+                                            </span>
+                                            <HiOutlineChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 transition-transform duration-300 ${isSiteDropdownOpen ? 'rotate-180' : ''}`} />
+                                        </button>
+
+                                        <AnimatePresence>
+                                            {isSiteDropdownOpen && (
+                                                <>
+                                                    <div className="fixed inset-0 z-40" onClick={() => setIsSiteDropdownOpen(false)} />
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                        transition={{ duration: 0.15 }}
+                                                        className="absolute bottom-full left-0 mb-3 w-48 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200/60 py-2 z-50 overflow-hidden"
+                                                    >
+                                                        {sites.map((site) => (
+                                                            <button
+                                                                key={site.siteId}
+                                                                onClick={() => {
+                                                                    setCurrentSite(site.siteId);
+                                                                    setIsSiteDropdownOpen(false);
+                                                                }}
+                                                                className={`w-full text-left px-4 py-3 text-sm font-bold transition-all relative overflow-hidden
+                                                                    ${currentSite?.siteId === site.siteId
+                                                                        ? 'text-indigo-600 bg-indigo-50/50'
+                                                                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                                                    }`}
+                                                            >
+                                                                {currentSite?.siteId === site.siteId && (
+                                                                    <motion.div layoutId="siteActiveIndicator" className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500" />
+                                                                )}
+                                                                {site.name}
+                                                            </button>
+                                                        ))}
+                                                    </motion.div>
+                                                </>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-white/60 rounded-full shadow-sm border border-slate-200/50">
+                                        <div className="w-6 h-6 rounded-full bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-inner">
+                                            <HiOutlineMapPin className="w-3.5 h-3.5 text-white" />
+                                        </div>
+                                        <span className="font-extrabold text-slate-800 text-xs sm:text-sm whitespace-nowrap">{currentSite?.name ?? '관광지'}</span>
+                                    </div>
+                                )}
                             </div>
-                            <span className="text-sm font-bold">장소 추가</span>
-                        </button>
-                        <button
-                            onClick={() => startPlacingMode('device')}
-                            className="group flex items-center gap-2.5 pl-4 pr-5 py-3 bg-white/95 backdrop-blur-md border border-white/50 text-slate-700 rounded-2xl shadow-lg
-                                hover:bg-teal-50 hover:border-teal-300 hover:text-teal-900 hover:shadow-xl transition-all duration-200 active:scale-[0.97]"
-                        >
-                            <div className="w-8 h-8 rounded-xl bg-teal-500 group-hover:bg-teal-600 flex items-center justify-center transition-colors shadow-inner">
-                                <HiOutlineDevicePhoneMobile className="w-4 h-4 text-white" />
+
+                            <div className="w-px h-6 sm:h-8 bg-slate-200/80 rounded-full shrink-0" />
+
+                            {/* 2. 스마트 멀티 필터 */}
+                            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 px-1">
+                                <button
+                                    onClick={() => setShowZones(!showZones)}
+                                    className={`group relative px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-bold transition-all duration-300 flex items-center gap-1.5 border active:scale-95
+                                        ${showZones 
+                                            ? 'bg-blue-50/90 border-blue-200 shadow-sm text-blue-800' 
+                                            : 'bg-white/40 hover:bg-white/90 border-transparent hover:border-slate-200/60 hover:shadow-sm text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    <HiOutlineMap className={`w-4 h-4 transition-colors ${showZones ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`} />
+                                    <span className="hidden sm:inline tracking-tight">구역</span>
+                                    <kbd className={`px-1.5 py-0.5 rounded-md text-[10px] uppercase font-extrabold tracking-wider transition-colors
+                                        ${showZones ? 'bg-blue-200/50 text-blue-700' : 'bg-slate-200/50 text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
+                                        {zones.length}
+                                    </kbd>
+                                </button>
+                                <button
+                                    onClick={() => setShowPlaces(!showPlaces)}
+                                    className={`group relative px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-bold transition-all duration-300 flex items-center gap-1.5 border active:scale-95
+                                        ${showPlaces 
+                                            ? 'bg-orange-50/90 border-orange-200 shadow-sm text-orange-800' 
+                                            : 'bg-white/40 hover:bg-white/90 border-transparent hover:border-slate-200/60 hover:shadow-sm text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    <HiOutlineMapPin className={`w-4 h-4 transition-colors ${showPlaces ? 'text-orange-600' : 'text-slate-400 group-hover:text-orange-500'}`} />
+                                    <span className="hidden sm:inline tracking-tight">장소</span>
+                                    <kbd className={`px-1.5 py-0.5 rounded-md text-[10px] uppercase font-extrabold tracking-wider transition-colors
+                                        ${showPlaces ? 'bg-orange-200/50 text-orange-700' : 'bg-slate-200/50 text-slate-500 group-hover:bg-orange-50 group-hover:text-orange-600'}`}>
+                                        {filteredPlaces.length}
+                                    </kbd>
+                                </button>
+                                <button
+                                    onClick={() => setShowDevices(!showDevices)}
+                                    className={`group relative px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-bold transition-all duration-300 flex items-center gap-1.5 border active:scale-95
+                                        ${showDevices 
+                                            ? 'bg-teal-50/90 border-teal-200 shadow-sm text-teal-800' 
+                                            : 'bg-white/40 hover:bg-white/90 border-transparent hover:border-slate-200/60 hover:shadow-sm text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    <HiOutlineDevicePhoneMobile className={`w-4 h-4 transition-colors ${showDevices ? 'text-teal-600' : 'text-slate-400 group-hover:text-teal-500'}`} />
+                                    <span className="hidden sm:inline tracking-tight">기기</span>
+                                    <kbd className={`px-1.5 py-0.5 rounded-md text-[10px] uppercase font-extrabold tracking-wider transition-colors
+                                        ${showDevices ? 'bg-teal-200/50 text-teal-700' : 'bg-slate-200/50 text-slate-500 group-hover:bg-teal-50 group-hover:text-teal-600'}`}>
+                                        {filteredDevices.length}
+                                    </kbd>
+                                </button>
                             </div>
-                            <span className="text-sm font-bold">디바이스 추가</span>
-                        </button>
-                        {/* 구역 재계산 버튼 */}
-                        <button
-                            onClick={handleRecalc}
-                            disabled={isMutating}
-                            className="group flex items-center gap-2.5 pl-4 pr-5 py-3 bg-white/95 backdrop-blur-md border border-white/50 text-slate-700 rounded-2xl shadow-lg
-                                hover:bg-violet-50 hover:border-violet-200 hover:text-violet-700 hover:shadow-xl transition-all duration-200 active:scale-[0.97]
-                                disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <div className="w-8 h-8 rounded-xl bg-violet-500 group-hover:bg-violet-600 flex items-center justify-center transition-colors">
-                                <HiOutlineArrowPath className={`w-4 h-4 text-white ${isMutating ? 'animate-spin' : ''}`} />
+
+                            <div className="w-px h-6 sm:h-8 bg-slate-200/80 rounded-full shrink-0" />
+
+                            {/* 3. 인라인 액션 버튼 */}
+                            <div className="flex items-center gap-1.5 pr-1 shrink-0">
+                                <button
+                                    onClick={startDrawingMode}
+                                    className="group relative w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-white hover:bg-blue-50 border border-slate-200/50 hover:border-blue-200 transition-all active:scale-95"
+                                    aria-label="구역 추가"
+                                >
+                                    <HiOutlineMap className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 transition-transform group-hover:scale-110" />
+                                    <span className="absolute bottom-full mb-2 scale-0 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded-lg whitespace-nowrap">구역 추가</span>
+                                </button>
+                                <button
+                                    onClick={() => startPlacingMode('place')}
+                                    className="group relative w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-white hover:bg-orange-50 border border-slate-200/50 hover:border-orange-200 transition-all active:scale-95"
+                                    aria-label="장소 추가"
+                                >
+                                    <HiOutlinePlusCircle className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500 transition-transform group-hover:scale-110" />
+                                    <span className="absolute bottom-full mb-2 scale-0 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded-lg whitespace-nowrap">장소 추가</span>
+                                </button>
+                                <button
+                                    onClick={() => startPlacingMode('device')}
+                                    className="group relative w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-white hover:bg-teal-50 border border-slate-200/50 hover:border-teal-200 transition-all active:scale-95"
+                                    aria-label="디바이스 추가"
+                                >
+                                    <HiOutlineDevicePhoneMobile className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600 transition-transform group-hover:scale-110" />
+                                    <span className="absolute bottom-full mb-2 scale-0 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded-lg whitespace-nowrap">기기 추가</span>
+                                </button>
+                                <div className="w-px h-6 bg-slate-200 mx-0.5 sm:mx-1" />
+                                <button
+                                    onClick={handleRecalc}
+                                    disabled={isMutating}
+                                    className="group relative flex items-center justify-center pl-2.5 sm:pl-3 pr-3 sm:pr-4 h-9 sm:h-10 rounded-full bg-white hover:bg-violet-50 border border-slate-200/60 shadow-sm hover:shadow-md hover:border-violet-200 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ml-0.5 sm:ml-1 gap-1.5 sm:gap-2"
+                                >
+                                    <HiOutlineArrowPath className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-violet-500 ${isMutating ? 'animate-spin' : 'transition-transform group-hover:rotate-180 duration-500'}`} />
+                                    <span className="text-[10px] sm:text-xs font-bold text-slate-700 group-hover:text-violet-700 leading-none mt-px">재계산</span>
+                                </button>
                             </div>
-                            <span className="text-sm font-bold">재계산</span>
-                        </button>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
 
             {/* ═══════ 우측: 플로팅 사이드패널 ═══════ */}
-            <div className="absolute top-4 right-4 bottom-4 z-10 flex items-stretch gap-2">
+            <div className={`absolute top-4 sm:top-6 right-4 sm:right-6 bottom-24 sm:bottom-28 z-40 flex items-start gap-4 transition-all duration-300 pointer-events-none`}>
                 <button
                     onClick={() => setIsPanelOpen(!isPanelOpen)}
-                    className="self-center bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-white/50 p-2 hover:bg-slate-50 transition-all"
+                    className="mt-4 pointer-events-auto bg-white/80 backdrop-blur-2xl rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.1)] border border-white/60 p-2.5 hover:bg-white transition-all hover:scale-105 active:scale-95 text-slate-500 hover:text-indigo-500"
                     aria-label={isPanelOpen ? '패널 닫기' : '패널 열기'}
                 >
                     {isPanelOpen
-                        ? <HiOutlineChevronRight className="w-4 h-4 text-slate-500" />
-                        : <HiOutlineChevronLeft className="w-4 h-4 text-slate-500" />
+                        ? <HiOutlineChevronRight className="w-5 h-5" />
+                        : <HiOutlineChevronLeft className="w-5 h-5" />
                     }
                 </button>
 
-                <AnimatePresence>
+                <AnimatePresence mode="popLayout">
                     {isPanelOpen && (
                         <motion.div
-                            initial={{ opacity: 0, x: 30, width: 0 }}
-                            animate={{ opacity: 1, x: 0, width: 320 }}
-                            exit={{ opacity: 0, x: 30, width: 0 }}
-                            transition={{ duration: 0.25, ease: 'easeOut' }}
-                            className="overflow-hidden"
+                            initial={{ opacity: 0, x: 50, scale: 0.95 }}
+                            animate={{ opacity: 1, x: 0, scale: 1 }}
+                            exit={{ opacity: 0, x: 50, scale: 0.95 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+                            className="pointer-events-auto h-full"
                         >
-                            <div className="h-full w-[320px] bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 overflow-hidden">
+                            <div className="h-full w-[360px] bg-white/50 backdrop-blur-[40px] rounded-[2rem] shadow-[0_16px_40px_-12px_rgba(0,0,0,0.15)] border border-white/80 overflow-hidden flex flex-col ring-1 ring-slate-900/5">
                                 <ZonePlaceSidePanel
                                     activeTab={activeTab}
                                     onChangeTab={setActiveTab}

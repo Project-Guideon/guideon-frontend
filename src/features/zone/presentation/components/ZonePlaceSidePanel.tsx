@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HiOutlineMapPin, HiOutlineMap, HiOutlinePencilSquare, HiOutlineTrash, HiOutlineDevicePhoneMobile, HiOutlineKey } from 'react-icons/hi2';
+import { HiOutlineMapPin, HiOutlineMap, HiOutlinePencilSquare, HiOutlineTrash, HiOutlineDevicePhoneMobile, HiOutlineKey, HiChevronRight } from 'react-icons/hi2';
 import type { Zone } from '@/features/zone/domain/entities/Zone';
 import type { Place } from '@/features/place/domain/entities/Place';
 import { PLACE_CATEGORY_META } from '@/features/place/domain/entities/Place';
@@ -33,6 +33,49 @@ interface ZonePlaceSidePanelProps {
     isLoading?: boolean;
 }
 
+function TossActionButtons({
+    onEdit,
+    onDelete,
+    onRotateToken,
+}: {
+    onEdit?: () => void;
+    onDelete?: () => void;
+    onRotateToken?: () => void;
+}) {
+    // 토스 스타일 액션 버튼: 마우스 호버 시에 우측에 큰 버튼이 통통 튀어나오도록 처리
+    return (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0 z-10 px-1 py-1 bg-white/60 backdrop-blur-md rounded-[1.2rem]">
+            {onEdit && (
+                <button
+                    type="button"
+                    onClick={(event) => { event.stopPropagation(); onEdit(); }}
+                    className="p-3 rounded-xl bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-500 transition-colors"
+                >
+                    <HiOutlinePencilSquare className="w-4 h-4" />
+                </button>
+            )}
+            {onRotateToken && (
+                <button
+                    type="button"
+                    onClick={(event) => { event.stopPropagation(); onRotateToken(); }}
+                    className="p-3 rounded-xl bg-slate-100 text-slate-600 hover:bg-amber-50 hover:text-amber-500 transition-colors"
+                >
+                    <HiOutlineKey className="w-4 h-4" />
+                </button>
+            )}
+            {onDelete && (
+                <button
+                    type="button"
+                    onClick={(event) => { event.stopPropagation(); onDelete(); }}
+                    className="p-3 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                >
+                    <HiOutlineTrash className="w-4 h-4" />
+                </button>
+            )}
+        </div>
+    );
+}
+
 function ZoneTreeItem({
     zone,
     subZones,
@@ -52,9 +95,12 @@ function ZoneTreeItem({
     onEditSubZone: (subZone: Zone) => void;
     onDeleteSubZone: (subZone: Zone) => void;
 }) {
+    const isSelected = selectedZoneId === zone.zoneId;
+
     return (
-        <div>
-            <div
+        <div className="mb-2">
+            <motion.div
+                whileTap={{ scale: 0.97 }}
                 role="button"
                 tabIndex={0}
                 onClick={() => onSelect(zone.zoneId)}
@@ -64,83 +110,63 @@ function ZoneTreeItem({
                         onSelect(zone.zoneId);
                     }
                 }}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all duration-200 group cursor-pointer
-                    ${selectedZoneId === zone.zoneId
-                        ? 'bg-orange-50 border border-orange-200 text-orange-700'
-                        : 'hover:bg-slate-50 text-slate-700 border border-transparent'
-                    }`}
+                className={`relative w-full flex items-center gap-4 p-4 rounded-[1.5rem] text-left transition-colors duration-200 group cursor-pointer outline-none mb-1
+                    ${isSelected ? 'bg-blue-50/60' : 'bg-transparent hover:bg-slate-50'}`}
             >
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${zone.zoneType === 'INNER' ? 'bg-blue-500' : 'bg-emerald-500'}`} />
-                    <div className="min-w-0">
-                        <p className="text-sm font-bold truncate">{zone.name}</p>
-                        <p className="text-[10px] text-slate-400 font-medium">{zone.code} · {zone.zoneType}</p>
-                    </div>
+                {/* 토스 스타일: 크고 둥근 스쿼클 아이콘 */}
+                <div className={`w-[52px] h-[52px] rounded-[1.2rem] flex items-center justify-center shrink-0
+                    ${zone.zoneType === 'INNER' ? 'bg-blue-100 text-blue-500' : 'bg-emerald-100 text-emerald-500'}`}>
+                    <HiOutlineMap className="w-[26px] h-[26px]" />
                 </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0">
-                    <button
-                        type="button"
-                        onClick={(event) => { event.stopPropagation(); onEdit(); }}
-                        className="p-1 rounded-lg hover:bg-orange-100 text-slate-400 hover:text-orange-600 transition-colors"
-                        aria-label={`${zone.name} 수정`}
-                    >
-                        <HiOutlinePencilSquare className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={(event) => { event.stopPropagation(); onDelete(); }}
-                        className="p-1 rounded-lg hover:bg-red-100 text-slate-400 hover:text-red-600 transition-colors"
-                        aria-label={`${zone.name} 삭제`}
-                    >
-                        <HiOutlineTrash className="w-3.5 h-3.5" />
-                    </button>
+                
+                {/* 텍스트부: 여백과 두꺼운 폰트 */}
+                <div className="flex-1 min-w-0 pr-8">
+                    <p className={`text-[17px] font-bold truncate tracking-tight transition-colors ${isSelected ? 'text-blue-700' : 'text-slate-900'}`}>{zone.name}</p>
+                    <p className="text-[13px] font-medium text-slate-500 mt-0.5 truncate">{zone.zoneType === 'INNER' ? '실내' : '실외'} · {zone.code}</p>
                 </div>
-            </div>
+
+                {/* 기본 상태에서는 셰브론, 호버 시 액션 버튼 */}
+                <div className="absolute right-5 group-hover:opacity-0 transition-opacity text-slate-300">
+                    <HiChevronRight className="w-5 h-5" />
+                </div>
+                <TossActionButtons onEdit={onEdit} onDelete={onDelete} />
+            </motion.div>
+
+            {/* 서브존 영역: 동일한 토스 스타일이지만 약간 작게 */}
             {subZones.length > 0 && (
-                <div className="ml-4 mt-1 space-y-1 border-l-2 border-slate-100 pl-2">
-                    {subZones.map((sub) => (
-                        <div
-                            role="button"
-                            tabIndex={0}
-                            key={sub.zoneId}
-                            onClick={() => onSelect(sub.zoneId)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    onSelect(sub.zoneId);
-                                }
-                            }}
-                            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-left transition-all duration-200 group text-sm cursor-pointer
-                                ${selectedZoneId === sub.zoneId
-                                    ? 'bg-emerald-50 text-emerald-700'
-                                    : 'hover:bg-slate-50 text-slate-600'
-                                }`}
-                        >
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                                <span className="font-medium truncate">{sub.name}</span>
-                                <span className="text-[10px] text-slate-400 shrink-0">{sub.code}</span>
-                            </div>
-                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0">
-                                <button
-                                    type="button"
-                                    onClick={(event) => { event.stopPropagation(); onEditSubZone(sub); }}
-                                    className="p-1 rounded-lg hover:bg-emerald-100 text-slate-400 hover:text-emerald-700 transition-colors"
-                                    aria-label={`${sub.name} 수정`}
-                                >
-                                    <HiOutlinePencilSquare className="w-3 h-3" />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={(event) => { event.stopPropagation(); onDeleteSubZone(sub); }}
-                                    className="p-1 rounded-lg hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors"
-                                    aria-label={`${sub.name} 삭제`}
-                                >
-                                    <HiOutlineTrash className="w-3 h-3" />
-                                </button>
-                            </div>
-                        </div>
-                    ))}
+                <div className="ml-12 mt-1 space-y-1">
+                    {subZones.map((sub) => {
+                        const isSubSelected = selectedZoneId === sub.zoneId;
+                        return (
+                            <motion.div
+                                whileTap={{ scale: 0.97 }}
+                                role="button"
+                                tabIndex={0}
+                                key={sub.zoneId}
+                                onClick={() => onSelect(sub.zoneId)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        onSelect(sub.zoneId);
+                                    }
+                                }}
+                                className={`relative w-full flex items-center gap-3.5 p-3 rounded-[1.2rem] text-left transition-colors duration-200 group cursor-pointer outline-none
+                                    ${isSubSelected ? 'bg-emerald-50/60' : 'bg-transparent hover:bg-slate-50'}`}
+                            >
+                                <div className="w-[40px] h-[40px] rounded-[1rem] bg-emerald-100 flex items-center justify-center shrink-0">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                </div>
+                                <div className="flex-1 min-w-0 pr-8">
+                                    <p className={`text-[15px] font-bold truncate tracking-tight transition-colors ${isSubSelected ? 'text-emerald-700' : 'text-slate-800'}`}>{sub.name}</p>
+                                    <p className="text-[12px] font-medium text-slate-400 truncate uppercase mt-0.5">{sub.code}</p>
+                                </div>
+                                <div className="absolute right-4 group-hover:opacity-0 transition-opacity text-slate-300">
+                                    <HiChevronRight className="w-4 h-4" />
+                                </div>
+                                <TossActionButtons onEdit={() => onEditSubZone(sub)} onDelete={() => onDeleteSubZone(sub)} />
+                            </motion.div>
+                        );
+                    })}
                 </div>
             )}
         </div>
@@ -165,7 +191,8 @@ function PlaceListItem({
     const meta = PLACE_CATEGORY_META[place.category];
 
     return (
-        <div
+        <motion.div
+            whileTap={{ scale: 0.97 }}
             role="button"
             tabIndex={0}
             onClick={onSelect}
@@ -175,55 +202,33 @@ function PlaceListItem({
                     onSelect();
                 }
             }}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200 group cursor-pointer
-                ${isSelected
-                    ? 'bg-orange-50 border border-orange-200'
-                    : 'hover:bg-slate-50 border border-transparent'
-                }`}
+            className={`relative w-full flex items-center gap-4 p-4 rounded-[1.5rem] text-left transition-colors duration-200 group cursor-pointer border-transparent outline-none mb-2
+                ${isSelected ? 'bg-orange-50/60' : 'bg-transparent hover:bg-slate-50'}`}
         >
-            {place.imageUrl ? (
-                <img src={place.imageUrl} alt={place.name} className={`w-10 h-10 object-cover rounded-xl shrink-0 ${!place.isActive ? 'opacity-50 grayscale' : ''}`} />
-            ) : (
-                <PlaceCategoryIcon
-                    category={place.category}
-                    size="lg"
-                    color={meta.color}
-                    className={!place.isActive ? 'opacity-50 grayscale' : ''}
-                />
-            )}
-            <div className="flex-1 min-w-0">
+            <div className={`relative w-[52px] h-[52px] rounded-[1.2rem] shrink-0 overflow-hidden flex items-center justify-center ${place.imageUrl ? '' : 'bg-slate-100 text-slate-500'}`}>
+                {place.imageUrl ? (
+                    <img src={place.imageUrl} alt={place.name} className={`w-full h-full object-cover ${!place.isActive ? 'opacity-40 grayscale' : ''}`} />
+                ) : (
+                    <PlaceCategoryIcon category={place.category} size="xl" color={meta.color} className={!place.isActive ? 'opacity-40 grayscale' : ''} />
+                )}
+                {/* 뱃지: 토스 느낌으로 아이콘 우측 하단이나 이름 옆에 배치, 여기서는 좌측 아이콘 오버레이로 처리하거나 생략 */}
+            </div>
+
+            <div className="flex-1 min-w-0 pr-8">
                 <div className="flex items-center gap-1.5">
-                    <p className={`text-sm font-bold truncate ${!place.isActive ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
+                    <p className={`text-[17px] font-bold truncate tracking-tight transition-colors ${!place.isActive ? 'text-slate-400 line-through' : isSelected ? 'text-orange-700' : 'text-slate-900'}`}>
                         {place.name}
                     </p>
-                    {!place.isActive && (
-                        <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-red-100 text-red-500 shrink-0">OFF</span>
-                    )}
+                    {!place.isActive && <span className="text-[10px] font-bold bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded-[0.4rem]">비활성</span>}
                 </div>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500">{meta.label}</span>
-                    <span className="text-[10px] text-slate-400">{zoneName}</span>
-                </div>
+                <p className="text-[13px] font-medium text-slate-500 mt-0.5 truncate">{meta.label} · {zoneName}</p>
             </div>
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0">
-                <button
-                    type="button"
-                    onClick={(event) => { event.stopPropagation(); onEdit(); }}
-                    className="p-1 rounded-lg hover:bg-orange-100 text-slate-400 hover:text-orange-600 transition-colors"
-                    aria-label={`${place.name} 수정`}
-                >
-                    <HiOutlinePencilSquare className="w-3.5 h-3.5" />
-                </button>
-                <button
-                    type="button"
-                    onClick={(event) => { event.stopPropagation(); onDelete(); }}
-                    className="p-1 rounded-lg hover:bg-red-100 text-slate-400 hover:text-red-600 transition-colors"
-                    aria-label={`${place.name} 삭제`}
-                >
-                    <HiOutlineTrash className="w-3.5 h-3.5" />
-                </button>
+
+            <div className="absolute right-5 group-hover:opacity-0 transition-opacity text-slate-300">
+                <HiChevronRight className="w-5 h-5" />
             </div>
-        </div>
+            <TossActionButtons onEdit={onEdit} onDelete={onDelete} />
+        </motion.div>
     );
 }
 
@@ -245,7 +250,8 @@ function DeviceListItem({
     onRotateToken: () => void;
 }) {
     return (
-        <div
+        <motion.div
+            whileTap={{ scale: 0.97 }}
             role="button"
             tabIndex={0}
             onClick={onSelect}
@@ -255,56 +261,29 @@ function DeviceListItem({
                     onSelect();
                 }
             }}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200 group cursor-pointer
-                ${isSelected
-                    ? 'bg-teal-50 border border-teal-200'
-                    : 'hover:bg-slate-50 border border-transparent'
-                }`}
+            className={`relative w-full flex items-center gap-4 p-4 rounded-[1.5rem] text-left transition-colors duration-200 group cursor-pointer border-transparent outline-none mb-2
+                ${isSelected ? 'bg-teal-50/60' : 'bg-transparent hover:bg-slate-50'}`}
         >
-            <div className={`flex items-center justify-center w-10 h-10 rounded-xl shrink-0 ${device.isActive ? 'bg-teal-100 text-teal-600' : 'bg-slate-100 text-slate-400 opacity-50'}`}>
-                <HiOutlineDevicePhoneMobile className="w-5 h-5" />
+            <div className={`w-[52px] h-[52px] rounded-[1.2rem] flex items-center justify-center shrink-0 
+                ${device.isActive ? 'bg-teal-100 text-teal-600' : 'bg-slate-100 text-slate-400'}`}>
+                <HiOutlineDevicePhoneMobile className="w-[26px] h-[26px]" />
             </div>
-            <div className="flex-1 min-w-0">
+
+            <div className="flex-1 min-w-0 pr-8">
                 <div className="flex items-center gap-1.5">
-                    <p className={`text-sm font-bold truncate ${!device.isActive ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
+                    <p className={`text-[17px] font-bold truncate tracking-tight transition-colors ${!device.isActive ? 'text-slate-400 line-through' : isSelected ? 'text-teal-700' : 'text-slate-900'}`}>
                         {device.locationName}
                     </p>
-                    {!device.isActive && (
-                        <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-red-100 text-red-500 shrink-0">OFF</span>
-                    )}
+                    {!device.isActive && <span className="text-[10px] font-bold bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded-[0.4rem]">오프라인</span>}
                 </div>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 truncate">{device.deviceId}</span>
-                    <span className="text-[10px] text-slate-400 shrink-0">{zoneName}</span>
-                </div>
+                <p className="text-[13px] font-medium text-slate-500 mt-0.5 truncate">{device.deviceId} · {zoneName}</p>
             </div>
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0">
-                <button
-                    type="button"
-                    onClick={(event) => { event.stopPropagation(); onEdit(); }}
-                    className="p-1 rounded-lg hover:bg-teal-100 text-slate-400 hover:text-teal-600 transition-colors"
-                    aria-label={`${device.locationName} 수정`}
-                >
-                    <HiOutlinePencilSquare className="w-3.5 h-3.5" />
-                </button>
-                <button
-                    type="button"
-                    onClick={(event) => { event.stopPropagation(); onRotateToken(); }}
-                    className="p-1 rounded-lg hover:bg-amber-100 text-slate-400 hover:text-amber-600 transition-colors"
-                    aria-label={`${device.locationName} 토큰 재발급`}
-                >
-                    <HiOutlineKey className="w-3.5 h-3.5" />
-                </button>
-                <button
-                    type="button"
-                    onClick={(event) => { event.stopPropagation(); onDelete(); }}
-                    className="p-1 rounded-lg hover:bg-red-100 text-slate-400 hover:text-red-600 transition-colors"
-                    aria-label={`${device.locationName} 삭제`}
-                >
-                    <HiOutlineTrash className="w-3.5 h-3.5" />
-                </button>
+
+            <div className="absolute right-5 group-hover:opacity-0 transition-opacity text-slate-300">
+                <HiChevronRight className="w-5 h-5" />
             </div>
-        </div>
+            <TossActionButtons onEdit={onEdit} onDelete={onDelete} onRotateToken={onRotateToken} />
+        </motion.div>
     );
 }
 
@@ -337,56 +316,59 @@ function ZonePlaceSidePanelInner({
     };
 
     return (
-        <div className="h-full flex flex-col overflow-hidden bg-white/50 backdrop-blur-sm">
-            <div className="flex border-b border-slate-100 shrink-0 px-2 pt-2 bg-white">
-                <button
-                    type="button"
-                    onClick={() => onChangeTab('zones')}
-                    className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-t-xl text-xs font-bold transition-all duration-200
-                        ${activeTab === 'zones'
-                            ? 'text-orange-600 bg-orange-50/80 shadow-[inset_0_-2px_0_0_#ea580c]'
-                            : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
-                        }`}
-                >
-                    <HiOutlineMap className="w-5 h-5" />
-                    <span>구역 ({zones.length})</span>
-                </button>
-                <button
-                    type="button"
-                    onClick={() => onChangeTab('places')}
-                    className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-t-xl text-xs font-bold transition-all duration-200
-                        ${activeTab === 'places'
-                            ? 'text-orange-600 bg-orange-50/80 shadow-[inset_0_-2px_0_0_#ea580c]'
-                            : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
-                        }`}
-                >
-                    <HiOutlineMapPin className="w-5 h-5" />
-                    <span>장소 ({places.length})</span>
-                </button>
-                <button
-                    type="button"
-                    onClick={() => onChangeTab('devices')}
-                    className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-t-xl text-xs font-bold transition-all duration-200
-                        ${activeTab === 'devices'
-                            ? 'text-teal-600 bg-teal-50/80 shadow-[inset_0_-2px_0_0_#0d9488]'
-                            : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
-                        }`}
-                >
-                    <HiOutlineDevicePhoneMobile className="w-5 h-5" />
-                    <span>디바이스 ({devices.length})</span>
-                </button>
+        <div className="h-full flex flex-col bg-white">
+            {/* 토스 스타일 거대한 헤더 */}
+            <div className="px-6 pt-10 pb-4 shrink-0 bg-white z-10">
+                <h2 className="text-[26px] font-black text-slate-900 tracking-tight leading-tight">
+                    구역 및 장소
+                </h2>
+                <p className="text-[14px] font-medium text-slate-500 mt-1.5">
+                    {zones.length}개의 구역과 {places.length}개의 장소
+                </p>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-3">
-                {/* 로딩 스켈레톤 */}
+            {/* 토스 스타일 빵빵한 세그먼트 탭 */}
+            <div className="px-5 pb-3 shrink-0 bg-white z-10">
+                <div className="relative flex p-1.5 bg-slate-100 rounded-[1.2rem]">
+                    {(['zones', 'places', 'devices'] as const).map((tab) => {
+                        const isSelected = activeTab === tab;
+                        const count = tab === 'zones' ? zones.length : tab === 'places' ? places.length : devices.length;
+                        return (
+                            <button
+                                key={tab}
+                                type="button"
+                                onClick={() => onChangeTab(tab)}
+                                className={`relative flex-1 py-3.5 rounded-[1rem] transition-colors duration-300 text-[15px] font-bold outline-none
+                                    ${isSelected ? 'text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                {isSelected && (
+                                    <motion.div
+                                        layoutId="tossTabBg"
+                                        className="absolute inset-0 bg-white rounded-[1rem] shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
+                                        initial={false}
+                                        transition={{ type: 'spring', bounce: 0.15, duration: 0.5 }}
+                                    />
+                                )}
+                                <span className="relative z-10 flex items-center justify-center gap-1.5">
+                                    {tab === 'zones' ? '구역' : tab === 'places' ? '장소' : '기기'} 
+                                    <span className={`text-[13px] ${isSelected ? 'text-blue-500' : 'text-slate-400'}`}>{count}</span>
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* 리스트 본문 */}
+            <div className="flex-1 overflow-y-auto px-3 pb-8 relative z-0 no-scrollbar bg-white">
                 {isLoading && (
-                    <div className="space-y-2 animate-pulse">
+                    <div className="px-3 space-y-4 animate-pulse mt-4">
                         {Array.from({ length: 4 }).map((_, index) => (
-                            <div key={index} className="flex items-center gap-3 px-3 py-3 rounded-xl">
-                                <div className="w-2 h-2 rounded-full bg-slate-200 shrink-0" />
-                                <div className="flex-1 space-y-1.5">
-                                    <div className="h-3.5 bg-slate-200 rounded-md w-3/4" />
-                                    <div className="h-2.5 bg-slate-100 rounded-md w-1/2" />
+                            <div key={index} className="flex items-center gap-4">
+                                <div className="w-[52px] h-[52px] rounded-[1.2rem] bg-slate-100 shrink-0" />
+                                <div className="flex-1 space-y-2.5">
+                                    <div className="h-4 bg-slate-100 rounded-md w-2/3" />
+                                    <div className="h-3 bg-slate-50 rounded-md w-1/3" />
                                 </div>
                             </div>
                         ))}
@@ -395,96 +377,48 @@ function ZonePlaceSidePanelInner({
 
                 <AnimatePresence mode="wait">
                     {!isLoading && activeTab === 'zones' && (
-                        <motion.div
-                            key="tab-zones"
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 10 }}
-                            transition={{ duration: 0.2 }}
-                            className="space-y-1"
-                        >
+                        <motion.div key="tab-zones" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }} className="pt-2">
                             {innerZones.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                                    <HiOutlineMap className="w-10 h-10 mb-2 opacity-50" />
-                                    <p className="text-sm font-semibold">등록된 구역이 없습니다</p>
-                                    <p className="text-xs mt-1 text-slate-300">좌측 하단의 구역 추가 버튼을 눌러보세요</p>
+                                <div className="flex flex-col items-center justify-center py-20 text-center">
+                                    <div className="w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center text-slate-300 mb-4"><HiOutlineMap className="w-8 h-8" /></div>
+                                    <p className="text-[17px] font-bold text-slate-800">등록된 구역이 없어요</p>
+                                    <p className="text-[14px] font-medium text-slate-500 mt-1">하단 중앙 메뉴에서 구역을 추가해보세요</p>
                                 </div>
                             ) : (
                                 innerZones.map((zone) => (
-                                    <ZoneTreeItem
-                                        key={zone.zoneId}
-                                        zone={zone}
-                                        subZones={getSubZones(zone.zoneId)}
-                                        selectedZoneId={selectedZoneId}
-                                        onSelect={(clickedZoneId) => onSelectZone(selectedZoneId === clickedZoneId ? null : clickedZoneId)}
-                                        onEdit={() => onEditZone(zone)}
-                                        onDelete={() => onDeleteZone(zone)}
-                                        onEditSubZone={(sub) => onEditZone(sub)}
-                                        onDeleteSubZone={(sub) => onDeleteZone(sub)}
-                                    />
+                                    <ZoneTreeItem key={zone.zoneId} zone={zone} subZones={getSubZones(zone.zoneId)} selectedZoneId={selectedZoneId} onSelect={(clickedZoneId) => onSelectZone(selectedZoneId === clickedZoneId ? null : clickedZoneId)} onEdit={() => onEditZone(zone)} onDelete={() => onDeleteZone(zone)} onEditSubZone={(sub) => onEditZone(sub)} onDeleteSubZone={(sub) => onDeleteZone(sub)} />
                                 ))
                             )}
                         </motion.div>
                     )}
 
                     {!isLoading && activeTab === 'places' && (
-                        <motion.div
-                            key="tab-places"
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 10 }}
-                            transition={{ duration: 0.2 }}
-                            className="space-y-1"
-                        >
+                        <motion.div key="tab-places" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }} className="pt-2">
                             {places.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                                    <HiOutlineMapPin className="w-10 h-10 mb-2 opacity-50" />
-                                    <p className="text-sm font-semibold">등록된 장소가 없습니다</p>
-                                    <p className="text-xs mt-1 text-slate-300">좌측 하단의 장소 추가 버튼을 눌러보세요</p>
+                                <div className="flex flex-col items-center justify-center py-20 text-center">
+                                    <div className="w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center text-slate-300 mb-4"><HiOutlineMapPin className="w-8 h-8" /></div>
+                                    <p className="text-[17px] font-bold text-slate-800">등록된 장소가 없어요</p>
+                                    <p className="text-[14px] font-medium text-slate-500 mt-1">하단 중앙 메뉴에서 장소를 추가해보세요</p>
                                 </div>
                             ) : (
                                 places.map((place) => (
-                                    <PlaceListItem
-                                        key={place.placeId}
-                                        place={place}
-                                        zoneName={getZoneName(place.zoneId)}
-                                        isSelected={selectedPlaceId === place.placeId}
-                                        onSelect={() => onSelectPlace(selectedPlaceId === place.placeId ? null : place.placeId)}
-                                        onEdit={() => onEditPlace(place)}
-                                        onDelete={() => onDeletePlace(place)}
-                                    />
+                                    <PlaceListItem key={place.placeId} place={place} zoneName={getZoneName(place.zoneId)} isSelected={selectedPlaceId === place.placeId} onSelect={() => onSelectPlace(selectedPlaceId === place.placeId ? null : place.placeId)} onEdit={() => onEditPlace(place)} onDelete={() => onDeletePlace(place)} />
                                 ))
                             )}
                         </motion.div>
                     )}
 
                     {!isLoading && activeTab === 'devices' && (
-                        <motion.div
-                            key="tab-devices"
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 10 }}
-                            transition={{ duration: 0.2 }}
-                            className="space-y-1"
-                        >
+                        <motion.div key="tab-devices" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }} className="pt-2">
                             {devices.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                                    <HiOutlineDevicePhoneMobile className="w-10 h-10 mb-2 opacity-50" />
-                                    <p className="text-sm font-semibold">등록된 디바이스가 없습니다</p>
-                                    <p className="text-xs mt-1 text-slate-300">좌측 하단의 디바이스 추가 버튼을 눌러보세요</p>
+                                <div className="flex flex-col items-center justify-center py-20 text-center">
+                                    <div className="w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center text-slate-300 mb-4"><HiOutlineDevicePhoneMobile className="w-8 h-8" /></div>
+                                    <p className="text-[17px] font-bold text-slate-800">등록된 기기가 없어요</p>
+                                    <p className="text-[14px] font-medium text-slate-500 mt-1">하단 중앙 메뉴에서 기기를 추가해보세요</p>
                                 </div>
                             ) : (
                                 devices.map((device) => (
-                                    <DeviceListItem
-                                        key={device.deviceId}
-                                        device={device}
-                                        zoneName={getZoneName(device.zoneId)}
-                                        isSelected={selectedDeviceId === device.deviceId}
-                                        onSelect={() => onSelectDevice(selectedDeviceId === device.deviceId ? null : device.deviceId)}
-                                        onEdit={() => onEditDevice(device)}
-                                        onDelete={() => onDeleteDevice(device)}
-                                        onRotateToken={() => onRotateToken(device)}
-                                    />
+                                    <DeviceListItem key={device.deviceId} device={device} zoneName={getZoneName(device.zoneId)} isSelected={selectedDeviceId === device.deviceId} onSelect={() => onSelectDevice(selectedDeviceId === device.deviceId ? null : device.deviceId)} onEdit={() => onEditDevice(device)} onDelete={() => onDeleteDevice(device)} onRotateToken={() => onRotateToken(device)} />
                                 ))
                             )}
                         </motion.div>
