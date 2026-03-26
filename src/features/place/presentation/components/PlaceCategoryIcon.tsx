@@ -25,7 +25,7 @@ const CATEGORY_ICON_MAP: Record<PlaceCategory, React.ElementType> = {
 
 interface PlaceCategoryIconProps {
     category: PlaceCategory;
-    size?: 'sm' | 'md' | 'lg';
+    size?: 'sm' | 'md' | 'lg' | 'xl';
     withBackground?: boolean;
     color?: string;
     className?: string;
@@ -35,6 +35,7 @@ const SIZE_MAP = {
     sm: { icon: 'w-3.5 h-3.5', container: 'w-6 h-6 rounded-lg' },
     md: { icon: 'w-4 h-4', container: 'w-8 h-8 rounded-xl' },
     lg: { icon: 'w-5 h-5', container: 'w-10 h-10 rounded-xl' },
+    xl: { icon: 'w-7 h-7', container: 'w-[52px] h-[52px] rounded-[1.2rem]' },
 };
 
 /** 카테고리에 맞는 Material Design 아이콘을 렌더링하는 컴포넌트 */
