@@ -44,6 +44,7 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, selectedCoords
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const latitude = mode === 'edit' && editTarget ? editTarget.latitude : selectedCoords.lat;
+    const longitude = mode === 'edit' && editTarget ? editTarget.longitude : selectedCoords.lng;
 
     const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -60,7 +61,6 @@ export function PlaceFormModal({ isOpen, mode, editTarget, zones, selectedCoords
             if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
-    const longitude = mode === 'edit' && editTarget ? editTarget.longitude : selectedCoords.lng;
 
     const handleSubmit = async (event: FormEvent) => {
         event.preventDefault();

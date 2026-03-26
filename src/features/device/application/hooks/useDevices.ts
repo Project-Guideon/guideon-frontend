@@ -5,6 +5,7 @@ import type { Device, CreateDeviceRequest, UpdateDeviceRequest, DeviceTokenRespo
 import { useSiteContext } from '@/features/auth/application/hooks/useAuth';
 import { getDevicesApi, createDeviceApi, updateDeviceApi, deleteDeviceApi, rotateDeviceTokenApi } from '@/api/endpoints/device';
 import type { ApiError } from '@/shared/types/api';
+import { extractApiError } from '@/shared/utils/api';
 
 interface UseDevicesReturn {
     devices: Device[];
@@ -52,6 +53,9 @@ export function useDevices(): UseDevicesReturn {
             const response = await getDevicesApi(currentSiteId, { size: 200 });
             if (response.success) {
                 setDevices(response.data.items);
+            } else {
+                setDevices([]);
+                setError({ code: response.error?.code ?? 'INTERNAL_ERROR', message: response.error?.message ?? 'Device 목록 조회에 실패했습니다.' });
             }
         } catch (err) {
             const apiError = extractApiError(err);
@@ -191,20 +195,5 @@ export function useDevices(): UseDevicesReturn {
         isLoading,
         isMutating,
         error,
-    };
-}
-
-/** Axios 에러에서 ApiError 추출 헬퍼 */
-function extractApiError(err: unknown): ApiError {
-    if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as { response?: { data?: { error?: ApiError } } };
-        if (axiosError.response?.data?.error) {
-            return axiosError.response.data.error;
-        }
-    }
-
-    return {
-        code: 'INTERNAL_ERROR',
-        message: err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.',
     };
 }

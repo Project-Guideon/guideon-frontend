@@ -5,6 +5,7 @@ import type { Place, PlaceCategory, CreatePlaceRequest, UpdatePlaceRequest } fro
 import { useSiteContext } from '@/features/auth/application/hooks/useAuth';
 import { getPlacesApi, createPlaceApi, updatePlaceApi, deletePlaceApi } from '@/api/endpoints/place';
 import type { ApiError } from '@/shared/types/api';
+import { extractApiError } from '@/shared/utils/api';
 
 interface UsePlacesReturn {
     places: Place[];
@@ -60,6 +61,9 @@ export function usePlaces(): UsePlacesReturn {
             const response = await getPlacesApi(currentSiteId, { size: 200 });
             if (response.success) {
                 setPlaces(response.data.items);
+            } else {
+                setPlaces([]);
+                setError({ code: response.error?.code ?? 'INTERNAL_ERROR', message: response.error?.message ?? 'Place 목록 조회에 실패했습니다.' });
             }
         } catch (err) {
             const apiError = extractApiError(err);
@@ -186,20 +190,5 @@ export function usePlaces(): UsePlacesReturn {
         isLoading,
         isMutating,
         error,
-    };
-}
-
-/** Axios 에러에서 ApiError 추출 헬퍼 */
-function extractApiError(err: unknown): ApiError {
-    if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as { response?: { data?: { error?: ApiError } } };
-        if (axiosError.response?.data?.error) {
-            return axiosError.response.data.error;
-        }
-    }
-
-    return {
-        code: 'INTERNAL_ERROR',
-        message: err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.',
     };
 }

@@ -46,7 +46,7 @@ export function DeleteConfirmDialog({
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         className="absolute inset-0 bg-black/40"
-                        onClick={isDeleting ? undefined : onClose}
+                        onClick={() => { if (!isDeleting) onClose(); }}
                     />
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}

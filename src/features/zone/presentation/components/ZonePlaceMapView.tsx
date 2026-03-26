@@ -335,10 +335,18 @@ export function ZonePlaceMapView() {
     }, [zoneFormMode, zoneEditTarget, createZone, updateZone, refetchPlaces, refetchDevices, addToast]);
 
     const handleImageUpload = useCallback(async (file: File) => {
-        if (!currentSite?.siteId) throw new Error('현재 선택된 관광지가 없습니다.');
-        const response = await uploadPlaceImageApi(currentSite.siteId, file);
-        return response.data.imageUrl;
-    }, [currentSite]);
+        if (!currentSite?.siteId) {
+            addToast('error', '현재 선택된 관광지가 없습니다.');
+            throw new Error('현재 선택된 관광지가 없습니다.');
+        }
+        try {
+            const response = await uploadPlaceImageApi(currentSite.siteId, file);
+            return response.data.imageUrl;
+        } catch (err) {
+            addToast('error', '이미지 업로드에 실패했습니다.');
+            throw err;
+        }
+    }, [currentSite, addToast]);
 
     const handleSubmitPlaceForm = useCallback(async (request: CreatePlaceRequest | UpdatePlaceRequest) => {
         try {
@@ -745,7 +753,7 @@ export function ZonePlaceMapView() {
             </div>
 
             {/* ═══════ 토스트 알림 ═══════ */}
-            <div className="fixed bottom-6 right-6 z-100 flex flex-col gap-2 pointer-events-none">
+            <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none">
                 <AnimatePresence>
                     {toasts.map((toast) => (
                         <motion.div
