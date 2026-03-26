@@ -1,150 +1,175 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import type { Place, PlaceCategory, CreatePlaceRequest, UpdatePlaceRequest } from '@/features/place/domain/entities/Place';
 import { useSiteContext } from '@/features/auth/application/hooks/useAuth';
+import { getPlacesApi, createPlaceApi, updatePlaceApi, deletePlaceApi } from '@/api/endpoints/place';
+import type { ApiError } from '@/shared/types/api';
+import { extractApiError } from '@/shared/utils/api';
 
-/** 경복궁 기준 Mock Place 데이터 */
-const INITIAL_PLACES: Place[] = [
-    {
-        placeId: 1, siteId: 2, zoneId: 3, zoneSource: 'AUTO',
-        name: '근정전 화장실', nameJson: { en: 'Geunjeongjeon Restroom', ja: '勤政殿トイレ' },
-        category: 'TOILET', latitude: 37.5786, longitude: 126.9762,
-        description: '근정전 동쪽 50m', imageUrl: null, isActive: true,
-        createdAt: '2026-02-15T10:00:00', updatedAt: '2026-02-15T10:00:00',
-    },
-    {
-        placeId: 2, siteId: 2, zoneId: 3, zoneSource: 'AUTO',
-        name: '매표소', nameJson: { en: 'Ticket Office' },
-        category: 'TICKET', latitude: 37.5783, longitude: 126.9768,
-        description: '정문 입구 매표소', imageUrl: null, isActive: true,
-        createdAt: '2026-02-15T10:05:00', updatedAt: '2026-02-15T10:05:00',
-    },
-    {
-        placeId: 3, siteId: 2, zoneId: 4, zoneSource: 'AUTO',
-        name: '경복궁 기념품샵', nameJson: { en: 'Gift Shop', ja: 'ギフトショップ' },
-        category: 'SHOP', latitude: 37.5795, longitude: 126.9770,
-        description: '사정전 옆 기념품 판매소', imageUrl: null, isActive: true,
-        createdAt: '2026-02-15T10:10:00', updatedAt: '2026-02-15T10:10:00',
-    },
-    {
-        placeId: 4, siteId: 2, zoneId: 2, zoneSource: 'AUTO',
-        name: '경회루 휴게소', nameJson: { en: 'Gyeonghoeru Rest Area' },
-        category: 'RESTAURANT', latitude: 37.5800, longitude: 126.9740,
-        description: '경회루 남쪽 휴게 공간', imageUrl: null, isActive: true,
-        createdAt: '2026-02-15T10:15:00', updatedAt: '2026-02-15T10:15:00',
-    },
-    {
-        placeId: 5, siteId: 2, zoneId: 2, zoneSource: 'MANUAL',
-        name: '관람 안내소', nameJson: { en: 'Information Center' },
-        category: 'INFO', latitude: 37.5805, longitude: 126.9745,
-        description: '경회루 권역 안내소', imageUrl: null, isActive: true,
-        createdAt: '2026-02-15T10:20:00', updatedAt: '2026-02-15T10:20:00',
-    },
-    {
-        placeId: 6, siteId: 2, zoneId: 1, zoneSource: 'AUTO',
-        name: '근정전', nameJson: { en: 'Geunjeongjeon Hall', ja: '勤政殿', zh: '勤政殿' },
-        category: 'ATTRACTION', latitude: 37.5790, longitude: 126.9769,
-        description: '조선 왕실의 정전', imageUrl: null, isActive: true,
-        createdAt: '2026-02-15T10:25:00', updatedAt: '2026-02-15T10:25:00',
-    },
-    {
-        placeId: 7, siteId: 2, zoneId: null, zoneSource: 'AUTO',
-        name: '주차장 A', nameJson: { en: 'Parking Lot A' },
-        category: 'PARKING', latitude: 37.5775, longitude: 126.9755,
-        description: '정문 앞 주차장', imageUrl: null, isActive: true,
-        createdAt: '2026-02-15T10:30:00', updatedAt: '2026-02-15T10:30:00',
-    },
-    {
-        placeId: 8, siteId: 2, zoneId: 3, zoneSource: 'AUTO',
-        name: '무료 해설 집결지', nameJson: { en: 'Free Tour Meeting Point' },
-        category: 'OTHER', latitude: 37.5785, longitude: 126.9765,
-        description: '정시 무료 해설 출발 지점', imageUrl: null, isActive: false,
-        createdAt: '2026-02-15T10:35:00', updatedAt: '2026-02-15T10:35:00',
-    },
-];
+interface UsePlacesReturn {
+    places: Place[];
+    filteredPlaces: Place[];
+    selectedPlace: Place | null;
+    selectedPlaceId: number | null;
+    setSelectedPlaceId: (id: number | null) => void;
+    categoryFilter: PlaceCategory | 'ALL';
+    setCategoryFilter: (category: PlaceCategory | 'ALL') => void;
+    zoneIdFilter: number | null;
+    setZoneIdFilter: (zoneId: number | null) => void;
+    searchKeyword: string;
+    setSearchKeyword: (keyword: string) => void;
+    createPlace: (request: CreatePlaceRequest) => Promise<Place>;
+    updatePlace: (placeId: number, request: UpdatePlaceRequest) => Promise<Place>;
+    deletePlace: (placeId: number) => Promise<void>;
+    refetchPlaces: () => Promise<void>;
+    isLoading: boolean;
+    isMutating: boolean;
+    error: ApiError | null;
+}
 
-/** Place CRUD 상태 관리 및 필터링 Mock 훅 */
-export function usePlaces() {
-    const [places, setPlaces] = useState<Place[]>(INITIAL_PLACES);
+/**
+ * Place CRUD 훅 (API 연동)
+ *
+ * - 현재 선택된 siteId 기준으로 Place 목록을 가져옵니다.
+ * - 클라이언트 사이드 필터링 (카테고리, 구역, 키워드)
+ * - 생성/수정/삭제 후 자동으로 목록을 갱신합니다.
+ */
+export function usePlaces(): UsePlacesReturn {
+    const [places, setPlaces] = useState<Place[]>([]);
     const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(null);
     const [categoryFilter, setCategoryFilter] = useState<PlaceCategory | 'ALL'>('ALL');
     const [zoneIdFilter, setZoneIdFilter] = useState<number | null>(null);
     const [searchKeyword, setSearchKeyword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [isMutating, setIsMutating] = useState(false);
+    const [error, setError] = useState<ApiError | null>(null);
 
     const { currentSiteId } = useSiteContext();
 
+    /** Place 목록 전체 조회 */
+    const fetchPlaces = useCallback(async () => {
+        if (currentSiteId === null) {
+            setPlaces([]);
+            return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await getPlacesApi(currentSiteId, { size: 200 });
+            if (response.success) {
+                setPlaces(response.data.items);
+            } else {
+                setPlaces([]);
+                setError({ code: response.error?.code ?? 'INTERNAL_ERROR', message: response.error?.message ?? 'Place 목록 조회에 실패했습니다.' });
+            }
+        } catch (err) {
+            const apiError = extractApiError(err);
+            setError(apiError);
+            console.error('Place 목록 조회 실패:', apiError);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [currentSiteId]);
+
+    /** siteId 변경 시 자동 조회 */
+    useEffect(() => {
+        fetchPlaces();
+    }, [fetchPlaces]);
+
+    /** 클라이언트 사이드 필터링 */
     const filteredPlaces = useMemo(() => {
-        if (currentSiteId === null) return [];
         return places.filter((place) => {
-            if (place.siteId !== currentSiteId) return false;
             if (categoryFilter !== 'ALL' && place.category !== categoryFilter) return false;
             if (zoneIdFilter !== null && place.zoneId !== zoneIdFilter) return false;
             if (searchKeyword) {
-                const normalizedSearch = searchKeyword.trim().toLowerCase();
-                const normalizedName = place.name.trim().toLowerCase();
-                if (!normalizedName.includes(normalizedSearch)) return false;
+                const normalized = searchKeyword.trim().toLowerCase();
+                if (!place.name.toLowerCase().includes(normalized)) return false;
             }
             return true;
         });
-    }, [places, currentSiteId, categoryFilter, zoneIdFilter, searchKeyword]);
+    }, [places, categoryFilter, zoneIdFilter, searchKeyword]);
 
-    const selectedPlace = filteredPlaces.find((place) => place.placeId === selectedPlaceId) ?? null;
+    const selectedPlace = useMemo(
+        () => filteredPlaces.find((place) => place.placeId === selectedPlaceId) ?? null,
+        [filteredPlaces, selectedPlaceId],
+    );
 
-    const createPlace = useCallback((request: CreatePlaceRequest) => {
-        if (currentSiteId == null) {
+    /** 장소 생성 */
+    const createPlace = useCallback(async (request: CreatePlaceRequest): Promise<Place> => {
+        if (currentSiteId === null) {
             throw new Error('현재 사이트가 선택되지 않았습니다.');
         }
 
-        const now = new Date().toISOString();
-        const newPlace: Place = {
-            placeId: Date.now(),
-            siteId: currentSiteId,
-            zoneId: request.zoneId ?? null,
-            zoneSource: request.zoneSource ?? 'AUTO',
-            name: request.name,
-            nameJson: request.nameJson ?? null,
-            category: request.category,
-            latitude: request.latitude,
-            longitude: request.longitude,
-            description: request.description ?? null,
-            imageUrl: request.imageUrl ?? null,
-            isActive: request.isActive ?? true,
-            createdAt: now,
-            updatedAt: now,
-        };
-        setPlaces((previous) => [...previous, newPlace]);
-        return newPlace;
-    }, [currentSiteId]);
+        setIsMutating(true);
+        setError(null);
 
-    const updatePlace = useCallback((placeId: number, request: UpdatePlaceRequest) => {
-        const sanitizedRequest = Object.fromEntries(
-            Object.entries(request).filter(([, value]) => value !== undefined)
-        );
+        try {
+            const response = await createPlaceApi(currentSiteId, request);
+            if (response.success) {
+                await fetchPlaces();
+                return response.data;
+            }
+            throw new Error('장소 생성에 실패했습니다.');
+        } catch (err) {
+            const apiError = extractApiError(err);
+            setError(apiError);
+            throw err;
+        } finally {
+            setIsMutating(false);
+        }
+    }, [currentSiteId, fetchPlaces]);
 
-        setPlaces((previous) =>
-            previous.map((place) =>
-                place.placeId === placeId
-                    ? { ...place, ...sanitizedRequest, updatedAt: new Date().toISOString() }
-                    : place,
-            ),
-        );
-    }, []);
+    /** 장소 수정 */
+    const updatePlace = useCallback(async (placeId: number, request: UpdatePlaceRequest): Promise<Place> => {
+        if (currentSiteId === null) {
+            throw new Error('현재 사이트가 선택되지 않았습니다.');
+        }
 
-    const deletePlace = useCallback((placeId: number) => {
-        setPlaces((previous) => previous.filter((place) => place.placeId !== placeId));
-        setSelectedPlaceId((current) => (current === placeId ? null : current));
-    }, []);
+        setIsMutating(true);
+        setError(null);
 
-    const clearZoneReferences = useCallback((deletedZoneIds: number[]) => {
-        setPlaces((previous) =>
-            previous.map((place) =>
-                place.zoneId !== null && deletedZoneIds.includes(place.zoneId)
-                    ? { ...place, zoneId: null, zoneSource: 'AUTO', updatedAt: new Date().toISOString() }
-                    : place,
-            ),
-        );
-    }, []);
+        try {
+            const response = await updatePlaceApi(currentSiteId, placeId, request);
+            if (response.success) {
+                await fetchPlaces();
+                return response.data;
+            }
+            throw new Error('장소 수정에 실패했습니다.');
+        } catch (err) {
+            const apiError = extractApiError(err);
+            setError(apiError);
+            throw err;
+        } finally {
+            setIsMutating(false);
+        }
+    }, [currentSiteId, fetchPlaces]);
+
+    /** 장소 삭제 (soft delete) */
+    const deletePlace = useCallback(async (placeId: number): Promise<void> => {
+        if (currentSiteId === null) {
+            throw new Error('현재 사이트가 선택되지 않았습니다.');
+        }
+
+        setIsMutating(true);
+        setError(null);
+
+        try {
+            const response = await deletePlaceApi(currentSiteId, placeId);
+            if (response.success) {
+                setSelectedPlaceId((current) => (current === placeId ? null : current));
+                await fetchPlaces();
+            }
+        } catch (err) {
+            const apiError = extractApiError(err);
+            setError(apiError);
+            throw err;
+        } finally {
+            setIsMutating(false);
+        }
+    }, [currentSiteId, fetchPlaces]);
 
     return {
         places,
@@ -161,6 +186,9 @@ export function usePlaces() {
         createPlace,
         updatePlace,
         deletePlace,
-        clearZoneReferences,
+        refetchPlaces: fetchPlaces,
+        isLoading,
+        isMutating,
+        error,
     };
 }

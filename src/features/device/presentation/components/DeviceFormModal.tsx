@@ -23,7 +23,7 @@ interface DeviceFormModalProps {
     /** 메인 지도에서 클릭한 좌표 (create 모드) */
     selectedCoords: { lat: number; lng: number };
     onClose: () => void;
-    onSubmit: (request: CreateDeviceRequest | UpdateDeviceRequest) => void;
+    onSubmit: (request: CreateDeviceRequest | UpdateDeviceRequest) => void | Promise<void>;
     /** 등록 후 발급된 토큰 (create 성공 후 부모가 set) */
     issuedToken: string | null;
 }
@@ -50,32 +50,37 @@ export function DeviceFormModal({
     const [isActive, setIsActive] = useState(mode === 'edit' && editTarget ? editTarget.isActive : true);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isTokenCopied, setIsTokenCopied] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const latitude = mode === 'edit' && editTarget ? editTarget.latitude : selectedCoords.lat;
     const longitude = mode === 'edit' && editTarget ? editTarget.longitude : selectedCoords.lng;
 
-    const handleSubmit = (event: FormEvent) => {
+    const handleSubmit = async (event: FormEvent) => {
         event.preventDefault();
-
-        if (mode === 'create') {
-            const request: CreateDeviceRequest = {
-                deviceId: deviceId.trim(),
-                locationName: locationName.trim(),
-                latitude,
-                longitude,
-                zoneSource: zoneId != null ? 'MANUAL' : 'AUTO',
-                zoneId: zoneId ?? undefined,
-                isActive,
-            };
-            onSubmit(request);
-        } else {
-            const request: UpdateDeviceRequest = {
-                locationName: locationName.trim(),
-                isActive,
-                zoneSource: zoneId != null ? 'MANUAL' : 'AUTO',
-                zoneId: zoneId ?? undefined,
-            };
-            onSubmit(request);
+        setIsSubmitting(true);
+        try {
+            if (mode === 'create') {
+                const request: CreateDeviceRequest = {
+                    deviceId: deviceId.trim(),
+                    locationName: locationName.trim(),
+                    latitude,
+                    longitude,
+                    zoneSource: zoneId != null ? 'MANUAL' : 'AUTO',
+                    zoneId: zoneId ?? undefined,
+                    isActive,
+                };
+                await onSubmit(request);
+            } else {
+                const request: UpdateDeviceRequest = {
+                    locationName: locationName.trim(),
+                    isActive,
+                    zoneSource: zoneId != null ? 'MANUAL' : 'AUTO',
+                    zoneId: zoneId ?? undefined,
+                };
+                await onSubmit(request);
+            }
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -347,10 +352,13 @@ export function DeviceFormModal({
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={!isFormValid}
-                                        className="flex-1 py-2.5 rounded-xl bg-violet-500 text-white text-sm font-bold hover:bg-violet-600 shadow-lg shadow-violet-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+                                        disabled={!isFormValid || isSubmitting}
+                                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-violet-500 text-white text-sm font-bold hover:bg-violet-600 shadow-lg shadow-violet-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
                                     >
-                                        {mode === 'create' ? '등록' : '저장'}
+                                        {isSubmitting && (
+                                            <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                                        )}
+                                        {isSubmitting ? '저장 중...' : mode === 'create' ? '등록' : '저장'}
                                     </button>
                                 </div>
                             </form>
