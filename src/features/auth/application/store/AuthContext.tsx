@@ -62,7 +62,9 @@ const CURRENT_SITE_KEY = 'currentSiteId';
 function getSavedSiteId(): number | null {
     if (typeof window === 'undefined') return null;
     const saved = localStorage.getItem(CURRENT_SITE_KEY);
-    return saved ? Number(saved) : null;
+    if (!saved) return null;
+    const parsed = parseInt(saved, 10);
+    return isNaN(parsed) ? null : parsed;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
@@ -132,15 +134,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
             // localStorage에서 이전에 선택한 siteId 복원
             const savedSiteId = getSavedSiteId();
             if (savedSiteId !== null) {
-                // PLATFORM_ADMIN은 모든 사이트 접근 가능, SITE_ADMIN은 본인 site만
                 const canAccess = me.role === 'PLATFORM_ADMIN' || me.site_ids.includes(savedSiteId);
                 if (canAccess) {
                     setCurrentSiteId(savedSiteId);
                 } else if (me.role === 'SITE_ADMIN' && me.site_ids.length > 0) {
-                    setCurrentSiteId(me.site_ids[0]);
+                    const fallbackId = me.site_ids[0];
+                    setCurrentSiteId(fallbackId);
+                    localStorage.setItem(CURRENT_SITE_KEY, String(fallbackId));
                 }
             } else if (me.role === 'SITE_ADMIN' && me.site_ids.length > 0) {
-                setCurrentSiteId(me.site_ids[0]);
+                const fallbackId = me.site_ids[0];
+                setCurrentSiteId(fallbackId);
+                localStorage.setItem(CURRENT_SITE_KEY, String(fallbackId));
             }
         } catch {
             tokenStorage.clearTokens();

@@ -27,6 +27,7 @@ function formatFileSize(bytes: number): string {
  */
 function formatDate(dateString: string): string {
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '-';
     return new Intl.DateTimeFormat('ko-KR', {
         year: 'numeric',
         month: '2-digit',

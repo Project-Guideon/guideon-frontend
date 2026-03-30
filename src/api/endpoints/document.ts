@@ -58,10 +58,7 @@ export const uploadDocumentApi = async (siteId: number, file: File) => {
     const response = await apiClient.post<ApiResponse<DocumentResponse>>(
         `/admin/sites/${siteId}/documents/upload`,
         formData,
-        {
-            headers: { 'Content-Type': 'multipart/form-data' },
-            timeout: 60000,
-        },
+        { timeout: 60000 },
     );
     return response.data;
 };

@@ -22,7 +22,8 @@ export function DocumentUploadPanel({ onClose, onUpload, isUploading }: Document
         const validFiles: File[] = [];
 
         files.forEach((file) => {
-            const extension = file.name.split('.').pop()?.toLowerCase();
+            const dotIndex = file.name.lastIndexOf('.');
+            const extension = dotIndex > 0 ? file.name.slice(dotIndex + 1).toLowerCase() : '';
             if (extension !== 'pdf') {
                 errors.push(`[${file.name}] PDF 파일만 업로드할 수 있습니다.`);
             } else if (file.size > MAX_FILE_SIZE) {
@@ -73,7 +74,7 @@ export function DocumentUploadPanel({ onClose, onUpload, isUploading }: Document
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={onClose}
+                onClick={isUploading ? undefined : onClose}
                 className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
             />
 

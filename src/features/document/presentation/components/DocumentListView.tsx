@@ -39,14 +39,17 @@ export function DocumentListView() {
     const [isUploadOpen, setIsUploadOpen] = useState(false);
 
     const handleFileUpload = async (files: File[]) => {
+        let hasError = false;
         for (const file of files) {
             try {
                 await uploadDocument(file);
             } catch {
-                // useDocument 내부에서 error 상태 관리
+                hasError = true;
             }
         }
-        setIsUploadOpen(false);
+        if (!hasError) {
+            setIsUploadOpen(false);
+        }
     };
 
     const handleDelete = async (docId: number) => {

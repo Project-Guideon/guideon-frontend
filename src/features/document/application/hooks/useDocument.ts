@@ -69,6 +69,19 @@ export function useDocument(): UseDocumentReturn {
     const [error, setError] = useState<ApiError | null>(null);
 
     const { currentSiteId } = useSiteContext();
+    const pollingInFlightRef = useRef(false);
+
+    /** siteId 변경 시 페이지/필터 초기화 */
+    const prevSiteIdRef = useRef(currentSiteId);
+    useEffect(() => {
+        if (prevSiteIdRef.current !== currentSiteId) {
+            prevSiteIdRef.current = currentSiteId;
+            setPage(0);
+            setSearchQuery('');
+            setStatusFilter('ALL');
+            setError(null);
+        }
+    }, [currentSiteId]);
 
     /**
      * 문서 목록 조회
@@ -83,10 +96,16 @@ export function useDocument(): UseDocumentReturn {
             return;
         }
 
+        if (silent && pollingInFlightRef.current) return;
+
         if (!silent) {
             setIsLoading(true);
+            setError(null);
         }
-        setError(null);
+
+        if (silent) {
+            pollingInFlightRef.current = true;
+        }
 
         try {
             const response = await getDocumentsApi(currentSiteId, {
@@ -115,6 +134,9 @@ export function useDocument(): UseDocumentReturn {
         } finally {
             if (!silent) {
                 setIsLoading(false);
+            }
+            if (silent) {
+                pollingInFlightRef.current = false;
             }
         }
     }, [currentSiteId, page, searchQuery, statusFilter]);
@@ -171,18 +193,26 @@ export function useDocument(): UseDocumentReturn {
 
         try {
             const response = await uploadDocumentApi(currentSiteId, file);
-            if (response.success) {
-                setPage(0);
-                await fetchDocuments(0);
+            if (!response.success) {
+                const apiError: ApiError = {
+                    code: response.error?.code ?? 'INTERNAL_ERROR',
+                    message: response.error?.message ?? '문서 업로드에 실패했습니다.',
+                };
+                setError(apiError);
+                throw new Error(apiError.message);
             }
+            setPage(0);
+            await fetchDocuments(0);
         } catch (err) {
-            const apiError = extractApiError(err);
-            setError(apiError);
+            if (!error) {
+                const apiError = extractApiError(err);
+                setError(apiError);
+            }
             throw err;
         } finally {
             setIsMutating(false);
         }
-    }, [currentSiteId, fetchDocuments]);
+    }, [currentSiteId, fetchDocuments, error]);
 
     /** 문서 삭제 */
     const deleteDocument = useCallback(async (docId: number) => {
@@ -193,17 +223,25 @@ export function useDocument(): UseDocumentReturn {
 
         try {
             const response = await deleteDocumentApi(currentSiteId, docId);
-            if (response.success) {
-                await fetchDocuments();
+            if (!response.success) {
+                const apiError: ApiError = {
+                    code: response.error?.code ?? 'INTERNAL_ERROR',
+                    message: response.error?.message ?? '문서 삭제에 실패했습니다.',
+                };
+                setError(apiError);
+                throw new Error(apiError.message);
             }
+            await fetchDocuments();
         } catch (err) {
-            const apiError = extractApiError(err);
-            setError(apiError);
+            if (!error) {
+                const apiError = extractApiError(err);
+                setError(apiError);
+            }
             throw err;
         } finally {
             setIsMutating(false);
         }
-    }, [currentSiteId, fetchDocuments]);
+    }, [currentSiteId, fetchDocuments, error]);
 
     /** 문서 재처리 */
     const reprocessDocument = useCallback(async (docId: number) => {
@@ -214,17 +252,25 @@ export function useDocument(): UseDocumentReturn {
 
         try {
             const response = await reprocessDocumentApi(currentSiteId, docId);
-            if (response.success) {
-                await fetchDocuments();
+            if (!response.success) {
+                const apiError: ApiError = {
+                    code: response.error?.code ?? 'INTERNAL_ERROR',
+                    message: response.error?.message ?? '문서 재처리에 실패했습니다.',
+                };
+                setError(apiError);
+                throw new Error(apiError.message);
             }
+            await fetchDocuments();
         } catch (err) {
-            const apiError = extractApiError(err);
-            setError(apiError);
+            if (!error) {
+                const apiError = extractApiError(err);
+                setError(apiError);
+            }
             throw err;
         } finally {
             setIsMutating(false);
         }
-    }, [currentSiteId, fetchDocuments]);
+    }, [currentSiteId, fetchDocuments, error]);
 
     return {
         documents,
