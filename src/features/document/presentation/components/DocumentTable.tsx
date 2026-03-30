@@ -1,44 +1,43 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { HiOutlineTrash, HiOutlineDocumentText, HiOutlineArrowDownTray, HiOutlineTableCells } from 'react-icons/hi2';
+import { HiOutlineTrash, HiOutlineDocumentText, HiOutlineArrowPath } from 'react-icons/hi2';
 import { DocumentEntry } from '../../domain/entities/DocumentEntry';
 import { DocumentStatusBadge } from './DocumentStatusBadge';
 
 interface DocumentTableProps {
     documents: DocumentEntry[];
-    onDelete: (id: string) => void;
-    onDownload?: (doc: DocumentEntry) => void;
+    onDelete: (docId: number) => void;
+    onReprocess: (docId: number) => void;
+    isMutating: boolean;
 }
 
-const EXTENSION_THEMES = {
-    pdf: {
-        icon: HiOutlineDocumentText,
-        color: 'text-red-500',
-        border: 'border-red-100',
-        label: 'PDF Document'
-    },
-    // docx: {
-    //     icon: HiOutlineDocument,
-    //     color: 'text-blue-500',
-    //     border: 'border-blue-100',
-    //     label: 'Word Document'
-    // },
-    xlsx: {
-        icon: HiOutlineTableCells,
-        color: 'text-emerald-500',
-        border: 'border-emerald-100',
-        label: 'Excel Sheet'
-    },
-    // txt: {
-    //     icon: HiOutlineDocument,
-    //     color: 'text-slate-500',
-    //     border: 'border-slate-100',
-    //     label: 'Text File'
-    // },
+/**
+ * 바이트 수를 사람이 읽기 쉬운 형식으로 변환
+ */
+function formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const index = Math.floor(Math.log(bytes) / Math.log(1024));
+    return parseFloat((bytes / Math.pow(1024, index)).toFixed(1)) + ' ' + units[index];
 }
 
-export function DocumentTable({ documents, onDelete, onDownload }: DocumentTableProps) {
+/**
+ * ISO 날짜 문자열을 표시용 포맷으로 변환
+ */
+function formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '-';
+    return new Intl.DateTimeFormat('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(date);
+}
+
+export function DocumentTable({ documents, onDelete, onReprocess, isMutating }: DocumentTableProps) {
     if (documents.length === 0) {
         return (
             <div className="flex flex-col items-center min-h-[400px] justify-center py-20 text-slate-400">
@@ -55,36 +54,39 @@ export function DocumentTable({ documents, onDelete, onDownload }: DocumentTable
             <table className="w-full text-left border-separate border-spacing-0 bg-white min-w-[800px] table-fixed">
                 <thead>
                     <tr className="bg-slate-50/30">
-                        <th className="w-[40%] px-25 py-4 text-[13px] font-black text-slate-400 border-b border-slate-100">파일명</th>
+                        <th className="w-[35%] px-25 py-4 text-[13px] font-black text-slate-400 border-b border-slate-100">파일명</th>
                         <th className="w-[15%] px-4 py-4 text-[13px] font-black text-slate-400 text-center border-b border-slate-100">학습 상태</th>
-                        <th className="w-[13%] px-4 py-4 text-[13px] font-black text-slate-400 text-center border-b border-slate-100">용량</th>
-                        <th className="w-[18%] px-4 py-4 text-[13px] font-black text-slate-400 text-center border-b border-slate-100">업로드 일시</th>
-                        <th className="w-[12%] px-16 py-4 text-[13px] font-black text-slate-400 text-right border-b border-slate-100">작업</th>
+                        <th className="w-[12%] px-4 py-4 text-[13px] font-black text-slate-400 text-center border-b border-slate-100">용량</th>
+                        <th className="w-[20%] px-4 py-4 text-[13px] font-black text-slate-400 text-center border-b border-slate-100">업로드 일시</th>
+                        <th className="w-[18%] px-8 py-4 text-[13px] font-black text-slate-400 text-right border-b border-slate-100">작업</th>
                     </tr>
                 </thead>
                 <tbody className="bg-white">
                     <AnimatePresence initial={false} mode="popLayout">
                         {documents.map((doc) => {
-                            const theme = EXTENSION_THEMES[doc.extension] || EXTENSION_THEMES.pdf;
-                            const Icon = theme.icon;
+                            const isProcessing = doc.status === 'PROCESSING' || doc.status === 'PENDING';
+                            const canReprocess = doc.status === 'COMPLETED' || doc.status === 'FAILED';
+
                             return (
-                                <motion.tr key={doc.id} layout initial={{ opacity: 0, x: -20 }}
+                                <motion.tr key={doc.docId} layout initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0, transition: { duration: 0.15 } }}
                                     exit={{ opacity: 0, x: -100, transition: { duration: 0.1, ease: "easeInOut" } }}
                                     className="group hover:bg-slate-50/50 transition-colors">
-                                    {/* 파일명, 아이콘 */}
+                                    {/* 파일명 */}
                                     <td className="px-8 py-4 border-b border-slate-50 bg-white min-w-0">
                                         <div className="flex items-center gap-4 overflow-hidden">
-                                            <div className={`w-12 h-12 rounded-2xl ${theme.border} border flex items-center justify-center ${theme.color} shadow-sm group-hover:scale-105 transition-transform duration-300 shrink-0`}>
-                                                <Icon className="w-5 h-5" />
+                                            <div className="w-12 h-12 rounded-2xl border-red-100 border flex items-center justify-center text-red-500 shadow-sm group-hover:scale-105 transition-transform duration-300 shrink-0">
+                                                <HiOutlineDocumentText className="w-5 h-5" />
                                             </div>
                                             <div className="flex flex-col min-w-0 overflow-hidden">
                                                 <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900 truncate">
-                                                    {doc.fileName}
+                                                    {doc.originalName}
                                                 </span>
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
-                                                    {doc.site}
-                                                </span>
+                                                {doc.failedReason && (
+                                                    <span className="text-[10px] font-bold text-red-400 truncate" title={doc.failedReason}>
+                                                        {doc.failedReason}
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
                                     </td>
@@ -96,34 +98,38 @@ export function DocumentTable({ documents, onDelete, onDownload }: DocumentTable
                                         </div>
                                     </td>
 
-                                    {/*파일 크기 */}
+                                    {/* 파일 크기 */}
                                     <td className="px-6 py-4 text-center border-b border-slate-50 bg-white">
                                         <span className="text-xs text-slate-500 font-bold tabular-nums block">
-                                            {doc.size}
+                                            {formatFileSize(doc.fileSize)}
                                         </span>
                                     </td>
 
                                     {/* 업로드 일시 */}
                                     <td className="px-6 py-4 text-center border-b border-slate-50 bg-white">
                                         <span className="text-xs text-slate-500 font-medium tabular-nums block">
-                                            {doc.uploadedAt}
+                                            {formatDate(doc.createdAt)}
                                         </span>
                                     </td>
 
                                     {/* 작업 */}
                                     <td className="px-8 py-4 border-b border-slate-50 bg-white">
                                         <div className="flex items-center justify-end gap-1 transition-opacity">
+                                            {canReprocess && (
+                                                <button
+                                                    onClick={() => onReprocess(doc.docId)}
+                                                    disabled={isMutating}
+                                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all disabled:opacity-30"
+                                                    title="재처리"
+                                                >
+                                                    <HiOutlineArrowPath className="w-5 h-5" />
+                                                </button>
+                                            )}
                                             <button
-                                                onClick={() => onDownload?.(doc)}
-                                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                                title="다운로드"
-                                            >
-                                                <HiOutlineArrowDownTray className="w-5 h-5" />
-                                            </button>
-                                            <button
-                                                onClick={() => onDelete(doc.id)}
-                                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                                title="삭제"
+                                                onClick={() => onDelete(doc.docId)}
+                                                disabled={isMutating || isProcessing}
+                                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-30"
+                                                title={isProcessing ? '처리 중에는 삭제할 수 없습니다' : '삭제'}
                                             >
                                                 <HiOutlineTrash className="w-5 h-5" />
                                             </button>
