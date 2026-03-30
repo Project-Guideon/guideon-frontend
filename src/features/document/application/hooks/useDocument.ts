@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { DocumentEntry, DocumentStatus } from '../../domain/entities/DocumentEntry';
 import type { DocumentResponse } from '@/api/endpoints/document';
 import { getDocumentsApi, uploadDocumentApi, deleteDocumentApi, reprocessDocumentApi } from '@/api/endpoints/document';
@@ -48,6 +48,7 @@ interface UseDocumentReturn {
 }
 
 const PAGE_SIZE = 6;
+const POLLING_INTERVAL = 5000;
 
 /**
  * Document CRUD 훅 (API 연동)
@@ -69,8 +70,12 @@ export function useDocument(): UseDocumentReturn {
 
     const { currentSiteId } = useSiteContext();
 
-    /** 문서 목록 조회 */
-    const fetchDocuments = useCallback(async (requestedPage?: number) => {
+    /**
+     * 문서 목록 조회
+     * @param requestedPage 특정 페이지 요청 (업로드 후 0페이지로 이동 등)
+     * @param silent true면 로딩 스피너 표시 안 함 (폴링용)
+     */
+    const fetchDocuments = useCallback(async (requestedPage?: number, silent?: boolean) => {
         if (currentSiteId === null) {
             setDocuments([]);
             setTotalPages(1);
@@ -78,7 +83,9 @@ export function useDocument(): UseDocumentReturn {
             return;
         }
 
-        setIsLoading(true);
+        if (!silent) {
+            setIsLoading(true);
+        }
         setError(null);
 
         try {
@@ -102,9 +109,13 @@ export function useDocument(): UseDocumentReturn {
             }
         } catch (err) {
             const apiError = extractApiError(err);
-            setError(apiError);
+            if (!silent) {
+                setError(apiError);
+            }
         } finally {
-            setIsLoading(false);
+            if (!silent) {
+                setIsLoading(false);
+            }
         }
     }, [currentSiteId, page, searchQuery, statusFilter]);
 
@@ -112,6 +123,31 @@ export function useDocument(): UseDocumentReturn {
     useEffect(() => {
         fetchDocuments();
     }, [fetchDocuments]);
+
+    /**
+     * PENDING/PROCESSING 문서가 있으면 5초마다 자동 갱신
+     * 상태 변화 감지 후 자동 중단
+     */
+    const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    useEffect(() => {
+        const hasProcessing = documents.some(
+            (doc) => doc.status === 'PENDING' || doc.status === 'PROCESSING',
+        );
+
+        if (hasProcessing && currentSiteId !== null) {
+            pollingRef.current = setInterval(() => {
+                fetchDocuments(undefined, true);
+            }, POLLING_INTERVAL);
+        }
+
+        return () => {
+            if (pollingRef.current) {
+                clearInterval(pollingRef.current);
+                pollingRef.current = null;
+            }
+        };
+    }, [documents, currentSiteId, fetchDocuments]);
 
     /** 검색어/필터 변경 시 첫 페이지로 리셋 */
     const handleSearchQuery = useCallback((query: string) => {
