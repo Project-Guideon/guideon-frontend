@@ -114,6 +114,7 @@ export function DocumentListView() {
             {/* 헤더 */}
             <DocumentPageHeader
                 siteName={currentSite?.name}
+                currentSiteId={currentSiteId}
                 sites={sites}
                 onSelectSite={setCurrentSite}
             />
@@ -189,10 +190,12 @@ export function DocumentListView() {
  */
 function DocumentPageHeader({
     siteName,
+    currentSiteId,
     sites,
     onSelectSite,
 }: {
     siteName?: string;
+    currentSiteId?: number | null;
     sites?: { siteId: number; name: string }[];
     onSelectSite?: (id: number) => void;
 }) {
@@ -245,7 +248,7 @@ function DocumentPageHeader({
                                                     setIsDropdownOpen(false);
                                                 }}
                                                 className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-all
-                                                    ${siteName === site.name
+                                                    ${currentSiteId === site.siteId
                                                         ? 'bg-orange-50 text-orange-600'
                                                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                                                     }`}

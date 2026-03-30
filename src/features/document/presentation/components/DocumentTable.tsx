@@ -16,9 +16,9 @@ interface DocumentTableProps {
  * 바이트 수를 사람이 읽기 쉬운 형식으로 변환
  */
 function formatFileSize(bytes: number): string {
-    if (bytes === 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB'];
-    const index = Math.floor(Math.log(bytes) / Math.log(1024));
+    if (!bytes || bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+    const index = Math.min(units.length - 1, Math.max(0, Math.floor(Math.log(bytes) / Math.log(1024))));
     return parseFloat((bytes / Math.pow(1024, index)).toFixed(1)) + ' ' + units[index];
 }
 
@@ -129,7 +129,7 @@ export function DocumentTable({ documents, onDelete, onReprocess, isMutating }: 
                                                 onClick={() => onDelete(doc.docId)}
                                                 disabled={isMutating || isProcessing}
                                                 className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-30"
-                                                title={isProcessing ? '처리 중에는 삭제할 수 없습니다' : '삭제'}
+                                                title={isMutating ? '변경 중에는 삭제할 수 없습니다' : isProcessing ? '처리 중에는 삭제할 수 없습니다' : '삭제'}
                                             >
                                                 <HiOutlineTrash className="w-5 h-5" />
                                             </button>

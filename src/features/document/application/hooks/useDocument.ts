@@ -119,7 +119,7 @@ export function useDocument(): UseDocumentReturn {
                 setDocuments(response.data.items.map(toDocumentEntry));
                 setTotalPages(response.data.page.total_pages || 1);
                 setTotalCount(response.data.page.total_elements);
-            } else {
+            } else if (!silent) {
                 setDocuments([]);
                 setError({
                     code: response.error?.code ?? 'INTERNAL_ERROR',
@@ -191,6 +191,7 @@ export function useDocument(): UseDocumentReturn {
         setIsMutating(true);
         setError(null);
 
+        let didSetError = false;
         try {
             const response = await uploadDocumentApi(currentSiteId, file);
             if (!response.success) {
@@ -199,20 +200,20 @@ export function useDocument(): UseDocumentReturn {
                     message: response.error?.message ?? '문서 업로드에 실패했습니다.',
                 };
                 setError(apiError);
+                didSetError = true;
                 throw new Error(apiError.message);
             }
             setPage(0);
             await fetchDocuments(0);
         } catch (err) {
-            if (!error) {
-                const apiError = extractApiError(err);
-                setError(apiError);
+            if (!didSetError) {
+                setError(extractApiError(err));
             }
             throw err;
         } finally {
             setIsMutating(false);
         }
-    }, [currentSiteId, fetchDocuments, error]);
+    }, [currentSiteId, fetchDocuments]);
 
     /** 문서 삭제 */
     const deleteDocument = useCallback(async (docId: number) => {
@@ -221,6 +222,7 @@ export function useDocument(): UseDocumentReturn {
         setIsMutating(true);
         setError(null);
 
+        let didSetError = false;
         try {
             const response = await deleteDocumentApi(currentSiteId, docId);
             if (!response.success) {
@@ -229,19 +231,19 @@ export function useDocument(): UseDocumentReturn {
                     message: response.error?.message ?? '문서 삭제에 실패했습니다.',
                 };
                 setError(apiError);
+                didSetError = true;
                 throw new Error(apiError.message);
             }
             await fetchDocuments();
         } catch (err) {
-            if (!error) {
-                const apiError = extractApiError(err);
-                setError(apiError);
+            if (!didSetError) {
+                setError(extractApiError(err));
             }
             throw err;
         } finally {
             setIsMutating(false);
         }
-    }, [currentSiteId, fetchDocuments, error]);
+    }, [currentSiteId, fetchDocuments]);
 
     /** 문서 재처리 */
     const reprocessDocument = useCallback(async (docId: number) => {
@@ -250,6 +252,7 @@ export function useDocument(): UseDocumentReturn {
         setIsMutating(true);
         setError(null);
 
+        let didSetError = false;
         try {
             const response = await reprocessDocumentApi(currentSiteId, docId);
             if (!response.success) {
@@ -258,19 +261,19 @@ export function useDocument(): UseDocumentReturn {
                     message: response.error?.message ?? '문서 재처리에 실패했습니다.',
                 };
                 setError(apiError);
+                didSetError = true;
                 throw new Error(apiError.message);
             }
             await fetchDocuments();
         } catch (err) {
-            if (!error) {
-                const apiError = extractApiError(err);
-                setError(apiError);
+            if (!didSetError) {
+                setError(extractApiError(err));
             }
             throw err;
         } finally {
             setIsMutating(false);
         }
-    }, [currentSiteId, fetchDocuments, error]);
+    }, [currentSiteId, fetchDocuments]);
 
     return {
         documents,
