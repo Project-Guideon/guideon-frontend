@@ -57,6 +57,16 @@ interface AuthProviderProps {
  * AuthProvider
  * 실제 백엔드 API 기반 인증 상태 관리
  */
+const CURRENT_SITE_KEY = 'currentSiteId';
+
+function getSavedSiteId(): number | null {
+    if (typeof window === 'undefined') return null;
+    const saved = localStorage.getItem(CURRENT_SITE_KEY);
+    if (!saved) return null;
+    const parsed = parseInt(saved, 10);
+    return isNaN(parsed) ? null : parsed;
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -121,8 +131,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
             await fetchSites(me.role, me.site_ids);
 
-            if (me.role === 'SITE_ADMIN' && me.site_ids.length > 0) {
-                setCurrentSiteId(me.site_ids[0]);
+            // localStorage에서 이전에 선택한 siteId 복원
+            const savedSiteId = getSavedSiteId();
+            if (savedSiteId !== null) {
+                const canAccess = me.role === 'PLATFORM_ADMIN' || me.site_ids.includes(savedSiteId);
+                if (canAccess) {
+                    setCurrentSiteId(savedSiteId);
+                } else if (me.role === 'SITE_ADMIN' && me.site_ids.length > 0) {
+                    const fallbackId = me.site_ids[0];
+                    setCurrentSiteId(fallbackId);
+                    localStorage.setItem(CURRENT_SITE_KEY, String(fallbackId));
+                }
+            } else if (me.role === 'SITE_ADMIN' && me.site_ids.length > 0) {
+                const fallbackId = me.site_ids[0];
+                setCurrentSiteId(fallbackId);
+                localStorage.setItem(CURRENT_SITE_KEY, String(fallbackId));
             }
         } catch {
             tokenStorage.clearTokens();
@@ -179,6 +202,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             // 로그아웃 API 실패해도 로컬 정리는 진행
         } finally {
             tokenStorage.clearTokens();
+            localStorage.removeItem(CURRENT_SITE_KEY);
             setUser(null);
             setCurrentSiteId(null);
             window.location.href = '/login';
@@ -186,10 +210,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }, []);
 
     /**
-     * 현재 사이트 변경
+     * 현재 사이트 변경 (localStorage에도 저장)
      */
     const setCurrentSite = useCallback((siteId: number) => {
         setCurrentSiteId(siteId);
+        localStorage.setItem(CURRENT_SITE_KEY, String(siteId));
     }, []);
 
     const value = useMemo<AuthContextType>(
