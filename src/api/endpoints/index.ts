@@ -5,3 +5,4 @@ export * from './mascot';
 export * from './zone';
 export * from './place';
 export * from './device';
+export * from './document';
