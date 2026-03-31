@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import type { Invite, InviteStatus } from '../../domain/entities/InviteEntry';
 import type { InviteResponse } from '@/api/endpoints/invite';
 import { getInvitesApi, resendInviteApi, expireInviteApi } from '@/api/endpoints/invite';
@@ -26,7 +26,8 @@ function toInvite(response: InviteResponse): Invite {
 interface UseInvitesReturn {
     invites: Invite[];
     isLoading: boolean;
-    isMutating: boolean;
+    /** 현재 mutation 진행 중인 초대 ID (null이면 진행 중 없음) */
+    mutatingInviteId: number | null;
     error: ApiError | null;
     searchTerm: string;
     setSearchTerm: (term: string) => void;
@@ -47,7 +48,7 @@ interface UseInvitesReturn {
 export function useInvites(): UseInvitesReturn {
     const [invites, setInvites] = useState<Invite[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [isMutating, setIsMutating] = useState(false);
+    const [mutatingInviteId, setMutatingInviteId] = useState<number | null>(null);
     const [error, setError] = useState<ApiError | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<InviteStatus | 'ALL'>('ALL');
@@ -79,22 +80,24 @@ export function useInvites(): UseInvitesReturn {
         fetchInvites();
     }, [fetchInvites]);
 
-    /** 클라이언트 사이드 검색/필터링 */
-    const filteredInvites = invites.filter((invite) => {
-        const matchesSearch =
-            searchTerm === '' ||
-            invite.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            invite.siteName.toLowerCase().includes(searchTerm.toLowerCase());
+    /** 클라이언트 사이드 검색/필터링 (메모이제이션) */
+    const filteredInvites = useMemo(() => {
+        return invites.filter((invite) => {
+            const matchesSearch =
+                searchTerm === '' ||
+                invite.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                invite.siteName.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const matchesStatus =
-            statusFilter === 'ALL' || invite.status === statusFilter;
+            const matchesStatus =
+                statusFilter === 'ALL' || invite.status === statusFilter;
 
-        return matchesSearch && matchesStatus;
-    });
+            return matchesSearch && matchesStatus;
+        });
+    }, [invites, searchTerm, statusFilter]);
 
     /** 초대 재발송 (PENDING 상태만 가능) */
     const resendInvite = useCallback(async (inviteId: number) => {
-        setIsMutating(true);
+        setMutatingInviteId(inviteId);
         setError(null);
 
         try {
@@ -115,18 +118,16 @@ export function useInvites(): UseInvitesReturn {
                 throw new Error(apiError.message);
             }
         } catch (err) {
-            if (!error) {
-                setError(extractApiError(err));
-            }
+            setError(extractApiError(err));
             throw err;
         } finally {
-            setIsMutating(false);
+            setMutatingInviteId(null);
         }
-    }, [error]);
+    }, []);
 
     /** 초대 만료 처리 (PENDING 상태만 가능) */
     const expireInvite = useCallback(async (inviteId: number) => {
-        setIsMutating(true);
+        setMutatingInviteId(inviteId);
         setError(null);
 
         try {
@@ -143,19 +144,17 @@ export function useInvites(): UseInvitesReturn {
                 throw new Error(apiError.message);
             }
         } catch (err) {
-            if (!error) {
-                setError(extractApiError(err));
-            }
+            setError(extractApiError(err));
             throw err;
         } finally {
-            setIsMutating(false);
+            setMutatingInviteId(null);
         }
-    }, [error, fetchInvites]);
+    }, [fetchInvites]);
 
     return {
         invites,
         isLoading,
-        isMutating,
+        mutatingInviteId,
         error,
         searchTerm,
         setSearchTerm,

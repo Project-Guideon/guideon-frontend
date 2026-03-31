@@ -7,7 +7,8 @@ import type { Invite } from '@/features/invite/domain/entities/InviteEntry';
 interface InviteTableProps {
     invites: Invite[];
     isLoading: boolean;
-    isMutating: boolean;
+    /** 현재 mutation 진행 중인 초대 ID (null이면 진행 중 없음) */
+    mutatingInviteId: number | null;
     onExpire: (inviteId: number) => Promise<void>;
     onResend: (inviteId: number) => Promise<void>;
 }
@@ -25,7 +26,7 @@ function formatDateTime(dateString: string): string {
     return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
 }
 
-export function InviteTable({ invites, isLoading, isMutating, onExpire, onResend }: InviteTableProps) {
+export function InviteTable({ invites, isLoading, mutatingInviteId, onExpire, onResend }: InviteTableProps) {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center py-16">
@@ -61,6 +62,7 @@ export function InviteTable({ invites, isLoading, isMutating, onExpire, onResend
                     <AnimatePresence mode="popLayout">
                         {invites.map((invite) => {
                             const statusInfo = STATUS_MAP[invite.status] ?? DEFAULT_STATUS;
+                            const isThisMutating = mutatingInviteId === invite.inviteId;
                             return (
                                 <motion.tr
                                     key={invite.inviteId}
@@ -95,16 +97,20 @@ export function InviteTable({ invites, isLoading, isMutating, onExpire, onResend
                                                 <>
                                                     <button
                                                         onClick={() => onResend(invite.inviteId)}
-                                                        disabled={isMutating}
+                                                        disabled={isThisMutating}
                                                         className="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all disabled:opacity-50"
                                                         title="재발송"
                                                         aria-label={`${invite.email} 초대 재발송`}
                                                     >
-                                                        <HiOutlineArrowPath className="w-5 h-5" />
+                                                        {isThisMutating ? (
+                                                            <div className="w-5 h-5 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+                                                        ) : (
+                                                            <HiOutlineArrowPath className="w-5 h-5" />
+                                                        )}
                                                     </button>
                                                     <button
                                                         onClick={() => onExpire(invite.inviteId)}
-                                                        disabled={isMutating}
+                                                        disabled={isThisMutating}
                                                         className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
                                                         title="초대 철회"
                                                         aria-label={`${invite.email} 초대 철회`}

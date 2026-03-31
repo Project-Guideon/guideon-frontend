@@ -5,6 +5,8 @@
  * React에 의존하지 않는 순수 TypeScript 타입
  */
 
+import type { InviteStatus } from '@/features/invite/domain/entities/InviteEntry';
+
 /** 관광지 엔티티 */
 export interface Site {
     siteId: number;
@@ -23,9 +25,6 @@ export interface CreateSiteRequest {
 export interface UpdateSiteRequest {
     name: string;
 }
-
-/** 초대 상태 */
-export type InviteStatus = 'PENDING' | 'USED' | 'EXPIRED';
 
 /** 관광지에 배정된 운영자 초대 정보 */
 export interface SiteInvite {

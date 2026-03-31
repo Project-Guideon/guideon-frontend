@@ -17,7 +17,7 @@ export function InviteListView() {
     const {
         filteredInvites,
         isLoading,
-        isMutating,
+        mutatingInviteId,
         error,
         searchTerm,
         setSearchTerm,
@@ -94,7 +94,7 @@ export function InviteListView() {
                 <InviteTable
                     invites={filteredInvites}
                     isLoading={isLoading}
-                    isMutating={isMutating}
+                    mutatingInviteId={mutatingInviteId}
                     onExpire={expireInvite}
                     onResend={resendInvite}
                 />
