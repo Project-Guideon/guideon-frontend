@@ -4,13 +4,29 @@ import { useState } from 'react';
 import { HiOutlineEnvelope, HiOutlineMagnifyingGlass, HiOutlineExclamationTriangle, HiChevronDown } from 'react-icons/hi2';
 import { useInvites } from '../../application/hooks/useInvites';
 import { InviteTable } from './InviteTable';
+import type { InviteStatus } from '../../domain/entities/InviteEntry';
 
-export function InviteListView() { 
-    const { invites, cancelInvite, resendInvite } = useInvites();
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('ALL');
+const STATUS_OPTIONS: { value: InviteStatus | 'ALL'; label: string }[] = [
+    { value: 'ALL', label: '전체' },
+    { value: 'PENDING', label: '대기 중' },
+    { value: 'USED', label: '수락됨' },
+    { value: 'EXPIRED', label: '만료됨' },
+];
+
+export function InviteListView() {
+    const {
+        filteredInvites,
+        isLoading,
+        mutatingInviteIds,
+        error,
+        searchTerm,
+        setSearchTerm,
+        statusFilter,
+        setStatusFilter,
+        resendInvite,
+        expireInvite,
+    } = useInvites();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
     return (
         <div className="flex flex-col gap-4">
@@ -23,16 +39,13 @@ export function InviteListView() {
                 </div>
             </div>
 
-            {/* 에러 문구 영역 */}
             {error && (
                 <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex items-center gap-3">
                     <HiOutlineExclamationTriangle className="w-5 h-5 text-red-500" />
-                    <p className="text-sm font-bold text-red-600">{error}</p>
-                    <button onClick={() => setError(null)} className="ml-auto text-xs font-bold text-red-400">닫기</button>
+                    <p className="text-sm font-bold text-red-600">{error.message}</p>
                 </div>
             )}
 
-            {/* 필터 영역 */}
             <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-3">
                     <span className="text-sm font-bold text-slate-500 whitespace-nowrap">검색</span>
@@ -53,22 +66,22 @@ export function InviteListView() {
                 <div className="flex items-center gap-3">
                     <span className="text-sm font-bold text-slate-500">상태</span>
                     <div className="relative">
-                        <button 
+                        <button
                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                             className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700"
                         >
-                            {statusFilter === 'ALL' ? '전체' : statusFilter}
+                            {STATUS_OPTIONS.find((option) => option.value === statusFilter)?.label}
                             <HiChevronDown className={`w-3.5 h-3.5 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                         </button>
                         {isDropdownOpen && (
                             <div className="absolute top-full mt-2 w-32 bg-white border border-slate-100 rounded-xl shadow-xl z-50 p-1">
-                                {['ALL', 'PENDING', 'ACCEPTED', 'EXPIRED'].map((s) => (
-                                    <button 
-                                        key={s} 
-                                        onClick={() => { setStatusFilter(s); setIsDropdownOpen(false); }}
+                                {STATUS_OPTIONS.map((option) => (
+                                    <button
+                                        key={option.value}
+                                        onClick={() => { setStatusFilter(option.value); setIsDropdownOpen(false); }}
                                         className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold hover:bg-orange-50 hover:text-orange-600"
                                     >
-                                        {s}
+                                        {option.label}
                                     </button>
                                 ))}
                             </div>
@@ -78,10 +91,12 @@ export function InviteListView() {
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
-                <InviteTable 
-                    invites={invites} 
-                    onCancel={cancelInvite} 
-                    onResend={resendInvite} 
+                <InviteTable
+                    invites={filteredInvites}
+                    isLoading={isLoading}
+                    mutatingInviteIds={mutatingInviteIds}
+                    onExpire={expireInvite}
+                    onResend={resendInvite}
                 />
             </div>
         </div>

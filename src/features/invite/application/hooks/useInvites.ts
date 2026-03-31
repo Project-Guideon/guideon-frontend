@@ -1,63 +1,186 @@
-import { useState, useEffect } from 'react';
-import { Invite } from '../../domain/entities/InviteEntry';
+'use client';
 
-export function useInvites() {
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import type { Invite, InviteStatus } from '../../domain/entities/InviteEntry';
+import type { InviteResponse } from '@/api/endpoints/invite';
+import { getInvitesApi, resendInviteApi, expireInviteApi } from '@/api/endpoints/invite';
+import type { ApiError } from '@/shared/types/api';
+import { extractApiError } from '@/shared/utils/api';
+
+/**
+ * API 응답(snake_case) → 프론트엔드 엔티티(camelCase) 변환
+ */
+function toInvite(response: InviteResponse): Invite {
+    return {
+        inviteId: response.invite_id,
+        siteId: response.site_id,
+        siteName: response.site_name,
+        email: response.email,
+        role: response.role,
+        status: response.status,
+        expiresAt: response.expires_at,
+        createdAt: response.created_at,
+    };
+}
+
+interface UseInvitesReturn {
+    invites: Invite[];
+    isLoading: boolean;
+    /** 현재 mutation 진행 중인 초대 ID 목록 */
+    mutatingInviteIds: Set<number>;
+    error: ApiError | null;
+    searchTerm: string;
+    setSearchTerm: (term: string) => void;
+    statusFilter: InviteStatus | 'ALL';
+    setStatusFilter: (status: InviteStatus | 'ALL') => void;
+    filteredInvites: Invite[];
+    resendInvite: (inviteId: number) => Promise<void>;
+    expireInvite: (inviteId: number) => Promise<void>;
+    refetchInvites: () => Promise<void>;
+}
+
+/**
+ * useInvites - 초대 목록 조회/재발송/만료 처리 훅 (API 연동)
+ *
+ * - PLATFORM_ADMIN 전용
+ * - 클라이언트 사이드 검색/필터링 (서버 페이지네이션 미지원)
+ * - 동시 mutation 지원 (Set 기반 per-invite 추적)
+ */
+export function useInvites(): UseInvitesReturn {
     const [invites, setInvites] = useState<Invite[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [mutatingInviteIds, setMutatingInviteIds] = useState<Set<number>>(new Set());
+    const [error, setError] = useState<ApiError | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState<InviteStatus | 'ALL'>('ALL');
 
-    useEffect(() => {
-        const fetchInvites = async () => {
-            setIsLoading(true);
-            try {
-                const realisticMockData: Invite[] = [
-                    { id: 1, email: 'kim_manager@jeju.resort.com', siteName: '제주 만장굴', siteId: 101, status: 'ACCEPTED', createdAt: '2024-03-01', expiresAt: '2024-03-08' },
-                    { id: 2, email: 'lee_staff@palace.seoul.kr', siteName: '경복궁', siteId: 102, status: 'PENDING', createdAt: '2024-03-15', expiresAt: '2024-03-22' },
-                    { id: 3, email: 'park_op@bulguksa.or.kr', siteName: '불국사', siteId: 103, status: 'EXPIRED', createdAt: '2024-02-20', expiresAt: '2024-02-27' },
-                    { id: 4, email: 'admin_support@tour.gangwon.kr', siteName: '남이섬', siteId: 104, status: 'REVOKED', createdAt: '2024-03-05', expiresAt: '2024-03-12' },
-                    { id: 5, email: 'wrong_mail@invalid-domain.com', siteName: '제주 만장굴', siteId: 101, status: 'EXPIRED', createdAt: '2024-03-10', expiresAt: '2024-03-17', errorMsg: '발송 실패: 주소 형식 오류' },
-                    { id: 6, email: 'choi_master@namsantower.co.kr', siteName: 'N서울타워', siteId: 105, status: 'ACCEPTED', createdAt: '2024-03-02', expiresAt: '2024-03-09' },
-                    { id: 7, email: 'han_guide@lotteworld.com', siteName: '롯데월드', siteId: 106, status: 'PENDING', createdAt: '2024-03-18', expiresAt: '2024-03-25' },
-                    { id: 8, email: 'seo_manager@everland.co.kr', siteName: '에버랜드', siteId: 107, status: 'PENDING', createdAt: '2024-03-18', expiresAt: '2024-03-25' },
-                    { id: 9, email: 'it_support@busan.tower.kr', siteName: '부산타워', siteId: 108, status: 'EXPIRED', createdAt: '2024-02-15', expiresAt: '2024-02-22' },
-                    { id: 10, email: 'jung_admin@sokcho.sea.kr', siteName: '속초 해수욕장', siteId: 109, status: 'REVOKED', createdAt: '2024-03-12', expiresAt: '2024-03-19' },
-                    { id: 11, email: 'mail_error@server.com', siteName: '경복궁', siteId: 102, status: 'EXPIRED', createdAt: '2024-03-14', expiresAt: '2024-03-21', errorMsg: '발송 실패: SMTP 서버 거부' },
-                    { id: 12, email: 'kang_op@suwon.fortress.kr', siteName: '수원 화성', siteId: 110, status: 'ACCEPTED', createdAt: '2024-03-05', expiresAt: '2024-03-12' },
-                    { id: 13, email: 'yu_staff@hanok.village.kr', siteName: '전주 한옥마을', siteId: 111, status: 'PENDING', createdAt: '2024-03-17', expiresAt: '2024-03-24' },
-                    { id: 14, email: 'temp_user@naver.com', siteName: '불국사', siteId: 103, status: 'EXPIRED', createdAt: '2024-02-28', expiresAt: '2024-03-06' },
-                    { id: 15, email: 'master@ocean.world.kr', siteName: '오션월드', siteId: 112, status: 'ACCEPTED', createdAt: '2024-03-08', expiresAt: '2024-03-15' },
-                ];
-                setInvites(realisticMockData);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchInvites();
+    /** mutation 시작: Set에 inviteId 추가 */
+    const addMutating = useCallback((inviteId: number) => {
+        setMutatingInviteIds((prev) => new Set(prev).add(inviteId));
     }, []);
 
-    const cancelInvite = (id: number) => {
-        setInvites(prev => prev.map(inv => 
-            inv.id === id ? { ...inv, status: 'REVOKED' } : inv
-        ));
+    /** mutation 종료: Set에서 inviteId 제거 */
+    const removeMutating = useCallback((inviteId: number) => {
+        setMutatingInviteIds((prev) => {
+            const next = new Set(prev);
+            next.delete(inviteId);
+            return next;
+        });
+    }, []);
+
+    /** 초대 목록 조회 */
+    const fetchInvites = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await getInvitesApi();
+
+            if (response.success) {
+                setInvites(response.data.map(toInvite));
+            } else {
+                setError({
+                    code: response.error?.code ?? 'INTERNAL_ERROR',
+                    message: response.error?.message ?? '초대 목록 조회에 실패했습니다.',
+                });
+            }
+        } catch (err) {
+            setError(extractApiError(err));
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchInvites();
+    }, [fetchInvites]);
+
+    /** 클라이언트 사이드 검색/필터링 (메모이제이션) */
+    const filteredInvites = useMemo(() => {
+        return invites.filter((invite) => {
+            const matchesSearch =
+                searchTerm === '' ||
+                invite.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                invite.siteName.toLowerCase().includes(searchTerm.toLowerCase());
+
+            const matchesStatus =
+                statusFilter === 'ALL' || invite.status === statusFilter;
+
+            return matchesSearch && matchesStatus;
+        });
+    }, [invites, searchTerm, statusFilter]);
+
+    /** 초대 재발송 (PENDING 상태만 가능) */
+    const resendInvite = useCallback(async (inviteId: number) => {
+        addMutating(inviteId);
+        setError(null);
+
+        try {
+            const response = await resendInviteApi(inviteId);
+
+            if (response.success) {
+                setInvites((prev) =>
+                    prev.map((invite) =>
+                        invite.inviteId === inviteId ? toInvite(response.data) : invite,
+                    ),
+                );
+            } else {
+                setError({
+                    code: response.error?.code ?? 'INTERNAL_ERROR',
+                    message: response.error?.message ?? '초대 재발송에 실패했습니다.',
+                });
+            }
+        } catch (err) {
+            setError(extractApiError(err));
+        } finally {
+            removeMutating(inviteId);
+        }
+    }, [addMutating, removeMutating]);
+
+    /** 초대 만료 처리 (PENDING 상태만 가능) */
+    const expireInvite = useCallback(async (inviteId: number) => {
+        addMutating(inviteId);
+        setError(null);
+
+        try {
+            const response = await expireInviteApi(inviteId);
+
+            if (response.success) {
+                /** 즉시 로컬 상태 반영 (낙관적 업데이트) */
+                setInvites((prev) =>
+                    prev.map((invite) =>
+                        invite.inviteId === inviteId
+                            ? { ...invite, status: 'EXPIRED' as InviteStatus }
+                            : invite,
+                    ),
+                );
+                /** 서버와 전체 동기화 (실패해도 로컬 상태는 이미 반영) */
+                await fetchInvites().catch(() => { /* 로컬 상태로 유지 */ });
+            } else {
+                setError({
+                    code: response.error?.code ?? 'INTERNAL_ERROR',
+                    message: response.error?.message ?? '초대 철회에 실패했습니다.',
+                });
+            }
+        } catch (err) {
+            setError(extractApiError(err));
+        } finally {
+            removeMutating(inviteId);
+        }
+    }, [addMutating, removeMutating, fetchInvites]);
+
+    return {
+        invites,
+        isLoading,
+        mutatingInviteIds,
+        error,
+        searchTerm,
+        setSearchTerm,
+        statusFilter,
+        setStatusFilter,
+        filteredInvites,
+        resendInvite,
+        expireInvite,
+        refetchInvites: fetchInvites,
     };
-
-    const resendInvite = (id: number) => {
-    const now = new Date();
-    const formattedToday = now.toISOString().split('T')[0];
-
-    const expiryDate = new Date();
-    expiryDate.setDate(now.getDate() + 7);
-    const formattedExpiry = expiryDate.toISOString().split('T')[0];
-
-    setInvites(prev => prev.map(inv => 
-        inv.id === id ? { 
-            ...inv, 
-            status: 'PENDING' as const,
-            createdAt: formattedToday,   
-            expiresAt: formattedExpiry,  // 현재 기준에서 7일 후로
-            errorMsg: undefined  
-        } : inv
-    ));
-    };
-
-    return { invites, isLoading, cancelInvite, resendInvite };
 }

@@ -8,10 +8,10 @@ import {
     updateSiteApi,
     activateSiteApi,
     deactivateSiteApi,
-    createInviteApi,
-    getInvitesApi,
 } from '@/api/endpoints/site';
-import type { SiteResponse, InviteResponse } from '@/api/endpoints/site';
+import { createInviteApi, getInvitesApi } from '@/api/endpoints/invite';
+import type { SiteResponse } from '@/api/endpoints/site';
+import type { InviteResponse } from '@/api/endpoints/invite';
 
 /**
  * 관광지 필터 상태
