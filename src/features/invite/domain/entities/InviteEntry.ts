@@ -1,4 +1,4 @@
-export type InviteStatus = 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED';
+export type InviteStatus = 'PENDING' | 'USED' | 'EXPIRED';
 
 export interface Invite {
     inviteId: number;

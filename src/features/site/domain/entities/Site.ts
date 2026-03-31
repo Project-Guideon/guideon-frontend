@@ -25,7 +25,7 @@ export interface UpdateSiteRequest {
 }
 
 /** 초대 상태 */
-export type InviteStatus = 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED';
+export type InviteStatus = 'PENDING' | 'USED' | 'EXPIRED';
 
 /** 관광지에 배정된 운영자 초대 정보 */
 export interface SiteInvite {

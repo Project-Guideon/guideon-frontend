@@ -14,9 +14,8 @@ interface InviteTableProps {
 
 const STATUS_MAP: Record<string, { label: string; className: string }> = {
     PENDING: { label: '대기 중', className: 'bg-amber-50 text-amber-600 border-amber-100' },
-    ACCEPTED: { label: '수락됨', className: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+    USED: { label: '수락됨', className: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
     EXPIRED: { label: '만료됨', className: 'bg-slate-50 text-slate-400 border-slate-200' },
-    REVOKED: { label: '철회됨', className: 'bg-red-50 text-red-500 border-red-100' },
 };
 
 const DEFAULT_STATUS = { label: '알 수 없음', className: 'bg-slate-50 text-slate-400 border-slate-200' };

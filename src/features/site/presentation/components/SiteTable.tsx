@@ -29,7 +29,7 @@ function formatDate(isoString: string): string {
  * 운영자 상태 뱃지 렌더링
  */
 function OperatorBadges({ invites }: { invites: SiteInvite[] }) {
-    const accepted = invites.filter((inv) => inv.status === 'ACCEPTED');
+    const accepted = invites.filter((inv) => inv.status === 'USED');
     const pending = invites.filter((inv) => inv.status === 'PENDING');
 
     if (accepted.length === 0 && pending.length === 0) {

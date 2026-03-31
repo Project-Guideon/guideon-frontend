@@ -12,7 +12,7 @@ export interface InviteResponse {
     site_name: string;
     email: string;
     role: string;
-    status: 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED';
+    status: 'PENDING' | 'USED' | 'EXPIRED';
     expires_at: string;
     created_at: string;
     token?: string;

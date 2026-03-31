@@ -9,9 +9,8 @@ import type { InviteStatus } from '../../domain/entities/InviteEntry';
 const STATUS_OPTIONS: { value: InviteStatus | 'ALL'; label: string }[] = [
     { value: 'ALL', label: '전체' },
     { value: 'PENDING', label: '대기 중' },
-    { value: 'ACCEPTED', label: '수락됨' },
+    { value: 'USED', label: '수락됨' },
     { value: 'EXPIRED', label: '만료됨' },
-    { value: 'REVOKED', label: '철회됨' },
 ];
 
 export function InviteListView() {
