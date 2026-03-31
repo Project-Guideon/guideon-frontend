@@ -26,8 +26,8 @@ function toInvite(response: InviteResponse): Invite {
 interface UseInvitesReturn {
     invites: Invite[];
     isLoading: boolean;
-    /** 현재 mutation 진행 중인 초대 ID (null이면 진행 중 없음) */
-    mutatingInviteId: number | null;
+    /** 현재 mutation 진행 중인 초대 ID 목록 */
+    mutatingInviteIds: Set<number>;
     error: ApiError | null;
     searchTerm: string;
     setSearchTerm: (term: string) => void;
@@ -44,14 +44,29 @@ interface UseInvitesReturn {
  *
  * - PLATFORM_ADMIN 전용
  * - 클라이언트 사이드 검색/필터링 (서버 페이지네이션 미지원)
+ * - 동시 mutation 지원 (Set 기반 per-invite 추적)
  */
 export function useInvites(): UseInvitesReturn {
     const [invites, setInvites] = useState<Invite[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [mutatingInviteId, setMutatingInviteId] = useState<number | null>(null);
+    const [mutatingInviteIds, setMutatingInviteIds] = useState<Set<number>>(new Set());
     const [error, setError] = useState<ApiError | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<InviteStatus | 'ALL'>('ALL');
+
+    /** mutation 시작: Set에 inviteId 추가 */
+    const addMutating = useCallback((inviteId: number) => {
+        setMutatingInviteIds((prev) => new Set(prev).add(inviteId));
+    }, []);
+
+    /** mutation 종료: Set에서 inviteId 제거 */
+    const removeMutating = useCallback((inviteId: number) => {
+        setMutatingInviteIds((prev) => {
+            const next = new Set(prev);
+            next.delete(inviteId);
+            return next;
+        });
+    }, []);
 
     /** 초대 목록 조회 */
     const fetchInvites = useCallback(async () => {
@@ -97,7 +112,7 @@ export function useInvites(): UseInvitesReturn {
 
     /** 초대 재발송 (PENDING 상태만 가능) */
     const resendInvite = useCallback(async (inviteId: number) => {
-        setMutatingInviteId(inviteId);
+        addMutating(inviteId);
         setError(null);
 
         try {
@@ -118,20 +133,29 @@ export function useInvites(): UseInvitesReturn {
         } catch (err) {
             setError(extractApiError(err));
         } finally {
-            setMutatingInviteId(null);
+            removeMutating(inviteId);
         }
-    }, []);
+    }, [addMutating, removeMutating]);
 
     /** 초대 만료 처리 (PENDING 상태만 가능) */
     const expireInvite = useCallback(async (inviteId: number) => {
-        setMutatingInviteId(inviteId);
+        addMutating(inviteId);
         setError(null);
 
         try {
             const response = await expireInviteApi(inviteId);
 
             if (response.success) {
-                await fetchInvites();
+                /** 즉시 로컬 상태 반영 (낙관적 업데이트) */
+                setInvites((prev) =>
+                    prev.map((invite) =>
+                        invite.inviteId === inviteId
+                            ? { ...invite, status: 'EXPIRED' as InviteStatus }
+                            : invite,
+                    ),
+                );
+                /** 서버와 전체 동기화 (실패해도 로컬 상태는 이미 반영) */
+                await fetchInvites().catch(() => { /* 로컬 상태로 유지 */ });
             } else {
                 setError({
                     code: response.error?.code ?? 'INTERNAL_ERROR',
@@ -141,14 +165,14 @@ export function useInvites(): UseInvitesReturn {
         } catch (err) {
             setError(extractApiError(err));
         } finally {
-            setMutatingInviteId(null);
+            removeMutating(inviteId);
         }
-    }, [fetchInvites]);
+    }, [addMutating, removeMutating, fetchInvites]);
 
     return {
         invites,
         isLoading,
-        mutatingInviteId,
+        mutatingInviteIds,
         error,
         searchTerm,
         setSearchTerm,

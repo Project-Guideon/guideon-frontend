@@ -7,8 +7,8 @@ import type { Invite } from '@/features/invite/domain/entities/InviteEntry';
 interface InviteTableProps {
     invites: Invite[];
     isLoading: boolean;
-    /** 현재 mutation 진행 중인 초대 ID (null이면 진행 중 없음) */
-    mutatingInviteId: number | null;
+    /** 현재 mutation 진행 중인 초대 ID 목록 */
+    mutatingInviteIds: Set<number>;
     onExpire: (inviteId: number) => Promise<void>;
     onResend: (inviteId: number) => Promise<void>;
 }
@@ -23,10 +23,16 @@ const DEFAULT_STATUS = { label: '알 수 없음', className: 'bg-slate-50 text-s
 
 function formatDate(dateString: string): string {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    return date.toLocaleString('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
 }
 
-export function InviteTable({ invites, isLoading, mutatingInviteId, onExpire, onResend }: InviteTableProps) {
+export function InviteTable({ invites, isLoading, mutatingInviteIds, onExpire, onResend }: InviteTableProps) {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center py-16">
@@ -62,7 +68,7 @@ export function InviteTable({ invites, isLoading, mutatingInviteId, onExpire, on
                     <AnimatePresence mode="popLayout">
                         {invites.map((invite) => {
                             const statusInfo = STATUS_MAP[invite.status] ?? DEFAULT_STATUS;
-                            const isThisMutating = mutatingInviteId === invite.inviteId;
+                            const isThisMutating = mutatingInviteIds.has(invite.inviteId);
                             return (
                                 <motion.tr
                                     key={invite.inviteId}
