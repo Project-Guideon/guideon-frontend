@@ -13,21 +13,6 @@ export interface SiteResponse {
 }
 
 /**
- * Invite 응답 타입
- */
-export interface InviteResponse {
-    invite_id: number;
-    site_id: number;
-    site_name: string;
-    email: string;
-    role: string;
-    status: 'PENDING' | 'ACCEPTED' | 'EXPIRED';
-    expires_at: string;
-    created_at: string;
-    token?: string;
-}
-
-/**
  * Site API Endpoints
  *
  * GET    /admin/sites                       - 관광지 목록 (PLATFORM_ADMIN)
@@ -36,9 +21,6 @@ export interface InviteResponse {
  * PATCH  /admin/sites/{siteId}              - 관광지 수정
  * POST   /admin/sites/{siteId}/activate     - 관광지 활성화
  * POST   /admin/sites/{siteId}/deactivate   - 관광지 비활성화
- *
- * POST   /admin/invites                     - 운영자 초대
- * GET    /admin/invites                     - 초대 목록 조회
  */
 
 /**
@@ -104,23 +86,3 @@ export const deactivateSiteApi = async (siteId: number) => {
     return response.data;
 };
 
-/**
- * 운영자 초대 생성 (PLATFORM_ADMIN 전용)
- */
-export const createInviteApi = async (data: { site_id: number; email: string }) => {
-    const response = await apiClient.post<ApiResponse<InviteResponse>>(
-        '/admin/invites',
-        data,
-    );
-    return response.data;
-};
-
-/**
- * 초대 목록 조회 (PLATFORM_ADMIN 전용)
- */
-export const getInvitesApi = async () => {
-    const response = await apiClient.get<ApiResponse<InviteResponse[]>>(
-        '/admin/invites',
-    );
-    return response.data;
-};
