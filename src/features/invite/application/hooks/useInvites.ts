@@ -110,16 +110,13 @@ export function useInvites(): UseInvitesReturn {
                     ),
                 );
             } else {
-                const apiError: ApiError = {
+                setError({
                     code: response.error?.code ?? 'INTERNAL_ERROR',
                     message: response.error?.message ?? '초대 재발송에 실패했습니다.',
-                };
-                setError(apiError);
-                throw new Error(apiError.message);
+                });
             }
         } catch (err) {
             setError(extractApiError(err));
-            throw err;
         } finally {
             setMutatingInviteId(null);
         }
@@ -136,16 +133,13 @@ export function useInvites(): UseInvitesReturn {
             if (response.success) {
                 await fetchInvites();
             } else {
-                const apiError: ApiError = {
+                setError({
                     code: response.error?.code ?? 'INTERNAL_ERROR',
                     message: response.error?.message ?? '초대 철회에 실패했습니다.',
-                };
-                setError(apiError);
-                throw new Error(apiError.message);
+                });
             }
         } catch (err) {
             setError(extractApiError(err));
-            throw err;
         } finally {
             setMutatingInviteId(null);
         }

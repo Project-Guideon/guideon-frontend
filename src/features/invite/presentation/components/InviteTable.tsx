@@ -21,7 +21,7 @@ const STATUS_MAP: Record<string, { label: string; className: string }> = {
 
 const DEFAULT_STATUS = { label: '알 수 없음', className: 'bg-slate-50 text-slate-400 border-slate-200' };
 
-function formatDateTime(dateString: string): string {
+function formatDate(dateString: string): string {
     const date = new Date(dateString);
     return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
 }
@@ -86,10 +86,10 @@ export function InviteTable({ invites, isLoading, mutatingInviteId, onExpire, on
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-center text-xs text-slate-500 font-medium">
-                                        {formatDateTime(invite.createdAt)}
+                                        {formatDate(invite.createdAt)}
                                     </td>
                                     <td className="px-6 py-4 text-center text-xs text-slate-500 font-medium">
-                                        {formatDateTime(invite.expiresAt)}
+                                        {formatDate(invite.expiresAt)}
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex justify-end gap-1">
@@ -115,7 +115,11 @@ export function InviteTable({ invites, isLoading, mutatingInviteId, onExpire, on
                                                         title="초대 철회"
                                                         aria-label={`${invite.email} 초대 철회`}
                                                     >
-                                                        <HiOutlineXCircle className="w-5 h-5" />
+                                                        {isThisMutating ? (
+                                                            <div className="w-5 h-5 border-2 border-red-200 border-t-red-500 rounded-full animate-spin" />
+                                                        ) : (
+                                                            <HiOutlineXCircle className="w-5 h-5" />
+                                                        )}
                                                     </button>
                                                 </>
                                             )}
