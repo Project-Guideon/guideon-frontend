@@ -163,7 +163,7 @@ export function ZonePlaceMapView() {
     const [deviceDeleteTarget, setDeviceDeleteTarget] = useState<Device | null>(null);
     const [isDeviceTokenOpen, setIsDeviceTokenOpen] = useState(false);
     const [deviceTokenTarget, setDeviceTokenTarget] = useState<Device | null>(null);
-    const [deviceIssuedToken, setDeviceIssuedToken] = useState<string | null>(null);
+    const [deviceRotatedToken, setDeviceRotatedToken] = useState<string | null>(null);
 
     const isGlobalLoading = isZonesLoading || isPlacesLoading || isDevicesLoading;
     const isMutating = isZoneMutating || isPlaceMutating || isDeviceMutating;
@@ -209,7 +209,6 @@ export function ZonePlaceMapView() {
             } else {
                 setDeviceFormMode('create');
                 setDeviceEditTarget(null);
-                setDeviceIssuedToken(null);
                 setIsDeviceFormOpen(true);
             }
             setInteractionMode('idle');
@@ -254,7 +253,6 @@ export function ZonePlaceMapView() {
         setDeviceFormMode('edit');
         setDeviceEditTarget(device);
         setSelectedCoords({ lat: device.latitude, lng: device.longitude });
-        setDeviceIssuedToken(null);
         setIsDeviceFormOpen(true);
     }, []);
 
@@ -265,7 +263,7 @@ export function ZonePlaceMapView() {
 
     const handleRotateToken = useCallback((device: Device) => {
         setDeviceTokenTarget(device);
-        setDeviceIssuedToken(null);
+        setDeviceRotatedToken(null);
         setIsDeviceTokenOpen(true);
     }, []);
 
@@ -310,7 +308,7 @@ export function ZonePlaceMapView() {
         if (!deviceTokenTarget) return;
         try {
             const newToken = await rotateToken(deviceTokenTarget.deviceId);
-            setDeviceIssuedToken(newToken);
+            setDeviceRotatedToken(newToken);
             addToast('success', '토큰이 재발급되었습니다. 새 토큰을 안전하게 저장하세요.');
         } catch {
             addToast('error', '토큰 재발급에 실패했습니다.');
@@ -367,18 +365,17 @@ export function ZonePlaceMapView() {
     const handleSubmitDeviceForm = useCallback(async (request: CreateDeviceRequest | UpdateDeviceRequest) => {
         try {
             if (deviceFormMode === 'create') {
-                const result = await createDevice(request as CreateDeviceRequest);
-                setDeviceIssuedToken(result.plainToken);
-                addToast('success', '디바이스가 등록되었습니다. 토큰을 안전하게 저장하세요.');
+                await createDevice(request as CreateDeviceRequest);
+                addToast('success', '디바이스가 페어링되었습니다.');
             } else if (deviceEditTarget) {
                 await updateDevice(deviceEditTarget.deviceId, request as UpdateDeviceRequest);
                 addToast('success', '디바이스가 수정되었습니다.');
-                setPlacingPosition(null);
-                setIsDeviceFormOpen(false);
             }
         } catch {
-            addToast('error', deviceFormMode === 'create' ? '디바이스 등록에 실패했습니다.' : '디바이스 수정에 실패했습니다.');
+            addToast('error', deviceFormMode === 'create' ? '디바이스 페어링에 실패했습니다.' : '디바이스 수정에 실패했습니다.');
         }
+        setPlacingPosition(null);
+        setIsDeviceFormOpen(false);
     }, [deviceFormMode, deviceEditTarget, createDevice, updateDevice, addToast]);
 
     /** 구역 재계산 */
@@ -815,8 +812,7 @@ export function ZonePlaceMapView() {
                 editTarget={deviceEditTarget}
                 zones={zones}
                 selectedCoords={selectedCoords}
-                issuedToken={deviceIssuedToken}
-                onClose={() => { setIsDeviceFormOpen(false); setPlacingPosition(null); setDeviceIssuedToken(null); }}
+                onClose={() => { setIsDeviceFormOpen(false); setPlacingPosition(null); }}
                 onSubmit={handleSubmitDeviceForm}
             />
             <DeviceDeleteDialog
@@ -829,8 +825,8 @@ export function ZonePlaceMapView() {
                 key={`device-token-${deviceTokenTarget?.deviceId}-${isDeviceTokenOpen}`}
                 isOpen={isDeviceTokenOpen}
                 deviceId={deviceTokenTarget?.deviceId ?? ''}
-                newToken={deviceIssuedToken}
-                onClose={() => { setIsDeviceTokenOpen(false); setDeviceIssuedToken(null); }}
+                newToken={deviceRotatedToken}
+                onClose={() => { setIsDeviceTokenOpen(false); setDeviceRotatedToken(null); }}
                 onConfirmRotate={handleConfirmRotateToken}
             />
         </div>

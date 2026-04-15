@@ -51,17 +51,19 @@ function toDevice(raw: RawDeviceResponse): Device {
 }
 
 /**
- * 페어링 등록 요청 시 snake_case 변환
+ * 페어링 등록 요청 바디 변환
+ *
+ * API_SPEC 8.6 기준 camelCase 사용
  */
 function toPairDeviceBody(request: CreateDeviceRequest) {
     return {
-        pairing_code: request.pairingCode,
-        device_id: request.deviceId,
-        location_name: request.locationName,
+        pairingCode: request.pairingCode,
+        deviceId: request.deviceId,
+        locationName: request.locationName,
         latitude: request.latitude,
         longitude: request.longitude,
-        zone_source: request.zoneSource,
-        zone_id: request.zoneId,
+        zoneSource: request.zoneSource,
+        zoneId: request.zoneId,
     };
 }
 
