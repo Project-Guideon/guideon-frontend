@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import type { Device, CreateDeviceRequest, UpdateDeviceRequest, DeviceTokenResponse } from '@/features/device/domain/entities/Device';
+import type { Device, CreateDeviceRequest, UpdateDeviceRequest } from '@/features/device/domain/entities/Device';
 import { useSiteContext } from '@/features/auth/application/hooks/useAuth';
-import { getDevicesApi, createDeviceApi, updateDeviceApi, deleteDeviceApi, rotateDeviceTokenApi } from '@/api/endpoints/device';
+import { getDevicesApi, pairDeviceApi, updateDeviceApi, deleteDeviceApi, rotateDeviceTokenApi } from '@/api/endpoints/device';
 import type { ApiError } from '@/shared/types/api';
 import { extractApiError } from '@/shared/utils/api';
 
@@ -13,7 +13,7 @@ interface UseDevicesReturn {
     selectedDevice: Device | null;
     selectedDeviceId: string | null;
     setSelectedDeviceId: (id: string | null) => void;
-    createDevice: (request: CreateDeviceRequest) => Promise<DeviceTokenResponse>;
+    createDevice: (request: CreateDeviceRequest) => Promise<Device>;
     updateDevice: (deviceId: string, request: UpdateDeviceRequest) => Promise<Device>;
     deleteDevice: (deviceId: string) => Promise<void>;
     rotateToken: (deviceId: string) => Promise<string>;
@@ -27,8 +27,8 @@ interface UseDevicesReturn {
  * Device CRUD + 토큰 재발급 훅 (API 연동)
  *
  * - 현재 선택된 siteId 기준으로 Device 목록을 가져옵니다.
- * - 생성/수정/삭제/토큰재발급 후 자동으로 목록을 갱신합니다.
- * - plainToken은 등록/재발급 시 1회만 노출됩니다.
+ * - 페어링 등록/수정/삭제/토큰재발급 후 자동으로 목록을 갱신합니다.
+ * - 페어링 등록 시 plainToken은 키오스크가 직접 수령하므로 반환되지 않습니다.
  */
 export function useDevices(): UseDevicesReturn {
     const [devices, setDevices] = useState<Device[]>([]);
@@ -82,8 +82,8 @@ export function useDevices(): UseDevicesReturn {
         [devices, selectedDeviceId],
     );
 
-    /** 디바이스 등록 (plainToken 1회 노출) */
-    const createDevice = useCallback(async (request: CreateDeviceRequest): Promise<DeviceTokenResponse> => {
+    /** 페어링 코드로 디바이스 등록 (plainToken은 키오스크가 직접 수령) */
+    const createDevice = useCallback(async (request: CreateDeviceRequest): Promise<Device> => {
         if (currentSiteId === null) {
             throw new Error('현재 사이트가 선택되지 않았습니다.');
         }
@@ -92,7 +92,7 @@ export function useDevices(): UseDevicesReturn {
         setError(null);
 
         try {
-            const response = await createDeviceApi(currentSiteId, request);
+            const response = await pairDeviceApi(currentSiteId, request);
             if (response.success) {
                 await fetchDevices();
                 return response.data;
