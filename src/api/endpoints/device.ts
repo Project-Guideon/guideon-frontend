@@ -1,6 +1,6 @@
 import { apiClient } from '../client';
 import type { ApiResponse, PaginatedResponse } from '@/shared/types/api';
-import type { Device, ZoneSource, CreateDeviceRequest, UpdateDeviceRequest, DeviceTokenResponse } from '@/features/device/domain/entities/Device';
+import type { Device, ZoneSource, CreateDeviceRequest, UpdateDeviceRequest, RotateTokenResponse } from '@/features/device/domain/entities/Device';
 
 /**
  * 백엔드 Device API 원본 응답 타입 (snake_case 혼재)
@@ -51,17 +51,19 @@ function toDevice(raw: RawDeviceResponse): Device {
 }
 
 /**
- * Device API 요청 시 snake_case 변환
+ * 페어링 등록 요청 바디 변환
+ *
+ * API_SPEC 8.6 기준 camelCase 사용
  */
-function toDeviceCreateBody(request: CreateDeviceRequest) {
+function toPairDeviceBody(request: CreateDeviceRequest) {
     return {
-        device_id: request.deviceId,
-        location_name: request.locationName,
+        pairingCode: request.pairingCode,
+        deviceId: request.deviceId,
+        locationName: request.locationName,
         latitude: request.latitude,
         longitude: request.longitude,
-        zone_source: request.zoneSource,
-        zone_id: request.zoneId,
-        is_active: request.isActive,
+        zoneSource: request.zoneSource,
+        zoneId: request.zoneId,
     };
 }
 
@@ -79,7 +81,7 @@ function toDeviceUpdateBody(request: UpdateDeviceRequest) {
 /**
  * Device API Endpoints
  *
- * POST   /admin/sites/{siteId}/devices                              - 디바이스 등록
+ * POST   /admin/sites/{siteId}/devices/pair                         - 페어링 코드로 디바이스 등록
  * GET    /admin/sites/{siteId}/devices                              - 디바이스 목록
  * GET    /admin/sites/{siteId}/devices/{deviceId}                   - 디바이스 상세
  * PATCH  /admin/sites/{siteId}/devices/{deviceId}                   - 디바이스 수정
@@ -88,20 +90,19 @@ function toDeviceUpdateBody(request: UpdateDeviceRequest) {
  */
 
 /**
- * 디바이스 등록 (plainToken은 1회만 노출)
+ * 페어링 코드로 디바이스 등록
+ *
+ * 키오스크 화면의 6자리 코드로 디바이스를 매칭합니다.
+ * plainToken은 키오스크가 직접 수령하므로 응답에 포함되지 않습니다.
  */
-export const createDeviceApi = async (siteId: number, request: CreateDeviceRequest) => {
-    const response = await apiClient.post<ApiResponse<{ plainToken?: string; plain_token?: string; device: RawDeviceResponse }>>(
-        `/admin/sites/${siteId}/devices`,
-        toDeviceCreateBody(request),
+export const pairDeviceApi = async (siteId: number, request: CreateDeviceRequest) => {
+    const response = await apiClient.post<ApiResponse<RawDeviceResponse>>(
+        `/admin/sites/${siteId}/devices/pair`,
+        toPairDeviceBody(request),
     );
-    const raw = response.data.data;
     return {
         ...response.data,
-        data: {
-            plainToken: raw.plainToken ?? raw.plain_token ?? '',
-            device: toDevice(raw.device),
-        } as DeviceTokenResponse,
+        data: response.data.success ? toDevice(response.data.data) : null,
     };
 };
 
@@ -182,6 +183,7 @@ export const rotateDeviceTokenApi = async (siteId: number, deviceId: string) => 
         data: {
             plainToken: raw.plainToken ?? raw.plain_token ?? '',
             device: toDevice(raw.device),
-        } as DeviceTokenResponse,
+        } as RotateTokenResponse,
     };
 };
+
