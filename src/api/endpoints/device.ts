@@ -102,7 +102,7 @@ export const pairDeviceApi = async (siteId: number, request: CreateDeviceRequest
     );
     return {
         ...response.data,
-        data: toDevice(response.data.data),
+        data: response.data.success ? toDevice(response.data.data) : null,
     };
 };
 

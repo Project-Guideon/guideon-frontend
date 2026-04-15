@@ -93,7 +93,7 @@ export function useDevices(): UseDevicesReturn {
 
         try {
             const response = await pairDeviceApi(currentSiteId, request);
-            if (response.success) {
+            if (response.success && response.data) {
                 await fetchDevices();
                 return response.data;
             }

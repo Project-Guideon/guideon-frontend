@@ -371,11 +371,11 @@ export function ZonePlaceMapView() {
                 await updateDevice(deviceEditTarget.deviceId, request as UpdateDeviceRequest);
                 addToast('success', '디바이스가 수정되었습니다.');
             }
+            setPlacingPosition(null);
+            setIsDeviceFormOpen(false);
         } catch {
             addToast('error', deviceFormMode === 'create' ? '디바이스 페어링에 실패했습니다.' : '디바이스 수정에 실패했습니다.');
         }
-        setPlacingPosition(null);
-        setIsDeviceFormOpen(false);
     }, [deviceFormMode, deviceEditTarget, createDevice, updateDevice, addToast]);
 
     /** 구역 재계산 */
