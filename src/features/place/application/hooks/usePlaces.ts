@@ -28,6 +28,89 @@ interface UsePlacesReturn {
     error: ApiError | null;
 }
 
+const MOCK_PLACES: Place[] = [
+    {
+        placeId: 101,
+        siteId: 1,
+        zoneId: 1,
+        zoneSource: "MANUAL",
+        name: "광화문 매표소",
+        nameJson: null,
+        category: "TICKET",
+        latitude: 37.5760,
+        longitude: 126.9768,
+        description: "관람권 구입 및 검표소",
+        imageUrl: null,
+        isActive: true,
+        createdAt: "2024-01-01",
+        updatedAt: "2024-01-01"
+    },
+    {
+        placeId: 102,
+        siteId: 1,
+        zoneId: 2,
+        zoneSource: "AUTO",
+        name: "경회루",
+        nameJson: null,
+        category: "ATTRACTION",
+        latitude: 37.5798,
+        longitude: 126.9760,
+        description: "국보 제224호",
+        imageUrl: null,
+        isActive: true,
+        createdAt: "2024-01-01",
+        updatedAt: "2024-01-01"
+    },
+    {
+        placeId: 103,
+        siteId: 1,
+        zoneId: 1,
+        zoneSource: "MANUAL",
+        name: "근정전 서측 화장실",
+        nameJson: null,
+        category: "TOILET",
+        latitude: 37.5785,
+        longitude: 126.9765,
+        description: "공중 화장실",
+        imageUrl: null,
+        isActive: true,
+        createdAt: "2024-01-01",
+        updatedAt: "2024-01-01"
+    },
+    {
+        placeId: 104,
+        siteId: 1,
+        zoneId: 3,
+        zoneSource: "MANUAL",
+        name: "광화문 안내소",
+        nameJson: null,
+        category: "INFO",
+        latitude: 37.5762,
+        longitude: 126.9768,
+        description: "정문 입구 안내소입니다.",
+        imageUrl: null,
+        isActive: true,
+        createdAt: "2024-01-01",
+        updatedAt: "2024-01-01"
+    },
+    {
+        placeId: 105,
+        siteId: 1,
+        zoneId: 5,
+        zoneSource: "AUTO",
+        name: "교태전 화장실",
+        nameJson: null,
+        category: "TOILET",
+        latitude: 37.5808,
+        longitude: 126.9772,
+        description: "교태전 인근 편의시설",
+        imageUrl: null,
+        isActive: true,
+        createdAt: "2024-01-01",
+        updatedAt: "2024-01-01"
+    }
+];
+
 /**
  * Place CRUD 훅 (API 연동)
  *
@@ -172,7 +255,7 @@ export function usePlaces(): UsePlacesReturn {
     }, [currentSiteId, fetchPlaces]);
 
     return {
-        places,
+        places:MOCK_PLACES,
         filteredPlaces,
         selectedPlace,
         selectedPlaceId,

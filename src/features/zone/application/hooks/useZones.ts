@@ -8,6 +8,153 @@ import type { RecalcResponse } from '@/api/endpoints/zone';
 import type { ApiError } from '@/shared/types/api';
 import { extractApiError } from '@/shared/utils/api';
 
+const MOCK_ZONES: Zone[] = [
+    {
+        zoneId: 1,
+        siteId: 1,
+        name: "근정전 영역",
+        code: "Z-001",
+        zoneType: "INNER",
+        level: 1,
+        parentZoneId: null,
+        areaGeojson: {
+            type: "Polygon",
+            coordinates: [[
+                [126.9763, 37.5783], [126.9778, 37.5783], 
+                [126.9778, 37.5796], [126.9763, 37.5796], [126.9763, 37.5783]
+            ]]
+        },
+        createdAt: "2024-01-01",
+        updatedAt: "2024-01-01"
+    },
+    {
+        zoneId: 2,
+        siteId: 1,
+        name: "경회루 영역",
+        code: "Z-002",
+        zoneType: "INNER",
+        level: 1,
+        parentZoneId: null,
+        areaGeojson: {
+            type: "Polygon",
+            coordinates: [[
+                [126.9750, 37.5794], [126.9762, 37.5794], 
+                [126.9762, 37.5805], [126.9750, 37.5805], [126.9750, 37.5794]
+            ]]
+        },
+        createdAt: "2024-01-01",
+        updatedAt: "2024-01-01"
+    },
+    {
+        zoneId: 3,
+        siteId: 1,
+        name: "광화문 및 협생문",
+        code: "Z-GATE",
+        zoneType: "INNER",
+        level: 1,
+        parentZoneId: null,
+        areaGeojson: {
+            type: "Polygon",
+            coordinates: [[
+                [126.9760, 37.5758], [126.9776, 37.5758], 
+                [126.9776, 37.5765], [126.9760, 37.5765], [126.9760, 37.5758]
+            ]]
+        },
+        createdAt: "2024-01-01",
+        updatedAt: "2024-01-01"
+    },
+    {
+        zoneId: 4,
+        siteId: 1,
+        name: "사정전 영역",
+        code: "Z-OFFICE",
+        zoneType: "SUB", 
+        level: 2,
+        parentZoneId: 1,
+        areaGeojson: {
+            type: "Polygon",
+            coordinates: [[
+                [126.9765, 37.5797], [126.9775, 37.5797], 
+                [126.9775, 37.5803], [126.9765, 37.5803], [126.9765, 37.5797]
+            ]]
+        },
+        createdAt: "2024-01-01",
+        updatedAt: "2024-01-01"
+    },
+    {
+        zoneId: 5,
+        siteId: 1,
+        name: "교태전(침전)",
+        code: "Z-LIVING",
+        zoneType: "INNER",
+        level: 1,
+        parentZoneId: null,
+        areaGeojson: {
+            type: "Polygon",
+            coordinates: [[
+                [126.9765, 37.5805], [126.9775, 37.5805], 
+                [126.9775, 37.5812], [126.9765, 37.5812], [126.9765, 37.5805]
+            ]]
+        },
+        createdAt: "2024-01-01",
+        updatedAt: "2024-01-01"
+    },
+    {
+        zoneId: 3,
+        siteId: 1,
+        name: "광화문 및 협생문",
+        code: "Z-GATE",
+        zoneType: "INNER",
+        level: 1,
+        parentZoneId: null,
+        areaGeojson: {
+            type: "Polygon",
+            coordinates: [[
+                [126.9760, 37.5758], [126.9776, 37.5758], 
+                [126.9776, 37.5765], [126.9760, 37.5765], [126.9760, 37.5758]
+            ]]
+        },
+        createdAt: "2024-01-01",
+        updatedAt: "2024-01-01"
+    },
+    {
+        zoneId: 4,
+        siteId: 1,
+        name: "사정전 영역",
+        code: "Z-OFFICE",
+        zoneType: "SUB",
+        level: 2,
+        parentZoneId: 1,
+        areaGeojson: {
+            type: "Polygon",
+            coordinates: [[
+                [126.9765, 37.5797], [126.9775, 37.5797], 
+                [126.9775, 37.5803], [126.9765, 37.5803], [126.9765, 37.5797]
+            ]]
+        },
+        createdAt: "2024-01-01",
+        updatedAt: "2024-01-01"
+    },
+    {
+        zoneId: 5,
+        siteId: 1,
+        name: "교태전(침전)",
+        code: "Z-LIVING",
+        zoneType: "INNER",
+        level: 1,
+        parentZoneId: null,
+        areaGeojson: {
+            type: "Polygon",
+            coordinates: [[
+                [126.9765, 37.5805], [126.9775, 37.5805], 
+                [126.9775, 37.5812], [126.9765, 37.5812], [126.9765, 37.5805]
+            ]]
+        },
+        createdAt: "2024-01-01",
+        updatedAt: "2024-01-01"
+    }
+];
+
 interface UseZonesReturn {
     zones: Zone[];
     innerZones: Zone[];
@@ -186,7 +333,7 @@ export function useZones(): UseZonesReturn {
     }, [currentSiteId]);
 
     return {
-        zones,
+        zones:MOCK_ZONES,
         innerZones,
         getSubZones,
         selectedZone,
