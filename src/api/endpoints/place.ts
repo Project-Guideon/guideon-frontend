@@ -200,6 +200,7 @@ export const uploadPlaceImageApi = async (siteId: number, file: File) => {
     const response = await apiClient.post<ApiResponse<PlaceImageResponse & { image_url?: string }>>(
         `/admin/sites/${siteId}/places/image`,
         formData,
+        { timeout: 30000 },
     );
     const raw = response.data.data;
     return {

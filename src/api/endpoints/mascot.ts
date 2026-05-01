@@ -61,6 +61,7 @@ export const generateMascotModelApi = async (siteId: number, imageFile: File) =>
     const response = await apiClient.post<ApiResponse<MascotGenerationStart>>(
         `/admin/sites/${siteId}/mascot/generate`,
         formData,
+        { timeout: 30000 },
     );
     return response.data;
 };
