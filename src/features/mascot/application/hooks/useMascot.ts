@@ -11,6 +11,7 @@ import {
     getMascotApi,
     createMascotApi,
     updateMascotApi,
+    uploadMascotImageApi,
     generateMascotModelApi,
     getMascotGenerationStatusApi,
     getMascotGenerationLatestApi,
@@ -171,12 +172,22 @@ export function useMascot(siteId: number | null): UseMascotReturn {
         setError(null);
 
         try {
-            const response = await generateMascotModelApi(siteId, imageFile);
+            // 1단계: 이미지 선업로드 (multipart)
+            const uploadResponse = await uploadMascotImageApi(siteId, imageFile);
+            const imageUrl = uploadResponse.data.imageUrl;
+
+            if (!imageUrl) {
+                setError('이미지 업로드에 실패했습니다. 반환된 URL이 없습니다.');
+                return false;
+            }
+
+            // 2단계: 3D 생성 시작 (JSON)
+            const response = await generateMascotModelApi(siteId, imageUrl);
             const generationId = response.data.generationId;
 
             setGeneration({
                 generationId,
-                sourceImageUrl: '',
+                sourceImageUrl: imageUrl,
                 modelTaskId: response.data.modelTaskId,
                 modelStatus: 'PROCESSING',
                 rigTaskId: null,
