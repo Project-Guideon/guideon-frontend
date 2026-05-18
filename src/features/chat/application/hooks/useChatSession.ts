@@ -53,6 +53,7 @@ export function useChatSession(selectedDevice: Device | null): UseChatSessionRet
     const sessionIdRef = useRef<string | null>(null);
     const currentSiteIdRef = useRef<number | null>(currentSiteId);
     const selectedDeviceRef = useRef<Device | null>(selectedDevice);
+    const sendingRef = useRef(false);
 
     sessionIdRef.current = sessionId;
     currentSiteIdRef.current = currentSiteId;
@@ -79,13 +80,13 @@ export function useChatSession(selectedDevice: Device | null): UseChatSessionRet
         setError(null);
     }, [endSession]);
 
-    // 사이트 변경 시 세션 자동 리셋
+    // 사이트 또는 디바이스 변경 시 세션 자동 리셋
     useEffect(() => {
         if (sessionIdRef.current) {
             resetSession();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentSiteId]);
+    }, [currentSiteId, selectedDevice?.deviceId]);
 
     // 언마운트 시 세션 종료
     useEffect(() => {
@@ -101,14 +102,17 @@ export function useChatSession(selectedDevice: Device | null): UseChatSessionRet
 
     const sendMessage = useCallback(
         async (text: string) => {
-            if (!text.trim() || isPending) return;
+            if (!text.trim() || sendingRef.current) return;
             if (currentSiteId === null || !selectedDevice) return;
 
+            sendingRef.current = true;
             setError(null);
             setIsPending(true);
 
             const userMessage = buildChatMessage('user', text);
             setMessages((previous) => [...previous, userMessage]);
+
+            let capturedSessionId: string | null = null;
 
             try {
                 let activeSessionId = sessionIdRef.current;
@@ -123,7 +127,10 @@ export function useChatSession(selectedDevice: Device | null): UseChatSessionRet
                     }
                     activeSessionId = sessionResponse.data.sessionId;
                     setSessionId(activeSessionId);
+                    sessionIdRef.current = activeSessionId;
                 }
+
+                capturedSessionId = activeSessionId;
 
                 const messageResponse = await sendChatMessageApi(activeSessionId, {
                     siteId: currentSiteId,
@@ -138,6 +145,9 @@ export function useChatSession(selectedDevice: Device | null): UseChatSessionRet
                     throw new Error(messageResponse.error?.message ?? 'AI 응답 수신에 실패했습니다.');
                 }
 
+                // 응답 대기 중 세션이 reset/변경됐으면 stale response 무시
+                if (sessionIdRef.current !== capturedSessionId) return;
+
                 const assistantMessage = buildChatMessage(
                     'assistant',
                     messageResponse.data.answer,
@@ -145,6 +155,7 @@ export function useChatSession(selectedDevice: Device | null): UseChatSessionRet
                 );
                 setMessages((previous) => [...previous, assistantMessage]);
             } catch (err) {
+                if (capturedSessionId !== null && sessionIdRef.current !== capturedSessionId) return;
                 const apiError = extractApiError(err);
                 setError(apiError);
                 const errorMessage = buildChatMessage(
@@ -153,10 +164,11 @@ export function useChatSession(selectedDevice: Device | null): UseChatSessionRet
                 );
                 setMessages((previous) => [...previous, errorMessage]);
             } finally {
+                sendingRef.current = false;
                 setIsPending(false);
             }
         },
-        [isPending, currentSiteId, selectedDevice],
+        [currentSiteId, selectedDevice],
     );
 
     return { messages, isPending, error, sendMessage, resetSession };

@@ -36,8 +36,12 @@ interface RawSendChatMessageResponse {
  * 백엔드 응답을 프론트 엔티티로 정규화
  */
 function toChatMessageResponse(raw: RawSendChatMessageResponse): SendChatMessageResponse {
+    const sessionId = raw.sessionId ?? raw.session_id;
+    if (!sessionId) {
+        throw new Error('Invalid chat response: missing sessionId');
+    }
     return {
-        sessionId: raw.sessionId ?? raw.session_id ?? '',
+        sessionId,
         answer: raw.answer,
         emotion: raw.emotion ?? null,
         language: raw.language ?? null,
@@ -71,7 +75,7 @@ export const createChatSessionApi = async (
     return response.data;
 };
 
-/** 채팅 메시지 전송 (AI 응답까지 최대 60초 소요) */
+/** 채팅 메시지 전송 (AI 응답까지 최대 90초 소요) */
 export const sendChatMessageApi = async (
     sessionId: string,
     body: SendChatMessageRequest,

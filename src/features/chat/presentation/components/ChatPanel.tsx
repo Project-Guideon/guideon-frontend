@@ -33,11 +33,17 @@ export function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
         await resetSession();
     };
 
-    // 디바이스 변경 시 세션 리셋
-    const handleSelectDevice = async (deviceId: string) => {
+    // 디바이스 변경 — reset은 useChatSession deps 변경으로 자동 처리
+    const handleSelectDevice = (deviceId: string) => {
         setSelectedDeviceId(deviceId);
-        await resetSession();
     };
+
+    // 패널 닫힐 때 세션 종료 (FAB 토글·X 버튼 모두 동일 경로)
+    useEffect(() => {
+        if (!isOpen) {
+            resetSession();
+        }
+    }, [isOpen, resetSession]);
 
     // 새 메시지 도착 시 스크롤 하단 이동
     useEffect(() => {
@@ -59,8 +65,11 @@ export function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
     };
 
     const handleCloseChat = async () => {
-        await resetSession();
-        onClose();
+        try {
+            await resetSession();
+        } finally {
+            onClose();
+        }
     };
 
     const handleResetSession = async () => {
@@ -87,12 +96,14 @@ export function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
                                 <button
                                     onClick={handleResetSession}
                                     title="대화 초기화"
+                                    aria-label="대화 초기화"
                                     className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                                 >
                                     <HiOutlineArrowPath className="w-4 h-4" />
                                 </button>
                                 <button
                                     onClick={handleCloseChat}
+                                    aria-label="채팅 패널 닫기"
                                     className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                                 >
                                     <HiOutlineXMark className="w-4 h-4" />
@@ -164,6 +175,7 @@ export function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
                             <button
                                 onClick={handleSendMessage}
                                 disabled={!inputText.trim() || isPending || !isReady}
+                                aria-label="메시지 전송"
                                 className="w-9 h-9 rounded-xl bg-orange-500 text-white flex items-center justify-center shrink-0 hover:bg-orange-600 active:bg-orange-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             >
                                 <HiOutlinePaperAirplane className="w-4 h-4" />
