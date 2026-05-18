@@ -44,7 +44,8 @@ export type ErrorCode =
     | 'RATE_LIMITED'                // 429 과다 요청
     | 'DOC_UPLOAD_FAILED'           // 500 파일 업로드 실패
     | 'INTERNAL_ERROR'              // 500 서버 오류
-    | 'UPSTREAM_TIMEOUT';           // 503 외부 의존 장애
+    | 'UPSTREAM_TIMEOUT'            // 503 외부 의존 장애
+    | 'FEIGN_ERROR';                // 500 Core/FastAPI 타임아웃
 
 /**
  * 페이지네이션 응답 (v4.0)
