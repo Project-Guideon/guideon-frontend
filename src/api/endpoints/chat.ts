@@ -65,7 +65,7 @@ export const createChatSessionApi = async (
     body: CreateChatSessionRequest,
 ): Promise<ApiResponse<CreateChatSessionResponse>> => {
     const response = await apiClient.post<ApiResponse<CreateChatSessionResponse>>(
-        '/api/v1/admin/chat/sessions',
+        '/admin/chat/sessions',
         body,
     );
     return response.data;
@@ -77,7 +77,7 @@ export const sendChatMessageApi = async (
     body: SendChatMessageRequest,
 ): Promise<ApiResponse<SendChatMessageResponse>> => {
     const response = await apiClient.post<ApiResponse<RawSendChatMessageResponse>>(
-        `/api/v1/admin/chat/sessions/${sessionId}/messages`,
+        `/admin/chat/sessions/${sessionId}/messages`,
         body,
         { timeout: 90000 },
     );
@@ -93,7 +93,7 @@ export const endChatSessionApi = async (
     body: EndChatSessionRequest,
 ): Promise<ApiResponse<null>> => {
     const response = await apiClient.post<ApiResponse<null>>(
-        `/api/v1/admin/chat/sessions/${sessionId}/end`,
+        `/admin/chat/sessions/${sessionId}/end`,
         body,
     );
     return response.data;
