@@ -3,6 +3,7 @@
 import { AuthGuard } from '@/features/auth/presentation/components/AuthGuard';
 import { AdminSidebarContainer } from '@/features/admin/presentation/components/AdminSidebarContainer';
 import { AdminHeader } from '@/shared/components/layout/AdminHeader';
+import { ChatWidget } from '@/features/chat/presentation/ChatWidget';
 
 export default function AdminLayout({
     children,
@@ -26,6 +27,7 @@ export default function AdminLayout({
                     </main>
                 </div>
             </div>
+            <ChatWidget />
         </AuthGuard>
     );
 }
