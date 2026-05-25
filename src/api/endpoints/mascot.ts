@@ -135,6 +135,7 @@ export const cloneMascotVoiceApi = async (
     const response = await apiClient.post<ApiResponse<MascotVoiceCloneResult>>(
         `/admin/sites/${siteId}/mascot/voice/clone`,
         formData,
+        { timeout: 60000 },
     );
     return response.data;
 };
