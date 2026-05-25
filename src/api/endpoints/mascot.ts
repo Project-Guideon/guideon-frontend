@@ -6,7 +6,9 @@ import type {
     UpdateMascotRequest,
     MascotGenerationStart,
     MascotGenerationStatus,
+    MascotVoiceCloneResult,
 } from '@/features/mascot/domain/entities/Mascot';
+import { VOICE_CLONE_DEFAULT_LANGUAGE } from '@/features/mascot/domain/entities/Mascot';
 
 /**
  * Mascot Image Upload 응답 타입
@@ -19,13 +21,14 @@ export interface MascotImageResponse {
 /**
  * Mascot API Endpoints (PLATFORM_ADMIN 전용)
  *
- * POST  /admin/sites/{siteId}/mascot                              - 생성
- * GET   /admin/sites/{siteId}/mascot                              - 조회
- * PATCH /admin/sites/{siteId}/mascot                              - 수정
- * POST  /admin/sites/{siteId}/mascot/image                        - 이미지 선업로드 (multipart)
- * POST  /admin/sites/{siteId}/mascot/generate                     - 3D 생성 시작 (JSON)
- * GET   /admin/sites/{siteId}/mascot/generate/{generationId}/status - 상태 폴링
- * GET   /admin/sites/{siteId}/mascot/generate/latest              - 최근 이력
+ * POST  /admin/sites/{siteId}/mascot                                    - 생성
+ * GET   /admin/sites/{siteId}/mascot                                    - 조회
+ * PATCH /admin/sites/{siteId}/mascot                                    - 수정
+ * POST  /admin/sites/{siteId}/mascot/image                              - 이미지 선업로드 (multipart)
+ * POST  /admin/sites/{siteId}/mascot/generate                           - 3D 생성 시작 (JSON)
+ * GET   /admin/sites/{siteId}/mascot/generate/{generationId}/status     - 상태 폴링
+ * GET   /admin/sites/{siteId}/mascot/generate/latest                    - 최근 이력
+ * POST  /admin/sites/{siteId}/mascot/voice/clone                        - Cartesia 음성 클로닝 (multipart)
  */
 
 /**
@@ -110,6 +113,29 @@ export const getMascotGenerationStatusApi = async (siteId: number, generationId:
 export const getMascotGenerationLatestApi = async (siteId: number) => {
     const response = await apiClient.get<ApiResponse<MascotGenerationStatus>>(
         `/admin/sites/${siteId}/mascot/generate/latest`,
+    );
+    return response.data;
+};
+
+/**
+ * Cartesia 음성 클로닝 (multipart/form-data)
+ * Content-Type 헤더는 Axios가 FormData를 감지해 자동 설정 — 직접 지정 금지
+ */
+export const cloneMascotVoiceApi = async (
+    siteId: number,
+    file: File,
+    name: string,
+    language: string = VOICE_CLONE_DEFAULT_LANGUAGE,
+): Promise<ApiResponse<MascotVoiceCloneResult>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('name', name);
+    formData.append('language', language);
+
+    const response = await apiClient.post<ApiResponse<MascotVoiceCloneResult>>(
+        `/admin/sites/${siteId}/mascot/voice/clone`,
+        formData,
+        { timeout: 60000 },
     );
     return response.data;
 };

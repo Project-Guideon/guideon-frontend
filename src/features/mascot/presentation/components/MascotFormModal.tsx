@@ -13,9 +13,9 @@ import type {
     CreateMascotRequest,
     UpdateMascotRequest,
 } from '@/features/mascot/domain/entities/Mascot';
-import { DEFAULT_ANIM_OPTIONS, TTS_VOICE_OPTIONS } from '@/features/mascot/domain/entities/Mascot';
+import { DEFAULT_ANIM_OPTIONS } from '@/features/mascot/domain/entities/Mascot';
 
-type FormTab = 'basic' | 'prompt' | 'tts';
+type FormTab = 'basic' | 'prompt';
 
 interface MascotFormModalProps {
     isOpen: boolean;
@@ -31,7 +31,6 @@ interface MascotFormModalProps {
 const TABS: { id: FormTab; label: string }[] = [
     { id: 'basic', label: '기본 정보' },
     { id: 'prompt', label: 'AI 프롬프트' },
-    { id: 'tts', label: 'TTS 음성' },
 ];
 
 /**
@@ -64,14 +63,8 @@ export function MascotFormModal({
     const [smalltalkStyle, setSmalltalkStyle] = useState('');
     const [answerStyle, setAnswerStyle] = useState('');
 
-    // TTS 음성
-    const [ttsVoiceId, setTtsVoiceId] = useState('ko-KR-Wavenet-A');
-    const [ttsSpeed, setTtsSpeed] = useState('1.0');
-    const [ttsPitch, setTtsPitch] = useState('0');
-
     // 드롭다운 상태
     const [isAnimDropdownOpen, setIsAnimDropdownOpen] = useState(false);
-    const [isVoiceDropdownOpen, setIsVoiceDropdownOpen] = useState(false);
 
     // 모달 열릴 때 초기화
     useEffect(() => {
@@ -88,9 +81,6 @@ export function MascotFormModal({
             setBasePersona(editTarget.promptConfig?.base_persona ?? '');
             setSmalltalkStyle(editTarget.promptConfig?.smalltalk_style ?? '');
             setAnswerStyle(editTarget.promptConfig?.answer_style ?? '');
-            setTtsVoiceId(editTarget.ttsVoiceId);
-            setTtsSpeed(String(editTarget.ttsVoiceJson?.speed ?? '1.0'));
-            setTtsPitch(String(editTarget.ttsVoiceJson?.pitch ?? '0'));
         } else {
             setName('');
             setModelId('');
@@ -101,9 +91,6 @@ export function MascotFormModal({
             setBasePersona('');
             setSmalltalkStyle('');
             setAnswerStyle('');
-            setTtsVoiceId('ko-KR-Wavenet-A');
-            setTtsSpeed('1.0');
-            setTtsPitch('0');
         }
     }, [isOpen, mode, editTarget, initialTab]);
 
@@ -125,15 +112,6 @@ export function MascotFormModal({
         return Object.keys(config).length > 0 ? config : undefined;
     };
 
-    const buildTtsVoiceJson = () => {
-        const speed = parseFloat(ttsSpeed);
-        const pitch = parseFloat(ttsPitch);
-        const json: Record<string, number> = {};
-        if (!isNaN(speed) && speed !== 1.0) json.speed = speed;
-        if (!isNaN(pitch) && pitch !== 0) json.pitch = pitch;
-        return Object.keys(json).length > 0 ? json : undefined;
-    };
-
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault();
 
@@ -145,8 +123,6 @@ export function MascotFormModal({
                 greetingMsg: greetingMsg.trim(),
                 systemPrompt: systemPrompt.trim(),
                 promptConfig: buildPromptConfig(),
-                ttsVoiceId,
-                ttsVoiceJson: buildTtsVoiceJson(),
             };
             onSubmit(request);
         } else {
@@ -157,8 +133,6 @@ export function MascotFormModal({
                 greetingMsg: greetingMsg.trim(),
                 systemPrompt: systemPrompt.trim(),
                 promptConfig: buildPromptConfig(),
-                ttsVoiceId,
-                ttsVoiceJson: buildTtsVoiceJson(),
                 isActive,
             };
             onSubmit(request);
@@ -418,105 +392,6 @@ export function MascotFormModal({
                                         </>
                                     )}
 
-                                    {/* TTS 음성 탭 */}
-                                    {activeTab === 'tts' && (
-                                        <>
-                                            {/* 음성 선택 드롭다운 */}
-                                            <div>
-                                                <label className={labelClass}>음성 선택</label>
-                                                <div className="relative">
-                                                    <button
-                                                        type="button"
-                                                        aria-haspopup="listbox"
-                                                        aria-expanded={isVoiceDropdownOpen}
-                                                        onClick={() => setIsVoiceDropdownOpen(!isVoiceDropdownOpen)}
-                                                        className="w-full flex items-center justify-between px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none transition-all hover:border-orange-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-50"
-                                                    >
-                                                        <span>
-                                                            {TTS_VOICE_OPTIONS.find((opt) => opt.value === ttsVoiceId)?.label ?? ttsVoiceId}
-                                                        </span>
-                                                        <HiOutlineChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isVoiceDropdownOpen ? 'rotate-180' : ''}`} />
-                                                    </button>
-                                                    <AnimatePresence>
-                                                        {isVoiceDropdownOpen && (
-                                                            <>
-                                                                <div className="fixed inset-0 z-40" onClick={() => setIsVoiceDropdownOpen(false)} />
-                                                                <motion.div
-                                                                    role="listbox"
-                                                                    initial={{ opacity: 0, y: -10 }}
-                                                                    animate={{ opacity: 1, y: 0 }}
-                                                                    exit={{ opacity: 0, y: -10 }}
-                                                                    transition={{ duration: 0.15 }}
-                                                                    className="absolute top-full left-0 mt-2 w-full bg-white/95 backdrop-blur-xl rounded-xl shadow-xl border border-slate-100 py-1.5 z-50 overflow-hidden"
-                                                                >
-                                                                    {TTS_VOICE_OPTIONS.map((opt) => (
-                                                                        <button
-                                                                            key={opt.value}
-                                                                            type="button"
-                                                                            role="option"
-                                                                            aria-selected={ttsVoiceId === opt.value}
-                                                                            onClick={() => {
-                                                                                setTtsVoiceId(opt.value);
-                                                                                setIsVoiceDropdownOpen(false);
-                                                                            }}
-                                                                            className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                                                                                ttsVoiceId === opt.value
-                                                                                    ? 'bg-orange-50 text-orange-600 font-bold'
-                                                                                    : 'text-slate-600 hover:bg-slate-50'
-                                                                            }`}
-                                                                        >
-                                                                            {opt.label}
-                                                                        </button>
-                                                                    ))}
-                                                                </motion.div>
-                                                            </>
-                                                        )}
-                                                    </AnimatePresence>
-                                                </div>
-                                            </div>
-
-                                            {/* 속도 & 피치 */}
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div>
-                                                    <label htmlFor="mascot-tts-speed" className={labelClass}>속도</label>
-                                                    <div className="space-y-2">
-                                                        <input
-                                                            id="mascot-tts-speed"
-                                                            type="range"
-                                                            min="0.5"
-                                                            max="2.0"
-                                                            step="0.1"
-                                                            value={ttsSpeed}
-                                                            onChange={(event) => setTtsSpeed(event.target.value)}
-                                                            className="w-full accent-orange-500"
-                                                        />
-                                                        <p className="text-center text-sm font-bold text-slate-600">{parseFloat(ttsSpeed).toFixed(1)}x</p>
-                                                    </div>
-                                                </div>
-
-                                                <div>
-                                                    <label htmlFor="mascot-tts-pitch" className={labelClass}>피치</label>
-                                                    <div className="space-y-2">
-                                                        <input
-                                                            id="mascot-tts-pitch"
-                                                            type="range"
-                                                            min="-10"
-                                                            max="10"
-                                                            step="1"
-                                                            value={ttsPitch}
-                                                            onChange={(event) => setTtsPitch(event.target.value)}
-                                                            className="w-full accent-orange-500"
-                                                        />
-                                                        <p className="text-center text-sm font-bold text-slate-600">{ttsPitch}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <p className="text-xs text-slate-400 px-1">
-                                                속도 1.0x, 피치 0이 기본값입니다. 변경하지 않으면 기본값이 적용됩니다.
-                                            </p>
-                                        </>
-                                    )}
                                 </div>
 
                                 {/* 액션 버튼 */}

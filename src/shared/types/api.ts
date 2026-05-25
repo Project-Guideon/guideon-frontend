@@ -43,6 +43,7 @@ export type ErrorCode =
     | 'DOMAIN_RULE_VIOLATION'       // 422 도메인 규칙 위반
     | 'RATE_LIMITED'                // 429 과다 요청
     | 'DOC_UPLOAD_FAILED'           // 500 파일 업로드 실패
+    | 'VOICE_CLONE_FAILED'          // 500 음성 클로닝 실패
     | 'INTERNAL_ERROR'              // 500 서버 오류
     | 'UPSTREAM_TIMEOUT'            // 503 외부 의존 장애
     | 'FEIGN_ERROR';                // 500 Core/FastAPI 타임아웃

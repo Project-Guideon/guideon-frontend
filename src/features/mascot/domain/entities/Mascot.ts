@@ -49,7 +49,7 @@ export interface CreateMascotRequest {
     greetingMsg: string;
     systemPrompt: string;
     promptConfig?: PromptConfig;
-    ttsVoiceId: string;
+    ttsVoiceId?: string;
     ttsVoiceJson?: TtsVoiceConfig;
 }
 
@@ -108,7 +108,7 @@ export const DEFAULT_ANIM_OPTIONS = [
 ] as const;
 
 /**
- * TTS 음성 옵션
+ * TTS 음성 옵션 (Deprecated: Cartesia 클로닝으로 대체됨)
  */
 export const TTS_VOICE_OPTIONS = [
     { value: 'ko-KR-Wavenet-A', label: '한국어 여성 A' },
@@ -116,3 +116,19 @@ export const TTS_VOICE_OPTIONS = [
     { value: 'ko-KR-Wavenet-C', label: '한국어 남성 A' },
     { value: 'ko-KR-Wavenet-D', label: '한국어 남성 B' },
 ] as const;
+
+/**
+ * 음성 클로닝 결과
+ */
+export interface MascotVoiceCloneResult {
+    voiceId: string;
+    name: string;
+}
+
+export const VOICE_CLONE_ACCEPTED_EXTENSIONS = [
+    '.wav', '.mp3', '.m4a', '.m4r', '.ogg', '.webm',
+] as const;
+
+export const VOICE_CLONE_ACCEPT_ATTRIBUTE = VOICE_CLONE_ACCEPTED_EXTENSIONS.join(',');
+export const VOICE_CLONE_MAX_BYTES = 800 * 1024;
+export const VOICE_CLONE_DEFAULT_LANGUAGE = 'ko';
