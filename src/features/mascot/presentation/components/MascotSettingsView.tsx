@@ -18,7 +18,7 @@ import { MascotModelCard } from './MascotModelCard';
 import { MascotFormModal } from './MascotFormModal';
 import type { CreateMascotRequest, UpdateMascotRequest } from '@/features/mascot/domain/entities/Mascot';
 
-type FormTab = 'basic' | 'prompt' | 'tts';
+type FormTab = 'basic' | 'prompt';
 
 /**
  * 마스코트 관리 메인 뷰
@@ -70,12 +70,6 @@ export function MascotSettingsView() {
     const handleClickEditPrompt = () => {
         setFormMode('edit');
         setFormInitialTab('prompt');
-        setIsFormOpen(true);
-    };
-
-    const handleClickEditTts = () => {
-        setFormMode('edit');
-        setFormInitialTab('tts');
         setIsFormOpen(true);
     };
 
@@ -244,7 +238,7 @@ export function MascotSettingsView() {
             >
                 <MascotInfoCard mascot={mascot} onEdit={handleClickEditInfo} />
                 <MascotPromptCard mascot={mascot} onEdit={handleClickEditPrompt} />
-                <MascotTtsCard mascot={mascot} onEdit={handleClickEditTts} />
+                <MascotTtsCard mascot={mascot} siteId={currentSiteId} onCloned={fetchMascot} />
                 <MascotModelCard
                     mascot={mascot}
                     generation={generation}
