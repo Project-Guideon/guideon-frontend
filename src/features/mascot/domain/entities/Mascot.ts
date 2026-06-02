@@ -79,6 +79,15 @@ export interface MascotGenerationStart {
 
 /**
  * 3D 생성 상태 (폴링 응답)
+ *
+ * 생성 단계 흐름:
+ *   modelStatus: PROCESSING → SUCCESS
+ *   rigStatus: PROCESSING → SUCCESS
+ *   retargetStatus: PROCESSING → SUCCESS  ← 신규
+ *   completed: true (retargetStatus가 SUCCESS 또는 FAILED 시)
+ *
+ * retargetStatus가 FAILED여도 completed: true가 될 수 있으며,
+ * 이 경우 animModelUrl이 null이고 resultModelUrl(base GLB)로 폴백합니다.
  */
 export interface MascotGenerationStatus {
     generationId: number;
@@ -87,6 +96,12 @@ export interface MascotGenerationStatus {
     modelStatus: GenerationStepStatus;
     rigTaskId: string | null;
     rigStatus: GenerationStepStatus;
+    /** 애니메이션 retarget 단계 상태 (신규) */
+    retargetStatus: GenerationStepStatus;
+    /** retarget 완료 GLB URL. 완료 전은 null. (신규) */
+    animModelUrl: string | null;
+    /** 상태→클립명 맵 (항상 5개 고정값, 참고용) (신규) */
+    animClips: Record<string, string> | null;
     resultModelUrl: string | null;
     failedReason: string | null;
     completed: boolean;
