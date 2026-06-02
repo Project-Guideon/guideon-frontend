@@ -132,3 +132,15 @@ export const VOICE_CLONE_ACCEPTED_EXTENSIONS = [
 export const VOICE_CLONE_ACCEPT_ATTRIBUTE = VOICE_CLONE_ACCEPTED_EXTENSIONS.join(',');
 export const VOICE_CLONE_MAX_BYTES = 800 * 1024;
 export const VOICE_CLONE_DEFAULT_LANGUAGE = 'ko';
+
+/**
+ * 마스코트 최초 생성 시 ttsVoiceId 자리에 사용하는 임시 기본값.
+ * TTS 카드에서 음성 클로닝 완료 후 PATCH 로 실제 값으로 교체됩니다.
+ */
+export const PENDING_VOICE_ID = 'PENDING' as const;
+
+/**
+ * 마스코트 최초 생성 시 modelId 자리에 사용하는 임시 기본값.
+ * 3D 모델 생성 완료 후 PATCH 로 실제 값으로 교체됩니다.
+ */
+export const PENDING_MODEL_ID = 'NONE' as const;
