@@ -13,7 +13,7 @@ import type {
     CreateMascotRequest,
     UpdateMascotRequest,
 } from '@/features/mascot/domain/entities/Mascot';
-import { DEFAULT_ANIM_OPTIONS } from '@/features/mascot/domain/entities/Mascot';
+import { DEFAULT_ANIM_OPTIONS, PENDING_MODEL_ID, PENDING_VOICE_ID } from '@/features/mascot/domain/entities/Mascot';
 
 type FormTab = 'basic' | 'prompt';
 
@@ -52,7 +52,6 @@ export function MascotFormModal({
 
     // 기본 정보
     const [name, setName] = useState('');
-    const [modelId, setModelId] = useState('');
     const [defaultAnim, setDefaultAnim] = useState('IDLE_A');
     const [greetingMsg, setGreetingMsg] = useState('');
     const [isActive, setIsActive] = useState(true);
@@ -73,7 +72,6 @@ export function MascotFormModal({
 
         if (mode === 'edit' && editTarget) {
             setName(editTarget.name);
-            setModelId(editTarget.modelId);
             setDefaultAnim(editTarget.defaultAnim);
             setGreetingMsg(editTarget.greetingMsg);
             setIsActive(editTarget.isActive);
@@ -83,7 +81,6 @@ export function MascotFormModal({
             setAnswerStyle(editTarget.promptConfig?.answer_style ?? '');
         } else {
             setName('');
-            setModelId('');
             setDefaultAnim('IDLE_A');
             setGreetingMsg('');
             setIsActive(true);
@@ -116,19 +113,21 @@ export function MascotFormModal({
         event.preventDefault();
 
         if (mode === 'create') {
+            // ttsVoiceId, modelId는 생성 직후 각 카드에서 PATCH로 실제값을 덮어씁니다.
+            // 백엔드 필수값 충족을 위해 임시 기본값을 전송합니다.
             const request: CreateMascotRequest = {
                 name: name.trim(),
-                modelId: modelId.trim(),
+                modelId: PENDING_MODEL_ID,
                 defaultAnim,
                 greetingMsg: greetingMsg.trim(),
                 systemPrompt: systemPrompt.trim(),
                 promptConfig: buildPromptConfig(),
+                ttsVoiceId: PENDING_VOICE_ID,
             };
             onSubmit(request);
         } else {
             const request: UpdateMascotRequest = {
                 name: name.trim(),
-                modelId: modelId.trim(),
                 defaultAnim,
                 greetingMsg: greetingMsg.trim(),
                 systemPrompt: systemPrompt.trim(),
@@ -141,7 +140,6 @@ export function MascotFormModal({
 
     const isFormValid =
         name.trim().length > 0 &&
-        modelId.trim().length > 0 &&
         greetingMsg.trim().length > 0 &&
         systemPrompt.trim().length > 0;
 
@@ -234,18 +232,7 @@ export function MascotFormModal({
                                                 />
                                             </div>
 
-                                            <div>
-                                                <label htmlFor="mascot-model-id" className={labelClass}>모델 ID *</label>
-                                                <input
-                                                    id="mascot-model-id"
-                                                    type="text"
-                                                    value={modelId}
-                                                    onChange={(event) => setModelId(event.target.value)}
-                                                    placeholder="예: haechi_v1"
-                                                    maxLength={100}
-                                                    className={inputClass}
-                                                />
-                                            </div>
+                                            {/* 모델 ID는 3D 모델 생성 카드에서 별도 설정합니다 */}
 
                                             {/* 기본 애니메이션 드롭다운 */}
                                             <div>
