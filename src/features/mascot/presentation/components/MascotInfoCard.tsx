@@ -2,6 +2,7 @@
 
 import { HiOutlineSparkles, HiOutlineChatBubbleLeftRight, HiOutlinePencilSquare } from 'react-icons/hi2';
 import type { Mascot } from '@/features/mascot/domain/entities/Mascot';
+import { PENDING_MODEL_ID } from '@/features/mascot/domain/entities/Mascot';
 
 interface MascotInfoCardProps {
     mascot: Mascot;
@@ -67,7 +68,13 @@ export function MascotInfoCard({ mascot, onEdit }: MascotInfoCardProps) {
                 <div className="grid grid-cols-2 gap-3">
                     <div className="bg-slate-50 rounded-xl px-4 py-3">
                         <p className="text-xs text-slate-400 mb-0.5">모델 ID</p>
-                        <p className="text-sm font-medium text-slate-700 truncate">{mascot.modelId}</p>
+                        <p className={`text-sm font-medium truncate ${
+                            mascot.modelId === PENDING_MODEL_ID
+                                ? 'text-slate-400 italic'
+                                : 'text-slate-700'
+                        }`}>
+                            {mascot.modelId === PENDING_MODEL_ID ? '미설정' : mascot.modelId}
+                        </p>
                     </div>
                     <div className="bg-slate-50 rounded-xl px-4 py-3">
                         <p className="text-xs text-slate-400 mb-0.5">기본 애니메이션</p>

@@ -9,7 +9,7 @@ import {
     HiOutlineSparkles,
 } from 'react-icons/hi2';
 import { useMascotVoiceClone } from '@/features/mascot/application/hooks/useMascotVoiceClone';
-import { VOICE_CLONE_ACCEPT_ATTRIBUTE } from '@/features/mascot/domain/entities/Mascot';
+import { VOICE_CLONE_ACCEPT_ATTRIBUTE, PENDING_VOICE_ID } from '@/features/mascot/domain/entities/Mascot';
 import type { MascotTtsCardProps } from '@/features/mascot/presentation/types/MascotTtsCardProps';
 
 export function MascotTtsCard({ mascot, siteId, onCloned }: MascotTtsCardProps) {
@@ -19,7 +19,7 @@ export function MascotTtsCard({ mascot, siteId, onCloned }: MascotTtsCardProps) 
 
     const { cloneVoice, isCloning, error, resetError } = useMascotVoiceClone(siteId);
 
-    const hasVoice = !!mascot.ttsVoiceId;
+    const hasVoice = !!mascot.ttsVoiceId && mascot.ttsVoiceId !== PENDING_VOICE_ID;
     const isReadyToSubmit = selectedFile !== null && voiceName.trim().length > 0;
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
