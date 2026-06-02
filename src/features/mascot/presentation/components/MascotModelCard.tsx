@@ -46,7 +46,12 @@ export function MascotModelCard({
     };
 
     const isInProgress = isPolling || isGenerating;
-    const hasModel = !!mascot.modelUrl;
+    // animModelUrl(리타겟 완료) 또는 resultModelUrl(base GLB) 중 사용 가능한 URL
+    const activeModelUrl = mascot.modelUrl;
+    const hasModel = !!activeModelUrl;
+    // 생성 완료 후 animModelUrl 유무로 폴백 여부 판단
+    const isAnimModelReady = generation?.completed && !!generation.animModelUrl;
+    const isAnimModelFailed = generation?.completed && generation.retargetStatus === 'FAILED';
 
     return (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
@@ -66,8 +71,15 @@ export function MascotModelCard({
                 <div className="bg-green-50 rounded-xl p-4 mb-4 flex items-center gap-3">
                     <HiOutlineCheckCircle className="w-5 h-5 text-green-500 shrink-0" />
                     <div className="min-w-0">
-                        <p className="text-sm font-medium text-green-700">3D 모델 적용 중</p>
-                        <p className="text-xs text-green-600 truncate">{mascot.modelUrl}</p>
+                        <p className="text-sm font-medium text-green-700">
+                            {isAnimModelReady ? '3D 모델 + 애니메이션 적용 중' : '3D 모델 적용 중'}
+                        </p>
+                        <p className="text-xs text-green-600 truncate">{activeModelUrl}</p>
+                        {isAnimModelFailed && (
+                            <p className="text-xs text-amber-600 mt-0.5">
+                                애니메이션 생성 실패 — 기본 모델로 동작 중
+                            </p>
+                        )}
                     </div>
                 </div>
             )}
@@ -159,6 +171,10 @@ function GenerationProgress({ generation }: { generation: MascotGenerationStatus
         {
             label: 'Auto Rigging',
             status: generation.rigStatus,
+        },
+        {
+            label: '애니메이션 생성',
+            status: generation.retargetStatus,
         },
     ];
 
