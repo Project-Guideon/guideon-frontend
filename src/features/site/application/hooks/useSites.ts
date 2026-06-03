@@ -31,6 +31,9 @@ function toSite(response: SiteResponse): Site {
         siteId: response.siteId,
         name: response.name,
         isActive: response.isActive,
+        latitude: response.latitude ?? null,
+        longitude: response.longitude ?? null,
+        mapLevel: response.mapLevel ?? null,
         createdAt: response.createdAt,
         updatedAt: response.updatedAt,
     };
@@ -117,7 +120,12 @@ export function useSites() {
     /** 관광지 생성 */
     const createSite = useCallback(async (request: CreateSiteRequest) => {
         try {
-            const response = await createSiteApi({ name: request.name });
+            const response = await createSiteApi({
+                name: request.name,
+                latitude: request.latitude ?? null,
+                longitude: request.longitude ?? null,
+                mapLevel: request.mapLevel ?? null,
+            });
             setSites((previous) => [toSite(response.data), ...previous]);
         } catch (err: unknown) {
             const apiError = err as { response?: { data?: { error?: { message?: string } } } };
@@ -128,7 +136,12 @@ export function useSites() {
     /** 관광지 수정 */
     const updateSite = useCallback(async (siteId: number, request: UpdateSiteRequest) => {
         try {
-            const response = await updateSiteApi(siteId, { name: request.name });
+            const response = await updateSiteApi(siteId, {
+                name: request.name,
+                latitude: request.latitude,
+                longitude: request.longitude,
+                mapLevel: request.mapLevel,
+            });
             const updatedSiteData = response?.data;
             if (updatedSiteData && updatedSiteData.siteId) {
                 const updated = toSite(updatedSiteData);
@@ -137,7 +150,13 @@ export function useSites() {
                 );
             } else {
                 setSites((previous) =>
-                    previous.map((site) => site.siteId === siteId ? { ...site, name: request.name } : site),
+                    previous.map((site) => site.siteId === siteId ? {
+                        ...site,
+                        name: request.name,
+                        latitude: request.latitude,
+                        longitude: request.longitude,
+                        mapLevel: request.mapLevel,
+                    } : site),
                 );
             }
         } catch (err: unknown) {
