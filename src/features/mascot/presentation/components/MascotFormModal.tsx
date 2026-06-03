@@ -71,11 +71,11 @@ export function MascotFormModal({
         setActiveTab(initialTab);
 
         if (mode === 'edit' && editTarget) {
-            setName(editTarget.name);
-            setDefaultAnim(editTarget.defaultAnim);
-            setGreetingMsg(editTarget.greetingMsg);
+            setName(editTarget.name ?? '');
+            setDefaultAnim(editTarget.defaultAnim ?? 'IDLE_A');
+            setGreetingMsg(editTarget.greetingMsg ?? '');
             setIsActive(editTarget.isActive);
-            setSystemPrompt(editTarget.systemPrompt);
+            setSystemPrompt(editTarget.systemPrompt ?? '');
             setBasePersona(editTarget.promptConfig?.base_persona ?? '');
             setSmalltalkStyle(editTarget.promptConfig?.smalltalk_style ?? '');
             setAnswerStyle(editTarget.promptConfig?.answer_style ?? '');

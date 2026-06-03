@@ -15,6 +15,7 @@ import {
     generateMascotModelApi,
     getMascotGenerationStatusApi,
     getMascotGenerationLatestApi,
+    uploadMascotAnimationApi,
 } from '@/api/endpoints/mascot';
 
 const POLLING_INTERVAL = 5000;
@@ -32,6 +33,7 @@ interface UseMascotReturn {
     createMascot: (data: CreateMascotRequest) => Promise<boolean>;
     updateMascot: (data: UpdateMascotRequest) => Promise<boolean>;
     startGeneration: (imageFile: File) => Promise<boolean>;
+    uploadAnimation: (glbFile: File, animClips?: Record<string, string>) => Promise<boolean>;
     clearError: () => void;
 }
 
@@ -192,9 +194,6 @@ export function useMascot(siteId: number | null): UseMascotReturn {
                 modelStatus: 'PROCESSING',
                 rigTaskId: null,
                 rigStatus: 'PENDING',
-                retargetStatus: 'PENDING',
-                animModelUrl: null,
-                animClips: null,
                 resultModelUrl: null,
                 failedReason: null,
                 completed: false,
@@ -223,6 +222,27 @@ export function useMascot(siteId: number | null): UseMascotReturn {
             setIsGenerating(false);
         }
     }, [siteId, pollGenerationStatus]);
+
+    /**
+     * 수동 오버라이드용 애니메이션 GLB 업로드
+     */
+    const uploadAnimation = useCallback(async (glbFile: File, animClips?: Record<string, string>): Promise<boolean> => {
+        if (!siteId) return false;
+        setIsSaving(true);
+        setError(null);
+
+        try {
+            await uploadMascotAnimationApi(siteId, glbFile, animClips);
+            await fetchMascot(); // 업로드 후 마스코트 정보 갱신
+            return true;
+        } catch (error: unknown) {
+            const apiError = error as { response?: { data?: { error?: { message?: string } } } };
+            setError(apiError.response?.data?.error?.message ?? '애니메이션 GLB 업로드에 실패했습니다.');
+            return false;
+        } finally {
+            setIsSaving(false);
+        }
+    }, [siteId, fetchMascot]);
 
     // siteId 변경 시 마스코트 조회
     useEffect(() => {
@@ -256,6 +276,7 @@ export function useMascot(siteId: number | null): UseMascotReturn {
         createMascot,
         updateMascot,
         startGeneration,
+        uploadAnimation,
         clearError,
     };
 }

@@ -5,16 +5,17 @@ export interface Mascot {
     mascotId: number;
     siteId: number;
     name: string;
-    modelId: string;
-    defaultAnim: string;
-    greetingMsg: string;
-    systemPrompt: string;
-    promptConfig: PromptConfig | null;
-    ttsVoiceId: string;
-    ttsVoiceJson: TtsVoiceConfig | null;
+    modelId: string | null;
     modelUrl: string | null;
     modelFormat: string | null;
-    generationId: number | null;
+    animModelUrl: string | null;
+    animClips: Record<string, string> | null;
+    defaultAnim: string | null;
+    greetingMsg: string | null;
+    ttsVoiceId: string | null;
+    ttsVoiceJson: TtsVoiceConfig | null;
+    systemPrompt: string | null;
+    promptConfig: PromptConfig | null;
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
@@ -83,11 +84,9 @@ export interface MascotGenerationStart {
  * 생성 단계 흐름:
  *   modelStatus: PENDING → PROCESSING → SUCCESS
  *   rigStatus:   PENDING → PROCESSING → SUCCESS
- *   retargetStatus: PENDING → PROCESSING → SUCCESS / FAILED
- *   completed: true (retargetStatus까지 완료 시)
+ *   completed: true (model + rig 모두 SUCCESS 시)
  *
- * retargetStatus가 FAILED여도 completed: true가 될 수 있으며,
- * 이 경우 animModelUrl이 null이고 resultModelUrl(base GLB)로 폴백합니다.
+ * completed=true 후 anim_config 유무에 따라 animModelUrl 자동 설정 여부가 결정됩니다.
  */
 export interface MascotGenerationStatus {
     generationId: number;
@@ -96,9 +95,6 @@ export interface MascotGenerationStatus {
     modelStatus: GenerationStepStatus;
     rigTaskId: string | null;
     rigStatus: GenerationStepStatus;
-    retargetStatus: GenerationStepStatus;
-    animModelUrl: string | null;
-    animClips: Record<string, string> | null;
     resultModelUrl: string | null;
     failedReason: string | null;
     completed: boolean;
@@ -108,6 +104,33 @@ export interface MascotGenerationStatus {
 }
 
 export type GenerationStepStatus = 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED';
+
+/**
+ * 사전 설정: 상태별 GLB 업로드 응답 (POST /mascot/animations)
+ */
+export interface AnimationGlbsUploadResponse {
+    uploaded: Array<{
+        stateKey: 'idle' | 'speaking' | 'listening' | 'thinking' | 'greeting';
+        clipName: string;
+        glbUrl: string;
+    }>;
+}
+
+/**
+ * 사전 설정: 현재 상태 조회/수정 응답 (GET/PUT /mascot/anim-config)
+ */
+export interface AnimConfigResponse {
+    animClips: Record<string, string>;
+    animGlbUrls: Record<string, string>;
+}
+
+/**
+ * 수동 오버라이드: 단일 anim GLB 업로드 응답 (POST /mascot/animation)
+ */
+export interface AnimationUploadResponse {
+    animModelUrl: string;
+    animClips: Record<string, string>;
+}
 
 /**
  * 기본 애니메이션 옵션
