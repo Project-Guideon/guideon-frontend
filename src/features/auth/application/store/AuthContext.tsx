@@ -23,6 +23,9 @@ export interface Site {
     siteId: number;
     name: string;
     isActive: boolean;
+    latitude: number | null;
+    longitude: number | null;
+    mapLevel: number | null;
 }
 
 /**
@@ -86,6 +89,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
                     siteId: site.siteId,
                     name: site.name,
                     isActive: site.isActive,
+                    latitude: site.latitude ?? null,
+                    longitude: site.longitude ?? null,
+                    mapLevel: site.mapLevel ?? null,
                 }));
                 setSites(siteList);
             } else if (siteIds.length > 0) {
@@ -100,6 +106,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
                         siteId: result.value.data.siteId,
                         name: result.value.data.name,
                         isActive: result.value.data.isActive,
+                        latitude: result.value.data.latitude ?? null,
+                        longitude: result.value.data.longitude ?? null,
+                        mapLevel: result.value.data.mapLevel ?? null,
                     }));
                 setSites(siteList);
             }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -116,6 +116,16 @@ export function ZonePlaceMapView() {
     const [activeTab, setActiveTab] = useState<SidePanelTab>('zones');
     const [isPanelOpen, setIsPanelOpen] = useState(true);
     const [isSiteDropdownOpen, setIsSiteDropdownOpen] = useState(false);
+
+    // ───────── 지도 중심/줌 레벨 (site 좌표 기반) ─────────
+    const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(DEFAULT_MAP_CENTER);
+    const [mapLevel, setMapLevel] = useState<number>(DEFAULT_MAP_LEVEL);
+
+    useEffect(() => {
+        if (currentSite?.latitude == null || currentSite.longitude == null) return;
+        setMapCenter({ lat: currentSite.latitude, lng: currentSite.longitude });
+        setMapLevel(currentSite.mapLevel ?? DEFAULT_MAP_LEVEL);
+    }, [currentSite]);
 
     // ───────── 토스트 알림 ─────────
     const [toasts, setToasts] = useState<Toast[]>([]);
@@ -415,8 +425,8 @@ export function ZonePlaceMapView() {
                     onSelectZone={setSelectedZoneId}
                     onSelectPlace={setSelectedPlaceId}
                     onSelectDevice={setSelectedDeviceId}
-                    mapCenter={DEFAULT_MAP_CENTER}
-                    mapLevel={DEFAULT_MAP_LEVEL}
+                    mapCenter={mapCenter}
+                    mapLevel={mapLevel}
                     mode={interactionMode}
                     drawingPoints={drawingPoints}
                     placingPosition={placingPosition}
