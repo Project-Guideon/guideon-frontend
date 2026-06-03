@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { HiOutlineCubeTransparent, HiOutlineArrowUpTray, HiOutlineCheckCircle, HiOutlineXCircle, HiOutlineArrowDownTray, HiOutlineFilm } from 'react-icons/hi2';
+import { HiOutlineCubeTransparent, HiOutlineArrowUpTray, HiOutlineCheckCircle, HiOutlineXCircle } from 'react-icons/hi2';
 import type { Mascot, MascotGenerationStatus } from '@/features/mascot/domain/entities/Mascot';
 
 interface MascotModelCardProps {
@@ -10,7 +10,6 @@ interface MascotModelCardProps {
     isGenerating: boolean;
     isPolling: boolean;
     onStartGeneration: (file: File) => Promise<boolean>;
-    onUploadAnimation: (file: File) => Promise<boolean>;
 }
 
 /**
@@ -22,14 +21,10 @@ export function MascotModelCard({
     isGenerating,
     isPolling,
     onStartGeneration,
-    onUploadAnimation,
 }: MascotModelCardProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const animInputRef = useRef<HTMLInputElement>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [selectedAnimFile, setSelectedAnimFile] = useState<File | null>(null);
-    const [isUploadingAnim, setIsUploadingAnim] = useState(false);
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -50,29 +45,14 @@ export function MascotModelCard({
         }
     };
 
-    const handleAnimFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-        setSelectedAnimFile(file);
-    };
-
-    const handleUploadAnimation = async () => {
-        if (!selectedAnimFile) return;
-        setIsUploadingAnim(true);
-        const success = await onUploadAnimation(selectedAnimFile);
-        setIsUploadingAnim(false);
-        if (success) {
-            setSelectedAnimFile(null);
-        }
-    };
-
     const isInProgress = isPolling || isGenerating;
+    // animModelUrl(리타겟 완료) 또는 resultModelUrl(base GLB) 중 사용 가능한 URL
     const activeModelUrl = mascot.modelUrl;
     const hasModel = !!activeModelUrl;
     
-    // v3: 생성 완료 상태
-    const isGenerationCompleted = generation?.completed === true;
-    const hasResultModel = !!generation?.resultModelUrl;
+    // 생성 완료 후 animModelUrl 유무로 폴백 여부 판단
+    const isAnimModelReady = generation?.completed && !!generation.animModelUrl;
+    const isAnimModelFailed = generation?.completed && generation.retargetStatus === 'FAILED';
 
     return (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
@@ -93,9 +73,14 @@ export function MascotModelCard({
                     <HiOutlineCheckCircle className="w-5 h-5 text-green-500 shrink-0" />
                     <div className="min-w-0">
                         <p className="text-sm font-medium text-green-700">
-                            적용 중인 3D 모델
+                            {isAnimModelReady ? '3D 모델 + 애니메이션 적용 중' : '3D 모델 적용 중'}
                         </p>
                         <p className="text-xs text-green-600 truncate">{activeModelUrl}</p>
+                        {isAnimModelFailed && (
+                            <p className="text-xs text-amber-600 mt-0.5">
+                                애니메이션 생성 실패 — 기본 모델로 동작 중
+                            </p>
+                        )}
                     </div>
                 </div>
             )}
@@ -117,30 +102,6 @@ export function MascotModelCard({
                             <p className="text-xs text-red-600 mt-1">{generation.failedReason}</p>
                         )}
                     </div>
-                </div>
-            )}
-
-            {/* v3: 생성 완료 시 리깅 GLB 다운로드 영역 */}
-            {isGenerationCompleted && hasResultModel && (
-                <div className="bg-blue-50 rounded-xl p-4 mb-4 flex flex-col gap-3">
-                    <div className="flex items-start gap-3">
-                        <HiOutlineCheckCircle className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-                        <div>
-                            <p className="text-sm font-bold text-blue-700">3D 자동 생성 완료</p>
-                            <p className="text-xs text-blue-600 mt-0.5">
-                                아래 버튼을 눌러 리깅이 완료된 모델(GLB)을 다운로드하세요.
-                            </p>
-                        </div>
-                    </div>
-                    <a
-                        href={generation.resultModelUrl!}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs rounded-lg px-4 py-2.5 shadow-sm transition-all"
-                    >
-                        <HiOutlineArrowDownTray className="w-4 h-4" />
-                        리깅 모델(GLB) 다운로드
-                    </a>
                 </div>
             )}
 
@@ -195,40 +156,6 @@ export function MascotModelCard({
                     </button>
                 )}
             </div>
-
-            {/* v3: 애니메이션 GLB 업로드 영역 (항상 노출, Mixamo 완료 후 업로드) */}
-            <div className="mt-6 pt-5 border-t border-slate-100 space-y-3">
-                <p className="text-xs font-bold text-slate-400">
-                    완성된 애니메이션(GLB) 업로드
-                </p>
-                <div className="flex gap-2 items-center">
-                    <input
-                        ref={animInputRef}
-                        type="file"
-                        accept=".glb"
-                        onChange={handleAnimFileSelect}
-                        className="hidden"
-                        disabled={isUploadingAnim}
-                    />
-                    <button
-                        onClick={() => animInputRef.current?.click()}
-                        disabled={isUploadingAnim}
-                        className="flex-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 font-medium text-xs rounded-xl px-4 py-2.5 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 truncate"
-                    >
-                        <HiOutlineFilm className="w-4 h-4 shrink-0" />
-                        {selectedAnimFile ? selectedAnimFile.name : 'GLB 파일 선택'}
-                    </button>
-                    {selectedAnimFile && (
-                        <button
-                            onClick={handleUploadAnimation}
-                            disabled={isUploadingAnim}
-                            className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xs rounded-xl px-4 py-2.5 shadow-sm transition-all disabled:opacity-50 shrink-0 min-w-[80px]"
-                        >
-                            {isUploadingAnim ? '업로드 중' : '업로드'}
-                        </button>
-                    )}
-                </div>
-            </div>
         </div>
     );
 }
@@ -245,6 +172,10 @@ function GenerationProgress({ generation }: { generation: MascotGenerationStatus
         {
             label: 'Auto Rigging',
             status: generation.rigStatus,
+        },
+        {
+            label: '애니메이션 생성',
+            status: generation.retargetStatus,
         },
     ];
 

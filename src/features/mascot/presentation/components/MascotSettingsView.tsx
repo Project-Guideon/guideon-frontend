@@ -43,7 +43,6 @@ export function MascotSettingsView() {
         createMascot,
         updateMascot,
         startGeneration,
-        uploadAnimation,
         clearError,
     } = useMascot(currentSiteId);
 
@@ -246,7 +245,6 @@ export function MascotSettingsView() {
                     isGenerating={isGenerating}
                     isPolling={isPolling}
                     onStartGeneration={startGeneration}
-                    onUploadAnimation={uploadAnimation}
                 />
             </motion.div>
 

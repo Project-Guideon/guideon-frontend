@@ -83,10 +83,11 @@ export interface MascotGenerationStart {
  * 생성 단계 흐름:
  *   modelStatus: PENDING → PROCESSING → SUCCESS
  *   rigStatus:   PENDING → PROCESSING → SUCCESS
- *   completed: true (model + rig 모두 SUCCESS 시)
+ *   retargetStatus: PENDING → PROCESSING → SUCCESS / FAILED
+ *   completed: true (retargetStatus까지 완료 시)
  *
- * completed=true 후 resultModelUrl에서 리깅 GLB 다운로드 가능.
- * 담당자가 Mixamo + Blender로 애니메이션 GLB 제작 후 POST /mascot/animation으로 업로드.
+ * retargetStatus가 FAILED여도 completed: true가 될 수 있으며,
+ * 이 경우 animModelUrl이 null이고 resultModelUrl(base GLB)로 폴백합니다.
  */
 export interface MascotGenerationStatus {
     generationId: number;
@@ -95,7 +96,9 @@ export interface MascotGenerationStatus {
     modelStatus: GenerationStepStatus;
     rigTaskId: string | null;
     rigStatus: GenerationStepStatus;
-    /** 리깅 완료 GLB 다운로드 URL. completed=true 후 활성화. */
+    retargetStatus: GenerationStepStatus;
+    animModelUrl: string | null;
+    animClips: Record<string, string> | null;
     resultModelUrl: string | null;
     failedReason: string | null;
     completed: boolean;
@@ -105,20 +108,6 @@ export interface MascotGenerationStatus {
 }
 
 export type GenerationStepStatus = 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED';
-
-/**
- * Mixamo anim GLB 업로드 응답 (POST /mascot/animation)
- */
-export interface AnimationUploadResponse {
-    animModelUrl: string;
-    animClips: {
-        idle: string;
-        speaking: string;
-        listening: string;
-        thinking: string;
-        greeting: string;
-    };
-}
 
 /**
  * 기본 애니메이션 옵션
