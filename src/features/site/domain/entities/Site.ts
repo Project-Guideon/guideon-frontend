@@ -12,6 +12,12 @@ export interface Site {
     siteId: number;
     name: string;
     isActive: boolean;
+    /** 카카오맵 중심 위도 (-90 ~ 90). 미설정 시 null */
+    latitude: number | null;
+    /** 카카오맵 중심 경도 (-180 ~ 180). 미설정 시 null */
+    longitude: number | null;
+    /** 카카오맵 줌 레벨 (1 ~ 14, 작을수록 확대). 미설정 시 null */
+    mapLevel: number | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -19,11 +25,22 @@ export interface Site {
 /** 관광지 생성 요청 */
 export interface CreateSiteRequest {
     name: string;
+    latitude?: number | null;
+    longitude?: number | null;
+    mapLevel?: number | null;
 }
 
-/** 관광지 수정 요청 */
+/**
+ * 관광지 수정 요청
+ *
+ * ⚠️ 좌표 필드를 생략하면 서버에서 null로 덮어씁니다.
+ * 이름만 수정하더라도 기존 좌표를 함께 전송해야 보존됩니다.
+ */
 export interface UpdateSiteRequest {
     name: string;
+    latitude: number | null;
+    longitude: number | null;
+    mapLevel: number | null;
 }
 
 /** 관광지에 배정된 운영자 초대 정보 */

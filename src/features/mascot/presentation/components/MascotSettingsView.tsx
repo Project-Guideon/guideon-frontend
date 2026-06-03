@@ -15,6 +15,7 @@ import { MascotInfoCard } from './MascotInfoCard';
 import { MascotPromptCard } from './MascotPromptCard';
 import { MascotTtsCard } from './MascotTtsCard';
 import { MascotModelCard } from './MascotModelCard';
+import { MascotAnimConfigCard } from './MascotAnimConfigCard';
 import { MascotFormModal } from './MascotFormModal';
 import type { CreateMascotRequest, UpdateMascotRequest } from '@/features/mascot/domain/entities/Mascot';
 
@@ -43,6 +44,7 @@ export function MascotSettingsView() {
         createMascot,
         updateMascot,
         startGeneration,
+        uploadAnimation,
         clearError,
     } = useMascot(currentSiteId);
 
@@ -245,7 +247,9 @@ export function MascotSettingsView() {
                     isGenerating={isGenerating}
                     isPolling={isPolling}
                     onStartGeneration={startGeneration}
+                    onUploadAnimation={uploadAnimation}
                 />
+                <MascotAnimConfigCard siteId={currentSiteId} />
             </motion.div>
 
             {/* 수정 모달 */}

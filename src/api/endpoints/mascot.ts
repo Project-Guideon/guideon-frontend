@@ -7,6 +7,9 @@ import type {
     MascotGenerationStart,
     MascotGenerationStatus,
     MascotVoiceCloneResult,
+    AnimationGlbsUploadResponse,
+    AnimConfigResponse,
+    AnimationUploadResponse,
 } from '@/features/mascot/domain/entities/Mascot';
 import { VOICE_CLONE_DEFAULT_LANGUAGE } from '@/features/mascot/domain/entities/Mascot';
 
@@ -28,6 +31,10 @@ export interface MascotImageResponse {
  * POST  /admin/sites/{siteId}/mascot/generate                           - 3D 생성 시작 (JSON)
  * GET   /admin/sites/{siteId}/mascot/generate/{generationId}/status     - 상태 폴링
  * GET   /admin/sites/{siteId}/mascot/generate/latest                    - 최근 이력
+ * POST  /admin/sites/{siteId}/mascot/animations                         - 사전설정: state별 GLB 업로드 (multipart)
+ * GET   /admin/sites/{siteId}/mascot/anim-config                        - 사전설정: 현재 조회
+ * PUT   /admin/sites/{siteId}/mascot/anim-config                        - 사전설정: 클립명 매핑 수정 (JSON)
+ * POST  /admin/sites/{siteId}/mascot/animation                          - 수동 오버라이드: 단일 anim GLB 업로드 (multipart)
  * POST  /admin/sites/{siteId}/mascot/voice/clone                        - Cartesia 음성 클로닝 (multipart)
  */
 
@@ -139,3 +146,70 @@ export const cloneMascotVoiceApi = async (
     );
     return response.data;
 };
+
+/**
+ * 사전설정: 상태별 GLB 5개 업로드 (multipart/form-data)
+ */
+export const uploadMascotAnimationsApi = async (
+    siteId: number,
+    files: Partial<Record<'idle' | 'speaking' | 'listening' | 'thinking' | 'greeting', File>>
+): Promise<ApiResponse<AnimationGlbsUploadResponse>> => {
+    const formData = new FormData();
+    Object.entries(files).forEach(([key, file]) => {
+        if (file) formData.append(key, file);
+    });
+
+    const response = await apiClient.post<ApiResponse<AnimationGlbsUploadResponse>>(
+        `/admin/sites/${siteId}/mascot/animations`,
+        formData,
+        { timeout: 300000 }, // 여러 개 업로드하므로 5분 넉넉히
+    );
+    return response.data;
+};
+
+/**
+ * 사전설정: 현재 설정 조회
+ */
+export const getMascotAnimConfigApi = async (siteId: number) => {
+    const response = await apiClient.get<ApiResponse<AnimConfigResponse>>(
+        `/admin/sites/${siteId}/mascot/anim-config`,
+    );
+    return response.data;
+};
+
+/**
+ * 사전설정: 클립명 매핑 수정
+ */
+export const updateMascotAnimConfigApi = async (
+    siteId: number,
+    animClips: Record<string, string>
+) => {
+    const response = await apiClient.put<ApiResponse<AnimConfigResponse>>(
+        `/admin/sites/${siteId}/mascot/anim-config`,
+        { animClips },
+    );
+    return response.data;
+};
+
+/**
+ * 수동 오버라이드: 단일 anim GLB 업로드 (multipart/form-data)
+ */
+export const uploadMascotAnimationApi = async (
+    siteId: number,
+    file: File,
+    animClips?: Record<string, string>,
+): Promise<ApiResponse<AnimationUploadResponse>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (animClips) {
+        formData.append('animClips', JSON.stringify(animClips));
+    }
+
+    const response = await apiClient.post<ApiResponse<AnimationUploadResponse>>(
+        `/admin/sites/${siteId}/mascot/animation`,
+        formData,
+        { timeout: 120000 }, // 2분
+    );
+    return response.data;
+};
+

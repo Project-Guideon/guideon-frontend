@@ -17,7 +17,7 @@ import { SiteTable } from './SiteTable';
 import { SiteFormModal } from './SiteFormModal';
 import { SiteToggleDialog } from './SiteToggleDialog';
 import { SiteInviteModal } from './SiteInviteModal';
-import type { SiteWithInvites } from '@/features/site/domain/entities/Site';
+import type { SiteWithInvites, CreateSiteRequest, UpdateSiteRequest } from '@/features/site/domain/entities/Site';
 
 /**
  * 활성 상태 필터 옵션
@@ -107,11 +107,11 @@ export function SiteListView() {
         }
     };
 
-    const handleSubmitForm = (name: string) => {
+    const handleSubmitForm = (request: CreateSiteRequest | UpdateSiteRequest) => {
         if (formMode === 'create') {
-            createSite({ name });
+            createSite(request as CreateSiteRequest);
         } else if (editTarget) {
-            updateSite(editTarget.siteId, { name });
+            updateSite(editTarget.siteId, request as UpdateSiteRequest);
         }
     };
 
@@ -330,6 +330,9 @@ export function SiteListView() {
                 isOpen={isFormModalOpen}
                 mode={formMode}
                 initialName={editTarget?.name ?? ''}
+                initialLatitude={editTarget?.latitude}
+                initialLongitude={editTarget?.longitude}
+                initialMapLevel={editTarget?.mapLevel}
                 onClose={() => setIsFormModalOpen(false)}
                 onSubmit={handleSubmitForm}
             />

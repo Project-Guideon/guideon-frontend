@@ -45,9 +45,9 @@ export function MascotPromptCard({ mascot, onEdit }: MascotPromptCardProps) {
                     <p className={`text-sm text-slate-700 leading-relaxed whitespace-pre-wrap ${
                         !isExpanded ? 'line-clamp-4' : ''
                     }`}>
-                        {mascot.systemPrompt}
+                        {mascot.systemPrompt ?? '시스템 프롬프트가 설정되지 않았습니다.'}
                     </p>
-                    {mascot.systemPrompt.length > 200 && (
+                    {mascot.systemPrompt && mascot.systemPrompt.length > 200 && (
                         <button
                             onClick={() => setIsExpanded(!isExpanded)}
                             className="flex items-center gap-1 mt-2 text-xs font-medium text-orange-500 hover:text-orange-600 transition-colors"
