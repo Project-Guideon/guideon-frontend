@@ -22,7 +22,7 @@ export interface SiteResponse {
  * GET    /admin/sites                       - 관광지 목록 (PLATFORM_ADMIN)
  * GET    /admin/sites/{siteId}              - 관광지 상세
  * POST   /admin/sites                       - 관광지 생성
- * PUT    /admin/sites/{siteId}              - 관광지 수정
+ * PATCH  /admin/sites/{siteId}              - 관광지 수정
  * POST   /admin/sites/{siteId}/activate     - 관광지 활성화
  * POST   /admin/sites/{siteId}/deactivate   - 관광지 비활성화
  */
@@ -62,11 +62,11 @@ export const createSiteApi = async (data: CreateSiteRequest) => {
 /**
  * 관광지 수정 (PLATFORM_ADMIN 전용)
  *
- * ⚠️ PUT 메서드 — 좌표 필드를 생략하면 null로 덮어씌워집니다.
+ * ⚠️ 좌표 필드를 생략하면 서버에서 null로 덮어씁니다.
  * 기존 좌표 보존이 필요하면 항상 전체 필드를 전송해야 합니다.
  */
 export const updateSiteApi = async (siteId: number, data: UpdateSiteRequest) => {
-    const response = await apiClient.put<ApiResponse<SiteResponse>>(
+    const response = await apiClient.patch<ApiResponse<SiteResponse>>(
         `/admin/sites/${siteId}`,
         data,
     );
