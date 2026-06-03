@@ -7,6 +7,7 @@ import type {
     MascotGenerationStart,
     MascotGenerationStatus,
     MascotVoiceCloneResult,
+    AnimationUploadResponse,
 } from '@/features/mascot/domain/entities/Mascot';
 import { VOICE_CLONE_DEFAULT_LANGUAGE } from '@/features/mascot/domain/entities/Mascot';
 
@@ -28,6 +29,7 @@ export interface MascotImageResponse {
  * POST  /admin/sites/{siteId}/mascot/generate                           - 3D 생성 시작 (JSON)
  * GET   /admin/sites/{siteId}/mascot/generate/{generationId}/status     - 상태 폴링
  * GET   /admin/sites/{siteId}/mascot/generate/latest                    - 최근 이력
+ * POST  /admin/sites/{siteId}/mascot/animation                          - Mixamo anim GLB 업로드 (multipart)
  * POST  /admin/sites/{siteId}/mascot/voice/clone                        - Cartesia 음성 클로닝 (multipart)
  */
 
@@ -136,6 +138,28 @@ export const cloneMascotVoiceApi = async (
         `/admin/sites/${siteId}/mascot/voice/clone`,
         formData,
         { timeout: 60000 },
+    );
+    return response.data;
+};
+
+/**
+ * Mixamo anim GLB 업로드 (multipart/form-data)
+ */
+export const uploadMascotAnimationApi = async (
+    siteId: number,
+    file: File,
+    animClips?: Record<string, string>,
+): Promise<ApiResponse<AnimationUploadResponse>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (animClips) {
+        formData.append('animClips', JSON.stringify(animClips));
+    }
+
+    const response = await apiClient.post<ApiResponse<AnimationUploadResponse>>(
+        `/admin/sites/${siteId}/mascot/animation`,
+        formData,
+        { timeout: 120000 }, // GLB 파일 업로드 고려 여유있게 2분
     );
     return response.data;
 };
