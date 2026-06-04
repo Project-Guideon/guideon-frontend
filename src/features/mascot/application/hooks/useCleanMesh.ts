@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { CleanMeshResponse, CleanMeshStatus } from '@/features/mascot/domain/entities/Mascot';
 import { getCleanMeshApi } from '@/api/endpoints/mascot';
 
@@ -44,6 +44,15 @@ export function useCleanMesh(siteId: number | null): UseCleanMeshReturn {
             timerRef.current = null;
         }
     }, []);
+
+    // siteId 변경 시 상태 초기화
+    useEffect(() => {
+        stopPolling();
+        setCleanMeshUrl(null);
+        setCleanMeshStatus(null);
+        setPollState('idle');
+        pollCountRef.current = 0;
+    }, [siteId, stopPolling]);
 
     const fetchOnce = useCallback(async (): Promise<CleanMeshResponse | null> => {
         if (!siteId) return null;
@@ -90,23 +99,23 @@ export function useCleanMesh(siteId: number | null): UseCleanMeshReturn {
     }, [siteId, fetchOnce, stopPolling]);
 
     /**
-     * 폴링 시작 (completed=true 직후 호출)
-     * 이미 폴링 중이거나 ready 상태면 무시합니다.
+     * 폴링 시작
+     * guard 없이 항상 초기화 후 재시작합니다.
+     * → 재생성(두번째 이후) 시에도 새 FBX를 올바르게 폴링합니다.
      */
     const startPolling = useCallback(() => {
-        if (pollState === 'polling' || pollState === 'ready') return;
-
         stopPolling();
         pollCountRef.current = 0;
         setPollState('polling');
         schedulePoll();
-    }, [pollState, stopPolling, schedulePoll]);
+    }, [stopPolling, schedulePoll]);
 
     /**
      * 수동 즉시 재조회 (새로고침 버튼 등에서 호출)
      */
     const refetch = useCallback(async () => {
         if (!siteId) return;
+        stopPolling();
         setPollState('polling');
         pollCountRef.current = 0;
 
@@ -124,7 +133,7 @@ export function useCleanMesh(siteId: number | null): UseCleanMeshReturn {
         } else {
             schedulePoll();
         }
-    }, [siteId, fetchOnce, schedulePoll]);
+    }, [siteId, fetchOnce, stopPolling, schedulePoll]);
 
     return {
         cleanMeshUrl,

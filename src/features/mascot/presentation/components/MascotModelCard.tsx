@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { HiOutlineCubeTransparent, HiOutlineArrowUpTray, HiOutlineCheckCircle, HiOutlineXCircle, HiOutlineFilm } from 'react-icons/hi2';
 import type { Mascot, MascotGenerationStatus } from '@/features/mascot/domain/entities/Mascot';
 
@@ -11,8 +11,6 @@ interface MascotModelCardProps {
     isPolling: boolean;
     onStartGeneration: (file: File) => Promise<boolean>;
     onUploadAnimation: (file: File) => Promise<boolean>;
-    /** completed=true 전환 직후 호출 — clean mesh 폴링 트리거용 */
-    onGenerationCompleted?: () => void;
 }
 
 /**
@@ -25,7 +23,6 @@ export function MascotModelCard({
     isPolling,
     onStartGeneration,
     onUploadAnimation,
-    onGenerationCompleted,
 }: MascotModelCardProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const animInputRef = useRef<HTMLInputElement>(null);
@@ -78,16 +75,6 @@ export function MascotModelCard({
     const isAnimModelReady = !!mascot.animModelUrl;
     const isAnimModelFallback = isGenerationCompleted && !isAnimModelReady;
 
-    // completed=true 전환 시 상위에 알림 (clean mesh 폴링 시작 트리거)
-    // 렌더 중 setState 금지 → useEffect로 처리
-    const prevCompletedRef = useRef(false);
-    useEffect(() => {
-        if (isGenerationCompleted && !prevCompletedRef.current) {
-            prevCompletedRef.current = true;
-            onGenerationCompleted?.();
-        }
-    }, [isGenerationCompleted, onGenerationCompleted]);
-
     return (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
             {/* 헤더 */}
@@ -118,11 +105,6 @@ export function MascotModelCard({
                         {isGenerationCompleted && isAnimModelReady && (
                             <p className="text-xs text-blue-600 mt-0.5 font-bold">
                                 ✨ 완료! 애니메이션 자동 적용됨
-                            </p>
-                        )}
-                        {isGenerationCompleted && (
-                            <p className="text-xs text-violet-500 mt-0.5">
-                                🔄 Mixamo용 메쉬 FBX 생성 중...
                             </p>
                         )}
                     </div>

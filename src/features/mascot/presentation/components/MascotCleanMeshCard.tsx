@@ -29,14 +29,13 @@ interface MascotCleanMeshCardProps {
 export function MascotCleanMeshCard({ siteId, generationCompleted }: MascotCleanMeshCardProps) {
     const { cleanMeshUrl, pollState, startPolling, refetch } = useCleanMesh(siteId);
 
-    // 생성 완료 시점에 자동으로 폴링 시작
+    // generation이 completed=true가 될 때마다 폴링 시작
+    // startPolling은 siteId 기준으로만 변경되므로 deps에 포함해도 안전
     useEffect(() => {
         if (generationCompleted) {
             startPolling();
         }
-        // generationCompleted가 true로 바뀌는 시점에만 실행
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [generationCompleted]);
+    }, [generationCompleted, startPolling]);
 
     // 생성이 완료된 적 없으면 (= rig 미완료) 회색 안내만 표시
     if (!generationCompleted && pollState === 'idle') {
