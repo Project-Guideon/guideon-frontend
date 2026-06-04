@@ -133,6 +133,48 @@ export interface AnimationUploadResponse {
 }
 
 /**
+ * 독립 clean-mesh 생성 시작 응답 (POST /mascot/clean-mesh/generate)
+ */
+export interface CleanMeshGenerateResponse {
+    taskId: string;
+}
+
+/**
+ * 독립 clean-mesh 폴링 응답 (GET /mascot/clean-mesh/generate/{taskId}/status)
+ */
+export interface CleanMeshJobStatus {
+    taskId: string;
+    status: 'processing' | 'ready' | 'failed';
+    cleanMeshUrl: string | null;
+}
+
+/**
+ * 수동 GLB 업로드 응답 (POST /mascot/model)
+ * 리깅 완료 GLB를 직접 업로드해 base model 교체 + anim_config 기준 자동 병합.
+ */
+export interface ModelUploadResponse {
+    modelUrl: string;
+    animModelUrl: string | null;
+}
+
+/**
+ * Clean Mesh 상태 (v5 신규)
+ * - ready: FBX 생성 완료, 다운로드 가능
+ * - not_available: rig 미완료이거나 백그라운드 생성 중
+ */
+export type CleanMeshStatus = 'ready' | 'not_available';
+
+/**
+ * Clean Mesh 조회 응답 (GET /mascot/clean-mesh) — v5 신규
+ * completed=true 이후 서버가 비동기로 스켈레톤 제거 FBX를 생성합니다.
+ * Mixamo 업로드 전용 메쉬로, 담당자가 직접 다운로드 후 Mixamo에 업로드합니다.
+ */
+export interface CleanMeshResponse {
+    cleanMeshUrl: string | null;
+    status: CleanMeshStatus;
+}
+
+/**
  * 기본 애니메이션 옵션
  */
 export const DEFAULT_ANIM_OPTIONS = [

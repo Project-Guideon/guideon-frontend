@@ -16,6 +16,7 @@ import { MascotPromptCard } from './MascotPromptCard';
 import { MascotTtsCard } from './MascotTtsCard';
 import { MascotModelCard } from './MascotModelCard';
 import { MascotAnimConfigCard } from './MascotAnimConfigCard';
+import { MascotCleanMeshCard } from './MascotCleanMeshCard';
 import { MascotFormModal } from './MascotFormModal';
 import type { CreateMascotRequest, UpdateMascotRequest } from '@/features/mascot/domain/entities/Mascot';
 
@@ -45,8 +46,13 @@ export function MascotSettingsView() {
         updateMascot,
         startGeneration,
         uploadAnimation,
+        uploadMascotModel,
         clearError,
     } = useMascot(currentSiteId);
+
+    // v5: generation.completed 파생 상태 — useState 불필요, 직접 도출
+    // generation이 null(로딩 중/미생성)이면 false, completed=true면 true
+    const generationCompleted = generation?.completed === true;
 
     // 모달 상태
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -248,6 +254,11 @@ export function MascotSettingsView() {
                     isPolling={isPolling}
                     onStartGeneration={startGeneration}
                     onUploadAnimation={uploadAnimation}
+                    onUploadModel={uploadMascotModel}
+                />
+                <MascotCleanMeshCard
+                    siteId={currentSiteId}
+                    generationCompleted={generationCompleted}
                 />
                 <MascotAnimConfigCard siteId={currentSiteId} />
             </motion.div>

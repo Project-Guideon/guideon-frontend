@@ -10,6 +10,10 @@ import type {
     AnimationGlbsUploadResponse,
     AnimConfigResponse,
     AnimationUploadResponse,
+    ModelUploadResponse,
+    CleanMeshResponse,
+    CleanMeshGenerateResponse,
+    CleanMeshJobStatus,
 } from '@/features/mascot/domain/entities/Mascot';
 import { VOICE_CLONE_DEFAULT_LANGUAGE } from '@/features/mascot/domain/entities/Mascot';
 
@@ -31,9 +35,11 @@ export interface MascotImageResponse {
  * POST  /admin/sites/{siteId}/mascot/generate                           - 3D 생성 시작 (JSON)
  * GET   /admin/sites/{siteId}/mascot/generate/{generationId}/status     - 상태 폴링
  * GET   /admin/sites/{siteId}/mascot/generate/latest                    - 최근 이력
+ * GET   /admin/sites/{siteId}/mascot/clean-mesh                         - [v5 신규] Mixamo용 FBX 조회
  * POST  /admin/sites/{siteId}/mascot/animations                         - 사전설정: state별 GLB 업로드 (multipart)
  * GET   /admin/sites/{siteId}/mascot/anim-config                        - 사전설정: 현재 조회
  * PUT   /admin/sites/{siteId}/mascot/anim-config                        - 사전설정: 클립명 매핑 수정 (JSON)
+ * POST  /admin/sites/{siteId}/mascot/model                               - base 모델 교체: 리깅 완료 GLB 직접 업로드 (multipart)
  * POST  /admin/sites/{siteId}/mascot/animation                          - 수동 오버라이드: 단일 anim GLB 업로드 (multipart)
  * POST  /admin/sites/{siteId}/mascot/voice/clone                        - Cartesia 음성 클로닝 (multipart)
  */
@@ -125,6 +131,18 @@ export const getMascotGenerationLatestApi = async (siteId: number) => {
 };
 
 /**
+ * [v5 신규] Clean Mesh 조회 (GET /mascot/clean-mesh)
+ * completed=true 이후 서버가 비동기로 생성하는 Mixamo 업로드용 FBX URL을 반환합니다.
+ * status=‘ready’일 때만 cleanMeshUrl이 non-null입니다.
+ */
+export const getCleanMeshApi = async (siteId: number) => {
+    const response = await apiClient.get<ApiResponse<CleanMeshResponse>>(
+        `/admin/sites/${siteId}/mascot/clean-mesh`,
+    );
+    return response.data;
+};
+
+/**
  * Cartesia 음성 클로닝 (multipart/form-data)
  * Content-Type 헤더는 Axios가 FormData를 감지해 자동 설정 — 직접 지정 금지
  */
@@ -187,6 +205,57 @@ export const updateMascotAnimConfigApi = async (
     const response = await apiClient.put<ApiResponse<AnimConfigResponse>>(
         `/admin/sites/${siteId}/mascot/anim-config`,
         { animClips },
+    );
+    return response.data;
+};
+
+/**
+ * 독립 clean-mesh 생성 시작 (POST /mascot/clean-mesh/generate)
+ * image_to_model만 실행 — rig 없이 리깅 없는 FBX 생성 전용
+ */
+export const startCleanMeshGenerationApi = async (
+    siteId: number,
+    imageFile: File,
+): Promise<ApiResponse<CleanMeshGenerateResponse>> => {
+    const formData = new FormData();
+    formData.append('file', imageFile);
+    const response = await apiClient.post<ApiResponse<CleanMeshGenerateResponse>>(
+        `/admin/sites/${siteId}/mascot/clean-mesh/generate`,
+        formData,
+        { timeout: 30000 },
+    );
+    return response.data;
+};
+
+/**
+ * 독립 clean-mesh 폴링 (GET /mascot/clean-mesh/generate/{taskId}/status)
+ */
+export const getCleanMeshJobStatusApi = async (
+    siteId: number,
+    taskId: string,
+): Promise<ApiResponse<CleanMeshJobStatus>> => {
+    const response = await apiClient.get<ApiResponse<CleanMeshJobStatus>>(
+        `/admin/sites/${siteId}/mascot/clean-mesh/generate/${taskId}/status`,
+    );
+    return response.data;
+};
+
+/**
+ * base 모델 교체: 리깅 완료 GLB 직접 업로드 (POST /mascot/model)
+ * - modelUrl 교체 + anim_config 기준 animModelUrl 자동 병합
+ * - Tripo 파이프라인 없이 외부에서 준비한 GLB를 마스코트에 연결할 때 사용
+ */
+export const uploadMascotModelApi = async (
+    siteId: number,
+    file: File,
+): Promise<ApiResponse<ModelUploadResponse>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await apiClient.post<ApiResponse<ModelUploadResponse>>(
+        `/admin/sites/${siteId}/mascot/model`,
+        formData,
+        { timeout: 120000 }, // 2분 (anim 병합까지 포함)
     );
     return response.data;
 };
