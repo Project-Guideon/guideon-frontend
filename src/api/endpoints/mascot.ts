@@ -10,6 +10,7 @@ import type {
     AnimationGlbsUploadResponse,
     AnimConfigResponse,
     AnimationUploadResponse,
+    CleanMeshResponse,
 } from '@/features/mascot/domain/entities/Mascot';
 import { VOICE_CLONE_DEFAULT_LANGUAGE } from '@/features/mascot/domain/entities/Mascot';
 
@@ -31,6 +32,7 @@ export interface MascotImageResponse {
  * POST  /admin/sites/{siteId}/mascot/generate                           - 3D 생성 시작 (JSON)
  * GET   /admin/sites/{siteId}/mascot/generate/{generationId}/status     - 상태 폴링
  * GET   /admin/sites/{siteId}/mascot/generate/latest                    - 최근 이력
+ * GET   /admin/sites/{siteId}/mascot/clean-mesh                         - [v5 신규] Mixamo용 FBX 조회
  * POST  /admin/sites/{siteId}/mascot/animations                         - 사전설정: state별 GLB 업로드 (multipart)
  * GET   /admin/sites/{siteId}/mascot/anim-config                        - 사전설정: 현재 조회
  * PUT   /admin/sites/{siteId}/mascot/anim-config                        - 사전설정: 클립명 매핑 수정 (JSON)
@@ -120,6 +122,18 @@ export const getMascotGenerationStatusApi = async (siteId: number, generationId:
 export const getMascotGenerationLatestApi = async (siteId: number) => {
     const response = await apiClient.get<ApiResponse<MascotGenerationStatus>>(
         `/admin/sites/${siteId}/mascot/generate/latest`,
+    );
+    return response.data;
+};
+
+/**
+ * [v5 신규] Clean Mesh 조회 (GET /mascot/clean-mesh)
+ * completed=true 이후 서버가 비동기로 생성하는 Mixamo 업로드용 FBX URL을 반환합니다.
+ * status=‘ready’일 때만 cleanMeshUrl이 non-null입니다.
+ */
+export const getCleanMeshApi = async (siteId: number) => {
+    const response = await apiClient.get<ApiResponse<CleanMeshResponse>>(
+        `/admin/sites/${siteId}/mascot/clean-mesh`,
     );
     return response.data;
 };
