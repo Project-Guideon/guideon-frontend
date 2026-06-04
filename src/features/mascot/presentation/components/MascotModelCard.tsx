@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { HiOutlineCubeTransparent, HiOutlineArrowUpTray, HiOutlineCheckCircle, HiOutlineXCircle, HiOutlineFilm } from 'react-icons/hi2';
+import { HiOutlineCubeTransparent, HiOutlineArrowUpTray, HiOutlineCheckCircle, HiOutlineXCircle, HiOutlineFilm, HiOutlineArrowPath } from 'react-icons/hi2';
 import type { Mascot, MascotGenerationStatus } from '@/features/mascot/domain/entities/Mascot';
 
 interface MascotModelCardProps {
@@ -11,6 +11,7 @@ interface MascotModelCardProps {
     isPolling: boolean;
     onStartGeneration: (file: File) => Promise<boolean>;
     onUploadAnimation: (file: File) => Promise<boolean>;
+    onUploadModel: (file: File) => Promise<boolean>;
 }
 
 /**
@@ -23,13 +24,17 @@ export function MascotModelCard({
     isPolling,
     onStartGeneration,
     onUploadAnimation,
+    onUploadModel,
 }: MascotModelCardProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const animInputRef = useRef<HTMLInputElement>(null);
+    const modelInputRef = useRef<HTMLInputElement>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [selectedAnimFile, setSelectedAnimFile] = useState<File | null>(null);
+    const [selectedModelFile, setSelectedModelFile] = useState<File | null>(null);
     const [isUploadingAnim, setIsUploadingAnim] = useState(false);
+    const [isUploadingModel, setIsUploadingModel] = useState(false);
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -63,6 +68,23 @@ export function MascotModelCard({
         setIsUploadingAnim(false);
         if (success) {
             setSelectedAnimFile(null);
+        }
+    };
+
+    const handleModelFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        setSelectedModelFile(file);
+    };
+
+    const handleUploadModel = async () => {
+        if (!selectedModelFile) return;
+        setIsUploadingModel(true);
+        const success = await onUploadModel(selectedModelFile);
+        setIsUploadingModel(false);
+        if (success) {
+            setSelectedModelFile(null);
+            if (modelInputRef.current) modelInputRef.current.value = '';
         }
     };
 
@@ -183,38 +205,84 @@ export function MascotModelCard({
                 )}
             </div>
 
-            {/* v4: 수동 오버라이드 (단일 GLB 업로드) */}
-            <div className="mt-6 pt-5 border-t border-slate-100 space-y-3">
-                <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold text-slate-400">수동 오버라이드</p>
-                    <p className="text-[10px] text-slate-400">단일 병합 GLB 직접 업로드</p>
-                </div>
-                <div className="flex gap-2 items-center">
-                    <input
-                        ref={animInputRef}
-                        type="file"
-                        accept=".glb"
-                        onChange={handleAnimFileSelect}
-                        className="hidden"
-                        disabled={isUploadingAnim}
-                    />
-                    <button
-                        onClick={() => animInputRef.current?.click()}
-                        disabled={isUploadingAnim}
-                        className="flex-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 font-medium text-xs rounded-xl px-4 py-2.5 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 truncate"
-                    >
-                        <HiOutlineFilm className="w-4 h-4 shrink-0" />
-                        {selectedAnimFile ? selectedAnimFile.name : 'anim.glb 선택'}
-                    </button>
-                    {selectedAnimFile && (
+            {/* 수동 업로드 섹션 */}
+            <div className="mt-6 pt-5 border-t border-slate-100 space-y-4">
+                <p className="text-xs font-bold text-slate-400">수동 업로드</p>
+
+                {/* 모델 교체 (POST /mascot/model) */}
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                            <HiOutlineArrowPath className="w-3.5 h-3.5 text-sky-500" />
+                            3D 모델 교체
+                        </p>
+                        <p className="text-[10px] text-slate-400">리깅 완료 GLB → 자동 병합</p>
+                    </div>
+                    <div className="flex gap-2 items-center">
+                        <input
+                            ref={modelInputRef}
+                            type="file"
+                            accept=".glb"
+                            onChange={handleModelFileSelect}
+                            className="hidden"
+                            disabled={isUploadingModel}
+                        />
                         <button
-                            onClick={handleUploadAnimation}
-                            disabled={isUploadingAnim}
-                            className="bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs rounded-xl px-4 py-2.5 shadow-sm transition-all disabled:opacity-50 shrink-0 min-w-[80px]"
+                            onClick={() => modelInputRef.current?.click()}
+                            disabled={isUploadingModel}
+                            className="flex-1 bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-700 font-medium text-xs rounded-xl px-4 py-2.5 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 truncate"
                         >
-                            {isUploadingAnim ? '업로드 중' : '적용'}
+                            <HiOutlineCubeTransparent className="w-4 h-4 shrink-0" />
+                            {selectedModelFile ? selectedModelFile.name : 'model.glb 선택'}
                         </button>
-                    )}
+                        {selectedModelFile && (
+                            <button
+                                onClick={handleUploadModel}
+                                disabled={isUploadingModel}
+                                className="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl px-4 py-2.5 shadow-sm transition-all disabled:opacity-50 shrink-0 min-w-[80px]"
+                            >
+                                {isUploadingModel ? '업로드 중' : '교체'}
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* anim GLB 오버라이드 (POST /mascot/animation) */}
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                            <HiOutlineFilm className="w-3.5 h-3.5 text-slate-400" />
+                            anim GLB 오버라이드
+                        </p>
+                        <p className="text-[10px] text-slate-400">병합 완료 anim GLB 직접 업로드</p>
+                    </div>
+                    <div className="flex gap-2 items-center">
+                        <input
+                            ref={animInputRef}
+                            type="file"
+                            accept=".glb"
+                            onChange={handleAnimFileSelect}
+                            className="hidden"
+                            disabled={isUploadingAnim}
+                        />
+                        <button
+                            onClick={() => animInputRef.current?.click()}
+                            disabled={isUploadingAnim}
+                            className="flex-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 font-medium text-xs rounded-xl px-4 py-2.5 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 truncate"
+                        >
+                            <HiOutlineFilm className="w-4 h-4 shrink-0" />
+                            {selectedAnimFile ? selectedAnimFile.name : 'anim.glb 선택'}
+                        </button>
+                        {selectedAnimFile && (
+                            <button
+                                onClick={handleUploadAnimation}
+                                disabled={isUploadingAnim}
+                                className="bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs rounded-xl px-4 py-2.5 shadow-sm transition-all disabled:opacity-50 shrink-0 min-w-[80px]"
+                            >
+                                {isUploadingAnim ? '업로드 중' : '적용'}
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

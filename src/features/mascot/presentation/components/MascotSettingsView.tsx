@@ -46,6 +46,7 @@ export function MascotSettingsView() {
         updateMascot,
         startGeneration,
         uploadAnimation,
+        uploadMascotModel,
         clearError,
     } = useMascot(currentSiteId);
 
@@ -253,6 +254,7 @@ export function MascotSettingsView() {
                     isPolling={isPolling}
                     onStartGeneration={startGeneration}
                     onUploadAnimation={uploadAnimation}
+                    onUploadModel={uploadMascotModel}
                 />
                 <MascotCleanMeshCard
                     siteId={currentSiteId}

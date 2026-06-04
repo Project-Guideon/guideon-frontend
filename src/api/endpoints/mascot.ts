@@ -10,6 +10,7 @@ import type {
     AnimationGlbsUploadResponse,
     AnimConfigResponse,
     AnimationUploadResponse,
+    ModelUploadResponse,
     CleanMeshResponse,
 } from '@/features/mascot/domain/entities/Mascot';
 import { VOICE_CLONE_DEFAULT_LANGUAGE } from '@/features/mascot/domain/entities/Mascot';
@@ -36,6 +37,7 @@ export interface MascotImageResponse {
  * POST  /admin/sites/{siteId}/mascot/animations                         - 사전설정: state별 GLB 업로드 (multipart)
  * GET   /admin/sites/{siteId}/mascot/anim-config                        - 사전설정: 현재 조회
  * PUT   /admin/sites/{siteId}/mascot/anim-config                        - 사전설정: 클립명 매핑 수정 (JSON)
+ * POST  /admin/sites/{siteId}/mascot/model                               - base 모델 교체: 리깅 완료 GLB 직접 업로드 (multipart)
  * POST  /admin/sites/{siteId}/mascot/animation                          - 수동 오버라이드: 단일 anim GLB 업로드 (multipart)
  * POST  /admin/sites/{siteId}/mascot/voice/clone                        - Cartesia 음성 클로닝 (multipart)
  */
@@ -201,6 +203,26 @@ export const updateMascotAnimConfigApi = async (
     const response = await apiClient.put<ApiResponse<AnimConfigResponse>>(
         `/admin/sites/${siteId}/mascot/anim-config`,
         { animClips },
+    );
+    return response.data;
+};
+
+/**
+ * base 모델 교체: 리깅 완료 GLB 직접 업로드 (POST /mascot/model)
+ * - modelUrl 교체 + anim_config 기준 animModelUrl 자동 병합
+ * - Tripo 파이프라인 없이 외부에서 준비한 GLB를 마스코트에 연결할 때 사용
+ */
+export const uploadMascotModelApi = async (
+    siteId: number,
+    file: File,
+): Promise<ApiResponse<ModelUploadResponse>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await apiClient.post<ApiResponse<ModelUploadResponse>>(
+        `/admin/sites/${siteId}/mascot/model`,
+        formData,
+        { timeout: 120000 }, // 2분 (anim 병합까지 포함)
     );
     return response.data;
 };

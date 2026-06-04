@@ -16,6 +16,7 @@ import {
     getMascotGenerationStatusApi,
     getMascotGenerationLatestApi,
     uploadMascotAnimationApi,
+    uploadMascotModelApi,
 } from '@/api/endpoints/mascot';
 
 const POLLING_INTERVAL = 5000;
@@ -34,6 +35,7 @@ interface UseMascotReturn {
     updateMascot: (data: UpdateMascotRequest) => Promise<boolean>;
     startGeneration: (imageFile: File) => Promise<boolean>;
     uploadAnimation: (glbFile: File, animClips?: Record<string, string>) => Promise<boolean>;
+    uploadMascotModel: (glbFile: File) => Promise<boolean>;
     clearError: () => void;
 }
 
@@ -224,6 +226,28 @@ export function useMascot(siteId: number | null): UseMascotReturn {
     }, [siteId, pollGenerationStatus]);
 
     /**
+     * base 모델 교체: 리깅 완료 GLB 직접 업로드 (POST /mascot/model)
+     * modelUrl 교체 + anim_config 기준 자동 병합
+     */
+    const uploadMascotModel = useCallback(async (glbFile: File): Promise<boolean> => {
+        if (!siteId) return false;
+        setIsSaving(true);
+        setError(null);
+
+        try {
+            await uploadMascotModelApi(siteId, glbFile);
+            await fetchMascot();
+            return true;
+        } catch (error: unknown) {
+            const apiError = error as { response?: { data?: { error?: { message?: string } } } };
+            setError(apiError.response?.data?.error?.message ?? '모델 업로드에 실패했습니다.');
+            return false;
+        } finally {
+            setIsSaving(false);
+        }
+    }, [siteId, fetchMascot]);
+
+    /**
      * 수동 오버라이드용 애니메이션 GLB 업로드
      */
     const uploadAnimation = useCallback(async (glbFile: File, animClips?: Record<string, string>): Promise<boolean> => {
@@ -277,6 +301,7 @@ export function useMascot(siteId: number | null): UseMascotReturn {
         updateMascot,
         startGeneration,
         uploadAnimation,
+        uploadMascotModel,
         clearError,
     };
 }

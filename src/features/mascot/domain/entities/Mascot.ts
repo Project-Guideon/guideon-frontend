@@ -133,6 +133,15 @@ export interface AnimationUploadResponse {
 }
 
 /**
+ * 수동 GLB 업로드 응답 (POST /mascot/model)
+ * 리깅 완료 GLB를 직접 업로드해 base model 교체 + anim_config 기준 자동 병합.
+ */
+export interface ModelUploadResponse {
+    modelUrl: string;
+    animModelUrl: string | null;
+}
+
+/**
  * Clean Mesh 상태 (v5 신규)
  * - ready: FBX 생성 완료, 다운로드 가능
  * - not_available: rig 미완료이거나 백그라운드 생성 중
