@@ -11,6 +11,8 @@ interface MascotModelCardProps {
     isPolling: boolean;
     onStartGeneration: (file: File) => Promise<boolean>;
     onUploadAnimation: (file: File) => Promise<boolean>;
+    /** completed=true 전환 직후 호출 — clean mesh 폴링 트리거용 */
+    onGenerationCompleted?: () => void;
 }
 
 /**
@@ -23,6 +25,7 @@ export function MascotModelCard({
     isPolling,
     onStartGeneration,
     onUploadAnimation,
+    onGenerationCompleted,
 }: MascotModelCardProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const animInputRef = useRef<HTMLInputElement>(null);
@@ -69,12 +72,18 @@ export function MascotModelCard({
     const isInProgress = isPolling || isGenerating;
     const activeModelUrl = mascot.modelUrl;
     const hasModel = !!activeModelUrl;
-    
-    // v4: 생성 완료 후 anim_config 유무에 따라 자동 적용 여부 판단
+
+    // v5: 생성 완료 후 anim_config 유무에 따라 자동 적용 여부 판단
     const isGenerationCompleted = generation?.completed === true;
-    const isAnimModelReady = !!mascot.animModelUrl; // mascot entity 자체에 업데이트됨
-    // 생성 완료되었는데 animModelUrl이 없으면 anim_config 미설정으로 인한 폴백
+    const isAnimModelReady = !!mascot.animModelUrl;
     const isAnimModelFallback = isGenerationCompleted && !isAnimModelReady;
+
+    // completed 전환 시 상위에 알림 (clean mesh 폴링 시작 트리거)
+    const prevCompletedRef = useRef(false);
+    if (isGenerationCompleted && !prevCompletedRef.current) {
+        prevCompletedRef.current = true;
+        onGenerationCompleted?.();
+    }
 
     return (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
@@ -100,12 +109,17 @@ export function MascotModelCard({
                         <p className="text-xs text-green-600 truncate">{activeModelUrl}</p>
                         {isAnimModelFallback && (
                             <p className="text-xs text-amber-600 mt-0.5 font-bold">
-                                ⚠️ 완료 (애니메이션 미설정 — 하단 사전 설정 탭에서 GLB 업로드 필요)
+                                ⚠️ 완료 (애니메이션 미설정 — Mixamo 메쉬 카드에서 FBX 다운로드 후 GLB 업로드 필요)
                             </p>
                         )}
                         {isGenerationCompleted && isAnimModelReady && (
                             <p className="text-xs text-blue-600 mt-0.5 font-bold">
                                 ✨ 완료! 애니메이션 자동 적용됨
+                            </p>
+                        )}
+                        {isGenerationCompleted && (
+                            <p className="text-xs text-violet-500 mt-0.5">
+                                🔄 Mixamo용 메쉬 FBX 생성 중...
                             </p>
                         )}
                     </div>
