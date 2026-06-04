@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     HiOutlineSparkles,
@@ -16,6 +16,7 @@ import { MascotPromptCard } from './MascotPromptCard';
 import { MascotTtsCard } from './MascotTtsCard';
 import { MascotModelCard } from './MascotModelCard';
 import { MascotAnimConfigCard } from './MascotAnimConfigCard';
+import { MascotCleanMeshCard } from './MascotCleanMeshCard';
 import { MascotFormModal } from './MascotFormModal';
 import type { CreateMascotRequest, UpdateMascotRequest } from '@/features/mascot/domain/entities/Mascot';
 
@@ -47,6 +48,23 @@ export function MascotSettingsView() {
         uploadAnimation,
         clearError,
     } = useMascot(currentSiteId);
+
+    // v5: clean mesh 폴링 트리거 쫐에로드된 generation 여부 (siteId 변경 시 리셋)
+    const [generationCompleted, setGenerationCompleted] = useState(
+        () => generation?.completed === true
+    );
+
+    const handleGenerationCompleted = useCallback(() => {
+        setGenerationCompleted(true);
+    }, []);
+
+    // siteId 변경 시 generationCompleted 리셋 (useEffect 사용을 피하고 직접 도출)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const [prevSiteId, setPrevSiteId] = useState(currentSiteId);
+    if (prevSiteId !== currentSiteId) {
+        setPrevSiteId(currentSiteId);
+        setGenerationCompleted(false);
+    }
 
     // 모달 상태
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -248,6 +266,11 @@ export function MascotSettingsView() {
                     isPolling={isPolling}
                     onStartGeneration={startGeneration}
                     onUploadAnimation={uploadAnimation}
+                    onGenerationCompleted={handleGenerationCompleted}
+                />
+                <MascotCleanMeshCard
+                    siteId={currentSiteId}
+                    generationCompleted={generationCompleted || generation?.completed === true}
                 />
                 <MascotAnimConfigCard siteId={currentSiteId} />
             </motion.div>
