@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { HiOutlineCubeTransparent, HiOutlineArrowUpTray, HiOutlineCheckCircle, HiOutlineXCircle, HiOutlineFilm } from 'react-icons/hi2';
 import type { Mascot, MascotGenerationStatus } from '@/features/mascot/domain/entities/Mascot';
 
@@ -78,12 +78,15 @@ export function MascotModelCard({
     const isAnimModelReady = !!mascot.animModelUrl;
     const isAnimModelFallback = isGenerationCompleted && !isAnimModelReady;
 
-    // completed 전환 시 상위에 알림 (clean mesh 폴링 시작 트리거)
+    // completed=true 전환 시 상위에 알림 (clean mesh 폴링 시작 트리거)
+    // 렌더 중 setState 금지 → useEffect로 처리
     const prevCompletedRef = useRef(false);
-    if (isGenerationCompleted && !prevCompletedRef.current) {
-        prevCompletedRef.current = true;
-        onGenerationCompleted?.();
-    }
+    useEffect(() => {
+        if (isGenerationCompleted && !prevCompletedRef.current) {
+            prevCompletedRef.current = true;
+            onGenerationCompleted?.();
+        }
+    }, [isGenerationCompleted, onGenerationCompleted]);
 
     return (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
