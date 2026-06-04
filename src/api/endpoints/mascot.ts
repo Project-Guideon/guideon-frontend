@@ -12,6 +12,8 @@ import type {
     AnimationUploadResponse,
     ModelUploadResponse,
     CleanMeshResponse,
+    CleanMeshGenerateResponse,
+    CleanMeshJobStatus,
 } from '@/features/mascot/domain/entities/Mascot';
 import { VOICE_CLONE_DEFAULT_LANGUAGE } from '@/features/mascot/domain/entities/Mascot';
 
@@ -203,6 +205,37 @@ export const updateMascotAnimConfigApi = async (
     const response = await apiClient.put<ApiResponse<AnimConfigResponse>>(
         `/admin/sites/${siteId}/mascot/anim-config`,
         { animClips },
+    );
+    return response.data;
+};
+
+/**
+ * 독립 clean-mesh 생성 시작 (POST /mascot/clean-mesh/generate)
+ * image_to_model만 실행 — rig 없이 리깅 없는 FBX 생성 전용
+ */
+export const startCleanMeshGenerationApi = async (
+    siteId: number,
+    imageFile: File,
+): Promise<ApiResponse<CleanMeshGenerateResponse>> => {
+    const formData = new FormData();
+    formData.append('file', imageFile);
+    const response = await apiClient.post<ApiResponse<CleanMeshGenerateResponse>>(
+        `/admin/sites/${siteId}/mascot/clean-mesh/generate`,
+        formData,
+        { timeout: 30000 },
+    );
+    return response.data;
+};
+
+/**
+ * 독립 clean-mesh 폴링 (GET /mascot/clean-mesh/generate/{taskId}/status)
+ */
+export const getCleanMeshJobStatusApi = async (
+    siteId: number,
+    taskId: string,
+): Promise<ApiResponse<CleanMeshJobStatus>> => {
+    const response = await apiClient.get<ApiResponse<CleanMeshJobStatus>>(
+        `/admin/sites/${siteId}/mascot/clean-mesh/generate/${taskId}/status`,
     );
     return response.data;
 };

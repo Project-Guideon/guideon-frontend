@@ -133,6 +133,22 @@ export interface AnimationUploadResponse {
 }
 
 /**
+ * 독립 clean-mesh 생성 시작 응답 (POST /mascot/clean-mesh/generate)
+ */
+export interface CleanMeshGenerateResponse {
+    taskId: string;
+}
+
+/**
+ * 독립 clean-mesh 폴링 응답 (GET /mascot/clean-mesh/generate/{taskId}/status)
+ */
+export interface CleanMeshJobStatus {
+    taskId: string;
+    status: 'processing' | 'ready' | 'failed';
+    cleanMeshUrl: string | null;
+}
+
+/**
  * 수동 GLB 업로드 응답 (POST /mascot/model)
  * 리깅 완료 GLB를 직접 업로드해 base model 교체 + anim_config 기준 자동 병합.
  */

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     HiOutlineArrowDownTray,
@@ -8,76 +8,177 @@ import {
     HiOutlineCheckCircle,
     HiOutlineExclamationTriangle,
     HiOutlineArrowPath,
-    HiOutlineInformationCircle,
+    HiOutlineArrowUpTray,
+    HiOutlinePhoto,
 } from 'react-icons/hi2';
 import { useCleanMesh } from '@/features/mascot/application/hooks/useCleanMesh';
-import type { CleanMeshPollState } from '@/features/mascot/application/hooks/useCleanMesh';
+import type { CleanMeshPollState, CleanMeshJobState } from '@/features/mascot/application/hooks/useCleanMesh';
 
 interface MascotCleanMeshCardProps {
     siteId: number;
-    /** 3D 생성 completed=true가 된 순간 true로 전환 — 폴링 자동 시작 트리거 */
+    /** 3D 생성 completed=true가 된 순간 true로 전환 — 기존 폴링 트리거 */
     generationCompleted: boolean;
 }
 
 /**
- * [v5 신규] Mixamo 업로드용 Clean Mesh 다운로드 카드
+ * Mixamo 업로드용 Clean Mesh 카드
  *
- * 마스코트 3D 생성 완료(completed=true) 이후 서버가 비동기로
- * 스켈레톤 제거 FBX를 생성합니다. 이 컴포넌트는 해당 FBX의 준비 상태를
- * 폴링하여 다운로드 버튼을 활성화하고, Mixamo 업로드 가이드를 제공합니다.
+ * [기존] full generation 완료 후 자동 생성된 FBX 다운로드
+ * [신규] 이미지 직접 업로드 → Tripo image_to_model → 리깅 없는 FBX 독립 생성
  */
 export function MascotCleanMeshCard({ siteId, generationCompleted }: MascotCleanMeshCardProps) {
-    const { cleanMeshUrl, pollState, startPolling, refetch } = useCleanMesh(siteId);
+    const {
+        cleanMeshUrl,
+        pollState,
+        startPolling,
+        refetch,
+        jobState,
+        jobCleanMeshUrl,
+        jobError,
+        generateCleanMesh,
+    } = useCleanMesh(siteId);
 
-    // generation이 completed=true가 될 때마다 폴링 시작
-    // startPolling은 siteId 기준으로만 변경되므로 deps에 포함해도 안전
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    // generation completed 시 기존 FBX 폴링 트리거
     useEffect(() => {
-        if (generationCompleted) {
-            startPolling();
-        }
+        if (generationCompleted) startPolling();
     }, [generationCompleted, startPolling]);
 
-    // 생성이 완료된 적 없으면 (= rig 미완료) 회색 안내만 표시
-    if (!generationCompleted && pollState === 'idle') {
-        return (
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                <CardHeader />
-                <div className="mt-4 flex items-center gap-3 bg-slate-50 rounded-xl px-4 py-3">
-                    <HiOutlineInformationCircle className="w-4 h-4 text-slate-400 shrink-0" />
-                    <p className="text-xs text-slate-400">3D 모델 생성 완료 후 사용 가능합니다.</p>
-                </div>
-                <MixamoGuide />
-            </div>
-        );
-    }
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setSelectedFile(file);
+        const reader = new FileReader();
+        reader.onload = () => setPreviewUrl(reader.result as string);
+        reader.readAsDataURL(file);
+    };
+
+    const handleGenerate = async () => {
+        if (!selectedFile) return;
+        await generateCleanMesh(selectedFile);
+        setSelectedFile(null);
+        setPreviewUrl(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const isJobBusy = jobState === 'uploading' || jobState === 'processing';
+
+    // 최종 표시할 FBX URL — 독립 생성이 있으면 우선, 없으면 기존 generation 결과
+    const displayUrl = jobCleanMeshUrl ?? cleanMeshUrl;
 
     return (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
             <CardHeader />
 
-            <div className="mt-4">
+            {/* ── 이미지 업로드 섹션 (독립 생성) ── */}
+            <div className="mt-5 space-y-3">
+                <p className="text-xs font-bold text-slate-500">이미지로 FBX 직접 생성</p>
+
+                {/* 이미지 드롭존 */}
+                <div
+                    onClick={() => !isJobBusy && fileInputRef.current?.click()}
+                    className={`relative border-2 border-dashed rounded-xl overflow-hidden transition-all duration-200 ${
+                        isJobBusy
+                            ? 'border-slate-200 bg-slate-50 cursor-not-allowed'
+                            : 'border-slate-200 hover:border-violet-400 cursor-pointer hover:bg-violet-50/30'
+                    }`}
+                >
+                    {previewUrl ? (
+                        <div className="aspect-video flex items-center justify-center bg-slate-50">
+                            <img src={previewUrl} alt="미리보기" className="max-h-36 object-contain" />
+                        </div>
+                    ) : (
+                        <div className="py-8 flex flex-col items-center gap-2">
+                            <HiOutlinePhoto className="w-7 h-7 text-slate-300" />
+                            <p className="text-sm text-slate-400">PNG, JPG, WEBP 이미지 선택</p>
+                            <p className="text-xs text-slate-400">클릭하여 파일 선택</p>
+                        </div>
+                    )}
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                        disabled={isJobBusy}
+                    />
+                </div>
+
+                {/* 생성 버튼 */}
+                {selectedFile && !isJobBusy && (
+                    <button
+                        onClick={handleGenerate}
+                        className="w-full flex items-center justify-center gap-2 bg-violet-500 hover:bg-violet-600 text-white font-bold text-sm rounded-xl px-5 py-3 shadow-lg shadow-violet-200 transition-all active:scale-[0.98]"
+                    >
+                        <HiOutlineArrowUpTray className="w-4 h-4" />
+                        리깅 없는 FBX 생성
+                    </button>
+                )}
+
+                {/* 독립 생성 진행 상태 */}
                 <AnimatePresence mode="wait">
-                    {pollState === 'ready' && cleanMeshUrl && (
-                        <ReadyState key="ready" cleanMeshUrl={cleanMeshUrl} />
+                    {(jobState === 'uploading' || jobState === 'processing') && (
+                        <motion.div
+                            key="job-processing"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="flex items-center gap-3 bg-violet-50 rounded-xl px-4 py-3"
+                        >
+                            <div className="w-4 h-4 border-[2.5px] border-violet-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                            <p className="text-xs font-medium text-violet-700">
+                                {jobState === 'uploading' ? '이미지 업로드 중...' : '3D 모델 생성 중... (최대 60초)'}
+                            </p>
+                        </motion.div>
                     )}
-                    {(pollState === 'polling' || (pollState === 'idle' && generationCompleted)) && (
-                        <PollingState key="polling" />
-                    )}
-                    {pollState === 'timeout' && (
-                        <TimeoutState key="timeout" onRetry={refetch} />
-                    )}
-                    {pollState === 'error' && (
-                        <ErrorState key="error" onRetry={refetch} />
+                    {jobState === 'failed' && (
+                        <motion.div
+                            key="job-failed"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="flex items-start gap-3 bg-red-50 rounded-xl px-4 py-3"
+                        >
+                            <HiOutlineExclamationTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                            <p className="text-xs font-medium text-red-700">{jobError}</p>
+                        </motion.div>
                     )}
                 </AnimatePresence>
             </div>
+
+            {/* ── FBX 다운로드 섹션 ── */}
+            {displayUrl && (
+                <div className="mt-5 pt-4 border-t border-slate-100">
+                    <p className="text-xs font-bold text-slate-500 mb-3">생성된 FBX</p>
+                    <ReadyState cleanMeshUrl={displayUrl} />
+                </div>
+            )}
+
+            {/* 기존 폴링 상태 (generation 완료 후 자동 생성 대기 중인 경우) */}
+            {!displayUrl && pollState === 'polling' && (
+                <div className="mt-4">
+                    <LegacyPollingState />
+                </div>
+            )}
+            {!displayUrl && pollState === 'timeout' && (
+                <div className="mt-4">
+                    <TimeoutState onRetry={refetch} />
+                </div>
+            )}
+            {!displayUrl && pollState === 'error' && (
+                <div className="mt-4">
+                    <ErrorState onRetry={refetch} />
+                </div>
+            )}
 
             <MixamoGuide />
         </div>
     );
 }
 
-/** 카드 상단 헤더 */
 function CardHeader() {
     return (
         <div className="flex items-center gap-3">
@@ -86,35 +187,27 @@ function CardHeader() {
             </div>
             <div>
                 <h3 className="text-sm font-bold text-slate-800">Mixamo 업로드용 메쉬</h3>
-                <p className="text-xs text-slate-400">
-                    스켈레톤 제거 FBX — Mixamo 자동 리깅 전용
-                </p>
+                <p className="text-xs text-slate-400">스켈레톤 제거 FBX — Mixamo 자동 리깅 전용</p>
             </div>
         </div>
     );
 }
 
-/** 준비 완료 상태 — 다운로드 버튼 활성화 */
 function ReadyState({ cleanMeshUrl }: { cleanMeshUrl: string }) {
     const fileName = cleanMeshUrl.split('/').at(-1) ?? 'clean_mesh.fbx';
-
     return (
         <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.25 }}
             className="space-y-3"
         >
-            {/* 상태 뱃지 */}
             <div className="flex items-center gap-2">
                 <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full">
                     <HiOutlineCheckCircle className="w-3.5 h-3.5" />
                     준비됨
                 </span>
             </div>
-
-            {/* 다운로드 버튼 */}
             <a
                 href={cleanMeshUrl}
                 download={fileName}
@@ -129,71 +222,45 @@ function ReadyState({ cleanMeshUrl }: { cleanMeshUrl: string }) {
     );
 }
 
-/** 폴링 중 상태 — 스피너 */
-function PollingState() {
+function LegacyPollingState() {
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="flex items-center gap-3 bg-violet-50 rounded-xl px-4 py-3"
-        >
+        <div className="flex items-center gap-3 bg-violet-50 rounded-xl px-4 py-3">
             <div className="w-4 h-4 border-[2.5px] border-violet-400 border-t-transparent rounded-full animate-spin shrink-0" />
             <p className="text-xs font-medium text-violet-700">FBX 생성 중... 잠시만 기다려 주세요.</p>
-        </motion.div>
+        </div>
     );
 }
 
-/** 타임아웃 상태 — 새로고침 안내 */
 function TimeoutState({ onRetry }: { onRetry: () => void }) {
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex items-start gap-3 bg-amber-50 rounded-xl px-4 py-3"
-        >
+        <div className="flex items-start gap-3 bg-amber-50 rounded-xl px-4 py-3">
             <HiOutlineExclamationTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
             <div className="flex-1">
                 <p className="text-xs font-medium text-amber-700">FBX 생성이 지연되고 있습니다.</p>
-                <button
-                    onClick={onRetry}
-                    className="mt-2 flex items-center gap-1 text-xs font-bold text-amber-600 hover:text-amber-700 transition-colors"
-                >
+                <button onClick={onRetry} className="mt-2 flex items-center gap-1 text-xs font-bold text-amber-600 hover:text-amber-700 transition-colors">
                     <HiOutlineArrowPath className="w-3.5 h-3.5" />
                     다시 확인하기
                 </button>
             </div>
-        </motion.div>
+        </div>
     );
 }
 
-/** 오류 상태 */
 function ErrorState({ onRetry }: { onRetry: () => void }) {
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex items-start gap-3 bg-red-50 rounded-xl px-4 py-3"
-        >
+        <div className="flex items-start gap-3 bg-red-50 rounded-xl px-4 py-3">
             <HiOutlineExclamationTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
             <div className="flex-1">
                 <p className="text-xs font-medium text-red-700">FBX 상태 조회에 실패했습니다.</p>
-                <button
-                    onClick={onRetry}
-                    className="mt-2 flex items-center gap-1 text-xs font-bold text-red-500 hover:text-red-700 transition-colors"
-                >
+                <button onClick={onRetry} className="mt-2 flex items-center gap-1 text-xs font-bold text-red-500 hover:text-red-700 transition-colors">
                     <HiOutlineArrowPath className="w-3.5 h-3.5" />
                     다시 시도
                 </button>
             </div>
-        </motion.div>
+        </div>
     );
 }
 
-/** Mixamo 사용 가이드 (항상 하단에 표시) */
 function MixamoGuide() {
     return (
         <div className="mt-5 pt-4 border-t border-slate-100">
